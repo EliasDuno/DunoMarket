@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        body {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+    <script>
+        (function () {
+            const session = sessionStorage.getItem('user_session'); // Changed to sessionStorage
+            try {
+                // Strict validation: Must be non-empty, not "null"/"undefined", and valid JSON with ID
+                if (!session || session === 'null' || session === 'undefined') throw new Error('No session');
+                const parsed = JSON.parse(session);
+                if (!parsed || !parsed.id) throw new Error('Invalid session');
+
+                // If valid, show body
+                document.write('<style>body { display: flex; }</style>');
+                window.onload = function () { setTimeout(() => document.body.style.opacity = '1', 50); };
+            } catch (e) {
+                // If invalid, clear and redirect immediately
+                sessionStorage.removeItem('user_session'); // Changed to sessionStorage
+                window.location.href = 'acceso.html';
+            }
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="resumen.html" target="content-main" class="nav-item active">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" target="content-main" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" target="content-main" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" target="content-main" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" target="content-main" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" target="content-main" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" target="content-main" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" target="content-main" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" target="content-main" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" target="content-main" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <!-- Mini User Profile (Optional, can rely on top bar) -->
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area with Iframe -->
+        <main class="main-content" style="padding: 0; overflow: hidden;">
+            <iframe name="content-main" src="resumen.html"
+                style="width: 100%; height: 100%; border: none; display: block;" allowtransparency="true"></iframe>
+        </main>
+    </div>
+
+    <!-- Modals (Global) -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content small-modal">
+            <span class="close" onclick="closeNotification()">&times;</span>
+            <div id="notificationIcon" style="text-align: center; font-size: 3rem; margin-bottom: 1rem;"></div>
+            <h2 id="notificationTitle" style="text-align: center;">...</h2>
+            <p id="notificationMessage" style="text-align: center;">...</p>
+            <button class="btn-primary full-width" onclick="closeNotification()">Aceptar</button>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script src="js/sistema.js"></script>
+    <script>
+        checkGlobalAuth();
+        loadGlobalProfile();
+        checkAlerts();
+
+        // Sidebar Navigation Logic
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', function () {
+                // Remove active class from all
+                navItems.forEach(nav => nav.classList.remove('active'));
+                // Add active class to clicked
+                this.classList.add('active');
+            });
+        });
+
+        // Listen for iframe load to sync sidebar (optional, for back button support)
+        // Listen for iframe load to sync sidebar (optional, for back button support)
+        const frame = document.querySelector('iframe[name="content-main"]');
+        if (frame) {
+            // 1. Restore last visited page on load
+            const lastPage = sessionStorage.getItem('last_module');
+            if (lastPage && lastPage !== 'resumen.html') {
+                frame.src = lastPage;
+            }
+
+            frame.onload = function () {
+                try {
+                    const path = frame.contentWindow.location.pathname;
+                    const page = path.split('/').pop();
+
+                    // 2. Save current page
+                    sessionStorage.setItem('last_module', page);
+
+                    // 3. Highlight Sidebar
+                    navItems.forEach(nav => {
+                        if (nav.href.includes(page)) {
+                            navItems.forEach(n => n.classList.remove('active'));
+                            nav.classList.add('active');
+                        }
+                    });
+                } catch (e) {
+                    // Ignore cross-origin errors if any
+                }
+            };
+        } 
+    </script>
+</body>
+
+</html>

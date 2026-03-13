@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - PiduNet SaaS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        .super-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+        .tenant-card { background: #1e293b; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+        .status-active { color: #4ade80; }
+        .status-suspended { color: #f87171; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); }
+        .form-group input { width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: white; }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-network-wired"></i>
+            <span>PiduNet SaaS</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="active"><i class="fas fa-users"></i> Clientes (Tenants)</a>
+            <a href="inicio.html"><i class="fas fa-arrow-left"></i> Volver al App</a>
+        </nav>
+    </div>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>Gestión de Clientes SaaS</h1>
+            <button class="btn-login" onclick="openNewTenantModal()"><i class="fas fa-plus"></i> Nuevo Cliente</button>
+        </header>
+
+        <div class="super-container">
+            <div id="tenantsList">
+                <!-- Tablets loaded via JS -->
+                <p>Cargando clientes...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Nuevo Cliente -->
+    <div id="tenantModal" class="modal">
+        <div class="modal-content login-container" style="max-width: 500px;">
+            <h2>Registrar Nuevo Cliente</h2>
+            <form id="tenantForm">
+                <div class="form-group">
+                    <label>Nombre Comercial</label>
+                    <input type="text" id="tNombre" placeholder="Ej: Abasto El Sol" required>
+                </div>
+                <div class="form-group">
+                    <label>Código de Inquilino (Slug)</label>
+                    <input type="text" id="tSlug" placeholder="ej: abastoelsol" required>
+                </div>
+                <div class="form-group">
+                    <label>URL de Conexión Supabase (PostgreSQL URL)</label>
+                    <input type="password" id="tDbUrl" placeholder="postgresql://postgres:[pass]@db.[id].supabase.co:5432/postgres" required>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn-cancel" onclick="closeTenantModal()">Cancelar</button>
+                    <button type="submit" class="btn-login">Crear Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadTenants);
+
+        async function loadTenants() {
+            try {
+                const res = await fetch('http://localhost:3000/api/saas/tenants');
+                const tenants = await res.json();
+                const container = document.getElementById('tenantsList');
+                container.innerHTML = tenants.map(t => `
+                    <div class="tenant-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin:0">${t.nombre} <small style="color:var(--text-muted)">(${t.slug})</small></h3>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0;">DB: ${t.db_url.substring(0, 30)}...</p>
+                            </div>
+                            <div>
+                                <span class="status-${t.status}">${t.status.toUpperCase()}</span>
+                                <button class="btn-action" title="Aprovisionar DB" onclick="provisionTenant('${t.slug}')"><i class="fas fa-database"></i></button>
+                                <button class="btn-action" title="Suspender" onclick="toggleTenantStatus('${t.id}')"><i class="fas fa-ban"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') || '<p>No hay clientes registrados.</p>';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('tenantsList').innerHTML = '<p>Error al cargar clientes.</p>';
+            }
+        }
+
+        function openNewTenantModal() { document.getElementById('tenantModal').style.display = 'flex'; }
+        function closeTenantModal() { document.getElementById('tenantModal').style.display = 'none'; }
+
+        document.getElementById('tenantForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                nombre: document.getElementById('tNombre').value,
+                slug: document.getElementById('tSlug').value,
+                dbUrl: document.getElementById('tDbUrl').value
+            };
+
+            try {
+                const res = await fetch('http://localhost:3000/api/saas/tenants', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    showNotification('Éxito', 'Cliente registrado correctamente');
+                    closeTenantModal();
+                    loadTenants();
+                } else {
+                    const err = await res.json();
+                    showNotification('Error', err.message);
+                }
+            } catch (e) { showNotification('Error', 'No se pudo conectar con el servidor.'); }
+        };
+
+        async function provisionTenant(slug) {
+            showNotification('Procesando', 'Creando tablas en la base de datos del cliente...');
+            try {
+                const res = await fetch('http://localhost:3000/api/saas/provision', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slug })
+                });
+                if (res.ok) {
+                    showNotification('Éxito', 'Base de datos aprovisionada correctamente.');
+                } else {
+                    showNotification('Error', 'Falló el aprovisionamiento.');
+                }
+            } catch (e) { showNotification('Error', 'Error de red.'); }
+        }
+    </script>
+</body>
+</html>

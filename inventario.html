@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        body {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+    <script>
+        (function () {
+            const session = sessionStorage.getItem('user_session');
+            try {
+                if (!session || session === 'null' || session === 'undefined') throw new Error('No session');
+                const parsed = JSON.parse(session);
+                if (!parsed || !parsed.id) throw new Error('Invalid session');
+
+                // Safer visibility logic: Wait for DOM, then show
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.style.display = 'flex';
+                    setTimeout(() => document.body.style.opacity = '1', 50);
+                });
+            } catch (e) {
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'acceso.html';
+            }
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="inicio.html" class="nav-item">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item active">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="main-container" style="max-width: 100%;">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1>Inventario</h1>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="productSearch" class="search-input"
+                                placeholder="Buscar por código o nombre...">
+                        </div>
+
+                        <div class="dollar-badge" id="dollarBadge">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>Tasa: <strong id="currentDollarRate">0.00</strong> Bs</span>
+                            <button class="btn-icon-small" id="btnUpdateDollar" title="Actualizar Tasa"><i
+                                    class="fas fa-sync"></i></button>
+                        </div>
+
+                        <button id="btnReceiveStock" class="btn-login" style="background: var(--secondary-color);"><i
+                                class="fas fa-truck-loading"></i> Recibir Mercancía</button>
+                        <button id="btnTransferStock" class="btn-login" style="background: #f59e0b;"><i
+                                class="fas fa-exchange-alt"></i> Traspaso</button>
+                        <button id="btnHistory" class="btn-login" style="background: #8b5cf6;"><i
+                                class="fas fa-history"></i> Historial</button>
+                        <button id="btnMermas" class="btn-secondary" onclick="openMermasReport()"><i
+                                class="fas fa-trash-alt" style="margin-right: 8px;"></i> Mermas</button>
+                        <button id="btnNewProduct" class="btn-login"><i class="fas fa-plus"></i> Alta de
+                            Productos</button>
+                    </div>
+
+                    <!-- Profile Section -->
+                    <div class="user-profile-header" id="userProfileHeader" style="display: none; margin-left: 1rem;">
+                        <div class="profile-info">
+                            <span class="profile-name" id="profileName">Cargando...</span>
+                            <span class="profile-role" id="profileRole">...</span>
+                        </div>
+                        <div class="profile-avatar-container" id="profileAvatarContainer">
+                            <div class="user-avatar-placeholder small"><i class="fas fa-user"></i></div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Inventory Tabs -->
+                <div class="inventory-tabs" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="inventory-tab active" data-tab="venta" onclick="switchInventoryTab('venta')">
+                        <i class="fas fa-store"></i> Disponible para Ventas
+                    </button>
+                    <button class="inventory-tab" data-tab="principal" onclick="switchInventoryTab('principal')">
+                        <i class="fas fa-warehouse"></i> Bodega Principal
+                    </button>
+                    <button class="inventory-tab" data-tab="secundaria" onclick="switchInventoryTab('secundaria')">
+                        <i class="fas fa-boxes"></i> Bodega Secundaria
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Producto</th>
+                                <th>Stock</th>
+                                <th id="thMerma" style="display: none;">Merma</th>
+                                <th>Costo ($)</th>
+                                <th>Margen (%)</th>
+                                <th>Precio ($)</th>
+                                <th>Precio (Bs)</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryBody">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Product Modal (Add/Edit) -->
+    <div id="productModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="productModalTitle">Nuevo Producto</h2>
+                <span class="close" id="closeProductModal">&times;</span>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label for="pCodigo">Código / Barras</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-barcode"></i>
+                            <input type="text" id="pCodigo" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="pCategoria">Categoría</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-tag"></i>
+                            <select id="pCategoria">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-grid"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label for="pProveedor">Proveedor</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-truck"></i>
+                            <select id="pProveedor">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="pMarca">Marca</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-tag"></i> <!-- Reusing tag icon or similar -->
+                            <input type="text" id="pMarca" placeholder="Ej. Polar, Nestlé...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label for="pPresentacion">Presentación</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-box-open"></i>
+                            <select id="pPresentacion">
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expiration Date Removed 
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label for="pFechaVencimiento">Fecha de Vencimiento <small>(Opcional)</small></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-calendar-alt"></i>
+                            <input type="date" id="pFechaVencimiento">
+                        </div>
+                    </div>
+                </div>
+                -->
+
+
+
+                <div class="input-group">
+                    <label for="pNombre">Nombre del Producto</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-box"></i>
+                        <input type="text" id="pNombre" required>
+                    </div>
+                </div>
+
+                <div class="pricing-calculator"
+                    style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px dashed var(--glass-border);">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">
+                        Precios y Margen</p>
+
+                    <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="input-group">
+                            <label for="pCosto">Costo (USD $)</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-dollar-sign"></i>
+                                <input type="number" id="pCosto" step="0.01" value="0.00" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Vender en...</label>
+                            <div style="display: flex; gap: 5px;">
+                                <label
+                                    style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
+                                    <input type="radio" name="pPriceType" value="usd" checked> USD
+                                </label>
+                                <label
+                                    style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
+                                    <input type="radio" name="pPriceType" value="bs"> Bs.
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-grid"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+                        <div class="input-group">
+                            <label>Precio de Venta</label>
+                            <div class="input-wrapper">
+                                <i id="pCalcIcon" class="fas fa-dollar-sign"></i>
+                                <input type="number" id="pSalePrice" step="0.01" value="0.00">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="pMargen">Margen (%)</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-percentage"></i>
+                                <input type="number" id="pMargen" step="0.1" value="30.0" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label for="pMinimo">Stock Mínimo (Alerta)</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <input type="number" id="pMinimo" value="5" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merma Management Section (Only in Edit Mode) -->
+                <div id="mermaManagementSection"
+                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px;">
+                    <h4 style="color: #ef4444; margin: 0 0 10px 0;"><i class="fas fa-trash-alt"></i> Reportar Merma /
+                        Pérdida</h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end;">
+                        <!-- Principal -->
+                        <div class="input-group" id="mermaGroupPrincipal">
+                            <label style="font-size: 0.8em;">Bodega Principal</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="mermaQtyPrincipal" placeholder="Cant." min="1"
+                                    style="width: 70px; padding: 5px; border-radius: 4px; border: 1px solid #ef4444;">
+                                <button type="button" onclick="reportMermaFromEdit('principal')"
+                                    style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                                    Dar de Baja
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Secundaria -->
+                        <div class="input-group" id="mermaGroupSecundaria">
+                            <label style="font-size: 0.8em;">Bodega Secundaria</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="mermaQtySecundaria" placeholder="Cant." min="1"
+                                    style="width: 70px; padding: 5px; border-radius: 4px; border: 1px solid #ef4444;">
+                                <button type="button" onclick="reportMermaFromEdit('secundaria')"
+                                    style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                                    Dar de Baja
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="pStock" value="0">
+
+                <div class="input-grid"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label for="pActivo">Estatus</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-toggle-on"></i>
+                            <select id="pActivo"
+                                style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color);">
+                                <option value="true">Activo</option>
+                                <option value="false">Suspendido</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="button-group" style="margin-top: 1.5rem;">
+                    <button type="button" class="btn-cancel" id="btnCancelProduct">Cancelar</button>
+                    <button type="submit" class="btn-login">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dollar Rate Modal -->
+    <div id="dollarModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; max-width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2>Actualizar Tasa BCV</h2>
+            </div>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Introduce la nueva tasa de cambio del dólar hoy.
+            </p>
+            <form id="dollarForm">
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <input type="number" id="newDollarRate" step="0.01" required
+                            style="text-align: center; font-size: 1.5rem; height: 3.5rem;">
+                    </div>
+                </div>
+                <div class="button-group" style="justify-content: center; margin-top: 1.5rem;">
+                    <button type="button" class="btn-cancel" id="btnCancelDollar">Cancelar</button>
+                    <button type="submit" class="btn-login">Actualizar Tasa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Receive Stock Modal (Reverse Calculator) -->
+    <div id="receiveStockModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; max-width: 500px;">
+            <div class="modal-header">
+                <h2>Recibir Mercancía</h2>
+                <span class="close" id="closeReceiveModal">&times;</span>
+            </div>
+            <form id="receiveForm">
+                <div class="input-group">
+                    <label>Seleccionar Producto (Escáner)</label>
+                    <div class="input-wrapper" style="position: relative;">
+                        <i class="fas fa-barcode"></i>
+                        <input type="text" id="receiveSearch" placeholder="Escanear código o buscar nombre..."
+                            autocomplete="off">
+                        <input type="hidden" id="receiveProductId" required>
+                        <div id="receiveSearchResults" class="search-results-dropdown" style="top: 100%;"></div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Proveedor</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-truck"></i>
+                        <select id="receiveSupplier">
+                            <option value="">Mantener Actual / Seleccionar...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Destino</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-warehouse"></i>
+                        <select id="receiveDestino">
+                            <option value="venta">Disponible Venta</option>
+                            <option value="principal" selected>Bodega Principal</option>
+                            <option value="secundaria">Bodega Secundaria</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Cantidad Recibida</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-plus"></i>
+                            <input type="number" id="receiveQty" value="1" min="1" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Nuevo Costo (Bs.)</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-coins"></i>
+                            <input type="number" id="receiveNewCost" step="0.01" required>
+                        </div>
+                    </div>
+                    <!-- Expiration Date Removed
+                    <div class="input-group">
+                        <label>Vencimiento <small>(Opcional)</small></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-calendar-alt"></i>
+                            <input type="date" id="receiveFechaVencimiento">
+                        </div>
+                    </div>
+                    -->
+                </div>
+
+                <div class="input-group">
+                    <label>Impuestos</label>
+                    <div class="input-wrapper" id="receiveIvaWrapper"
+                        style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 0 15px; height: 50px; border-radius: 0.75rem; border: 1px solid var(--input-border); transition: all 0.3s ease;">
+                        <span style="color: var(--text-color);">Aplica IVA</span>
+                        <label class="switch"
+                            style="position: relative; display: inline-block; width: 50px; height: 26px; margin: 0;">
+                            <input type="checkbox" id="receiveAplicaIva" style="opacity: 0; width: 0; height: 0;">
+                            <span class="slider round"
+                                style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 34px;"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pricing-calculator"
+                    style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px dashed var(--glass-border);">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">
+                        Calculadora de Margen</p>
+
+                    <div class="input-group">
+                        <label>Establecer Precio de Venta en...</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 0.5rem;">
+                            <label
+                                style="flex: 1; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
+                                <input type="radio" name="priceType" value="usd" checked> USD ($)
+                            </label>
+                            <label
+                                style="flex: 1; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
+                                <input type="radio" name="priceType" value="bs"> Bs.
+                            </label>
+                        </div>
+                        <div class="input-wrapper">
+                            <i id="calcIcon" class="fas fa-dollar-sign"></i>
+                            <input type="number" id="receiveSalePrice" step="0.01" placeholder="Precio de Venta">
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <span style="font-size: 0.9rem;">Margen Resultante: <strong id="calcMarginResult"
+                                style="color: var(--primary-color);">0%</strong></span>
+                        <input type="hidden" id="receiveFinalMargin" value="0">
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn-cancel" id="btnCancelReceive">Cancelar</button>
+                    <button type="submit" class="btn-login">Confirmar Recepción</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; max-width: 800px;">
+            <div class="modal-header">
+                <h2>Transferir Mercancía</h2>
+                <span class="close" onclick="closeTransferModal()">&times;</span>
+            </div>
+
+            <form id="transfer-form">
+                <input type="hidden" id="transId">
+                
+                <div id="transProductSelect" class="input-group" style="margin-bottom: 1.5rem; display: none;">
+                    <label>Seleccionar Producto (Buscar)</label>
+                    <div class="input-wrapper" style="position: relative;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="transSearchInput" placeholder="Buscar por nombre o código..." autocomplete="off">
+                        <div id="transSearchResults" class="search-results-dropdown" style="top: 100%;"></div>
+                    </div>
+                </div>
+
+                <p id="transProdName"
+                    style="margin-bottom: 1.5rem; font-weight: 600; color: var(--text-color); text-align: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                </p>
+
+                <div class="input-grid"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="input-group">
+                        <label>Origen</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <select id="transOrigin">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Destino</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <select id="transDest">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Cantidad a Transferir</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-exchange-alt"></i>
+                        <input type="number" id="transQty" required min="1" placeholder="Ej: 10">
+                    </div>
+                </div>
+
+                <!-- Merma Options -->
+                <div class="form-group" id="groupMerma"
+                    style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem; background: rgba(220, 38, 38, 0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid rgba(220, 38, 38, 0.3);">
+                    <input type="checkbox" id="checkMerma"
+                        style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
+                    <label for="checkMerma" style="margin: 0; color: #ef4444; font-weight: 600; cursor: pointer;">¿Es
+                        Merma / Pérdida?</label>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Observaciones (Opcional)</label>
+                    <div class="input-wrapper">
+                        <textarea id="transObs" rows="2" placeholder="Motivo de la transferencia o merma..."
+                            style="padding-left: 1rem; resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 2rem;">
+                    <button type="button" class="btn-cancel" onclick="closeTransferModal()">Cancelar</button>
+                    <button type="submit" class="btn-login"><i class="fas fa-exchange-alt"></i> Transferir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content login-container" style="margin: auto; max-width: 900px;">
+            <div class="modal-header">
+                <h2>Historial de Compras</h2>
+                <span class="close" id="closeHistoryModal">&times;</span>
+            </div>
+
+            <div class="input-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="input-group">
+                    <label>Fecha Inicio</label>
+                    <div class="input-wrapper" onclick="document.getElementById('histStart').showPicker()">
+                        <i class="fas fa-calendar"></i><input type="date" id="histStart" style="cursor: pointer;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Fecha Fin</label>
+                    <div class="input-wrapper" onclick="document.getElementById('histEnd').showPicker()">
+                        <i class="fas fa-calendar"></i><input type="date" id="histEnd" style="cursor: pointer;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Proveedor</label>
+                    <div class="input-wrapper"><i class="fas fa-truck"></i><select id="histSupplier">
+                            <option value="">Todos</option>
+                        </select></div>
+                </div>
+                <div class="input-group">
+                    <label>Producto</label>
+                    <div class="input-wrapper" style="position: relative;">
+                        <i class="fas fa-box"></i>
+                        <input type="text" id="histProduct" placeholder="Filtrar por nombre..." autocomplete="off">
+                        <div id="histProductResults" class="search-results-dropdown" style="top: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button id="btnApplyHistoryFilter" class="btn-login" style="width: auto; padding: 0.6rem 2rem;">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Proveedor</th>
+                            <th>Cant.</th>
+                            <th>Costo Unit.</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+
+            <div class="button-group" style="justify-content: flex-end; margin-top: 1rem;">
+                <button class="btn-cancel" id="btnCloseHistoryBtn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte Mermas Modal -->
+    <div id="mermasModal" class="mermas-modal">
+        <div class="modal-content">
+            <div class="mermas-header">
+                <h2><i class="fas fa-trash-alt"></i> Reporte de Mermas</h2>
+                <span class="close" onclick="closeMermasModal()">&times;</span>
+            </div>
+
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Desde</label>
+                    <input type="date" id="mermaStart">
+                </div>
+                <div class="filter-group">
+                    <label>Hasta</label>
+                    <input type="date" id="mermaEnd">
+                </div>
+                <button class="btn-primary" onclick="loadMermasData()">
+                    <i class="fas fa-filter" style="margin-right: 8px;"></i> Filtrar
+                </button>
+                <div class="total-loss">
+                    Total Pérdida: <span id="mermaTotalCost">$0.00</span>
+                </div>
+            </div>
+
+            <div class="mermas-table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Bodega</th>
+                            <th>Cant.</th>
+                            <th>Costo U.</th>
+                            <th>Total ($)</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mermasTableBody">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 id="notificationTitle">Aviso</h2>
+            </div>
+            <p id="notificationMessage" style="margin-bottom: 1.5rem; color: var(--text-color);"></p>
+            <div class="button-group" style="justify-content: center;">
+                <button class="btn-login" onclick="closeNotification()">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center; max-width: 400px;">
+            <div class="modal-header" style="justify-content: center; border-bottom: none;">
+                <h2 id="confirmTitle" style="color: var(--primary-color);">Confirmar</h2>
+            </div>
+            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color); font-size: 1.1em;"></p>
+            <div class="button-group" style="justify-content: center; gap: 15px;">
+                <button class="btn-cancel" id="btnConfirmCancel"
+                    style="width: auto; min-width: 100px;">Cancelar</button>
+                <button class="btn-login" id="btnConfirmOk" style="width: auto; min-width: 100px;">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script src="js/sistema.js"></script>
+</body>
+
+</html>

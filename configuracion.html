@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <script src="js/auth-guard.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="inicio.html" class="nav-item">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item active">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="main-container" style="max-width: 800px;">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1>Configuración del Sistema</h1>
+                    </div>
+                </header>
+
+                <div class="login-container" style="max-width: 100%; margin: 0;">
+
+                    <!-- SECTION 1: Commerce Data -->
+                    <details>
+                        <summary class="section-title">
+                            <span><i class="fas fa-store" style="color: var(--primary-color);"></i> Datos del
+                                Comercio</span>
+                            <i class="fas fa-chevron-down arrow-icon"></i>
+                        </summary>
+                        <div class="section-content">
+                            <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                                <div class="input-group">
+                                    <label>Nombre del Comercio</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-tag"></i>
+                                        <input type="text" id="commerceName" placeholder="Ej: PiduNet C.A.">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label>RIF / Documento</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-id-card"></i>
+                                        <input type="text" id="commerceRif" placeholder="Ej: J-12345678-9">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label>Porcentaje IVA (%)</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-percentage"></i>
+                                        <input type="number" id="ivaPercentage" step="0.01" placeholder="Ej: 16.00">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label>Teléfono Admin</label>
+                                    <div class="input-wrapper">
+                                        <i class="fab fa-whatsapp"></i>
+                                        <input type="text" id="adminPhone" placeholder="+584120000000">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Dirección Fiscal</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <input type="text" id="commerceAddress" placeholder="Ej: Av. Principal, Local 1">
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Teléfono Admin (WhatsApp)</label>
+                                <div class="input-wrapper">
+                                    <i class="fab fa-whatsapp"></i>
+                                    <input type="text" id="whatsappPhone" placeholder="+584120000000">
+                                </div>
+                            </div>
+
+                            <!-- Logo Principal (UPDATED STYLES) -->
+                            <div class="input-group"
+                                style="margin-top: 1.5rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                                <label>Logo Principal</label>
+                                <div class="profile-upload"
+                                    style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div
+                                            style="background: rgba(255,255,255,0.05); padding: 0.5rem; border-radius: 0.5rem;">
+                                            <img src="images/logo.png" id="logoPreview" alt="Logo Actual"
+                                                style="height: 50px; object-fit: contain;">
+                                        </div>
+                                        <div class="file-input-container">
+                                            <label for="logoInput" class="btn-cancel"
+                                                style="width: auto; padding: 0.6rem 1.2rem; margin: 0; font-size: 0.9rem;">
+                                                <i class="fas fa-upload"></i> Subir
+                                            </label>
+                                            <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                                        </div>
+                                    </div>
+                                    <button id="btnSaveLogo" class="btn-login" style="width: 100%; font-size: 0.9rem;"
+                                        disabled>Guardar Logo</button>
+                                </div>
+                            </div>
+
+                            <div class="button-group"
+                                style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                                <button id="btnSavePhone" class="btn-login" style="width: auto; padding: 0.8rem 2rem;">
+                                    <i class="fas fa-save"></i> Guardar Datos
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- SECTION 2: Email Config -->
+                    <details>
+                        <summary class="section-title">
+                            <span><i class="fas fa-envelope" style="color: var(--primary-color);"></i> Configuración de
+                                Correo</span>
+                            <i class="fas fa-chevron-down arrow-icon"></i>
+                        </summary>
+                        <div class="section-content">
+                            <div class="input-group">
+                                <label for="smtpEmail">Correo Electrónico (Gmail)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-at"></i>
+                                    <input type="email" id="smtpEmail" placeholder="tu_correo@gmail.com">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="smtpPass">Contraseña de Aplicación</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-key"></i>
+                                    <input type="password" id="smtpPass" placeholder="••••••••••••••••">
+                                    <i class="fas fa-eye" id="toggleSmtpPass"
+                                        style="cursor: pointer; pointer-events: auto;"></i>
+                                </div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                    Requerido para enviar facturas. <a href="https://myaccount.google.com/apppasswords"
+                                        target="_blank" style="color: var(--primary-color);">Generar aquí</a>.
+                                </p>
+                            </div>
+                            <div class="button-group"
+                                style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                                <button id="btnSaveEmail" class="btn-login" style="width: auto; padding: 0.8rem 2rem;">
+                                    <i class="fas fa-save"></i> Guardar Credenciales
+                                </button>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- SECTION 3: Login Customization -->
+                    <details>
+                        <summary class="section-title">
+                            <span><i class="fas fa-images" style="color: var(--primary-color);"></i> Personalizar
+                                Login</span>
+                            <i class="fas fa-chevron-down arrow-icon"></i>
+                        </summary>
+                        <div class="section-content">
+                            <!-- Login Logo (UPDATED STYLES) -->
+                            <div class="input-group">
+                                <label>Logo de Inicio de Sesión</label>
+                                <div class="profile-upload"
+                                    style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div
+                                            style="background: rgba(255,255,255,0.05); padding: 0.5rem; border-radius: 0.5rem;">
+                                            <img src="images/login_logo.png" id="loginLogoPreview" alt="Logo Login"
+                                                onerror="this.src='images/logo.png'"
+                                                style="height: 50px; object-fit: contain;">
+                                        </div>
+                                        <div class="file-input-container">
+                                            <label for="loginLogoInput" class="btn-cancel"
+                                                style="width: auto; padding: 0.6rem 1.2rem; margin: 0; font-size: 0.9rem;">
+                                                <i class="fas fa-upload"></i> Subir
+                                            </label>
+                                            <input type="file" id="loginLogoInput" accept="image/*"
+                                                style="display: none;">
+                                        </div>
+                                    </div>
+                                    <button id="btnSaveLoginLogo" class="btn-login"
+                                        style="width: 100%; font-size: 0.9rem;" disabled>Guardar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- SECTION 3.1: Agregado manualmente -->
+                    <details>
+                        <summary class="section-title">
+                            <span><i class="fas fa-images" style="color: var(--primary-color);"></i> Configuración de
+                                Notificaciones</span>
+                            <i class="fas fa-chevron-down arrow-icon"></i>
+                        </summary>
+                        <div class="section-content">
+                            <form id="alertForm">
+                                <div class="input-group">
+                                    <label>Días de anticipación para alerta de pago</label>
+                                    <div class="input-wrapper">
+                                        <div class="form-group">
+                                            <div style="position: relative; display: flex; align-items: center;">
+                                                <i class="fas fa-calendar-day"
+                                                    style="position: absolute; left: 10px; color: #888;"></i>
+                                                <input type="number" id="alertDays" class="form-control" min="1"
+                                                    value="" style="padding-left: 35px;">
+                                            </div>
+                                            <small>Días antes del vencimiento para mostrar alerta naranja.</small>
+                                        </div>
+                                    </div>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                        Se marcarán en amarillo los compromisos que venzan en este número de
+                                        días o menos.
+                                    </p>
+                                </div>
+                                <div class="button-group"
+                                    style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                                    <button type="submit" class="btn-login" style="width: auto; padding: 0.8rem 2rem;">
+                                        <i class="fas fa-save"></i> Guardar Alertas
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+
+                    <!-- SECTION 4: Bulk Operations -->
+                    <details>
+                        <summary class="section-title">
+                            <span><i class="fas fa-file-excel" style="color: var(--primary-color);"></i> Operaciones
+                                Masivas (Excel)</span>
+                            <i class="fas fa-chevron-down arrow-icon"></i>
+                        </summary>
+                        <div class="section-content">
+                            <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                                <!-- Bulk Categories -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-tags"></i> Categorías</h4>
+                                    <p
+                                        style="font-size: 0.8rem; color: #fbbf24; margin-bottom: 1rem; font-weight: 600;">
+                                        ⚠️ Requisito previo para Productos</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('categories')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkCatInput" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkCatInput" accept=".xlsx, .xls" style="display: none;">
+                                    <span id="bulkCatFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Suppliers -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-truck"></i> Proveedores</h4>
+                                    <p
+                                        style="font-size: 0.8rem; color: #fbbf24; margin-bottom: 1rem; font-weight: 600;">
+                                        ⚠️ Requisito previo para Productos</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('suppliers')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkProvInput" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkProvInput" accept=".xlsx, .xls" style="display: none;">
+                                    <span id="bulkProvFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Create (Products) -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-plus-circle"></i> Alta Productos
+                                    </h4>
+                                    <p
+                                        style="font-size: 0.8rem; color: #fbbf24; margin-bottom: 1rem; font-weight: 600;">
+                                        ⚠️ Categorías y Proveedores</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('create')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkCreateInput" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkCreateInput" accept=".xlsx, .xls" style="display: none;">
+                                    <span id="bulkCreateFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Receive (Stock) -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-truck-loading"></i> Cargar Stock
+                                    </h4>
+                                    <p
+                                        style="font-size: 0.8rem; color: #fbbf24; margin-bottom: 1rem; font-weight: 600;">
+                                        ⚠️ Requiere Productos creados</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('receive')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkReceiveInput" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkReceiveInput" accept=".xlsx, .xls"
+                                        style="display: none;">
+                                    <span id="bulkReceiveFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Clients -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-user-friends"></i> Clientes</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                        Registro de cartera.</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('clients')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkClientInput" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkClientInput" accept=".xlsx, .xls" style="display: none;">
+                                    <span id="bulkClientFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Users -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-users"></i> Usuarios</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Acceso
+                                        al sistema.</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('users')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkUserInput" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkUserInput" accept=".xlsx, .xls" style="display: none;">
+                                    <span id="bulkUserFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Payment Methods -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-money-bill-wave"></i> Medios de
+                                        Pago</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                        Config.
+                                        Pagos</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('payments')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkPaymentInputFile" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkPaymentInputFile" accept=".xlsx, .xls"
+                                        style="display: none;">
+                                    <span id="bulkPaymentFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+
+                                <!-- Bulk Presentations -->
+                                <div class="card"
+                                    style="flex-direction: column; align-items: center; text-align: center; padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-box"></i> Presentaciones</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                        Config.
+                                        Empaques</p>
+                                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: center;">
+                                        <button class="btn-cancel" onclick="downloadTemplate('presentations')"
+                                            style="font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin-right: 0.5rem;">
+                                            <i class="fas fa-download"></i> Plantilla
+                                        </button>
+                                        <label for="bulkPresentationInputFile" class="btn-login"
+                                            style="cursor: pointer; font-size: 0.85rem; padding: 0.6rem 1rem; width: auto; margin: 0;">
+                                            <i class="fas fa-upload"></i> Cargar
+                                        </label>
+                                    </div>
+                                    <input type="file" id="bulkPresentationInputFile" accept=".xlsx, .xls"
+                                        style="display: none;">
+                                    <span id="bulkPresentationFile"
+                                        style="font-size: 0.75rem; margin-top: 0.5rem; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></span>
+                                </div>
+                            </div>
+                            <!-- Bulk Result Log -->
+                            <div id="bulkLog"
+                                style="margin-top: 1.5rem; display: none; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8rem;">
+                            </div>
+                        </div>
+                    </details>
+                </div>
+        </main>
+    </div>
+
+    <div id="notificationModal" class="modal">
+        <div class="modal-content login-container" style="max-width: 350px; text-align: center;">
+            <div style="margin-bottom: 1rem;">
+                <i class="fas fa-info-circle" style="font-size: 3rem; color: var(--primary-color);"></i>
+            </div>
+            <h2 id="notificationTitle" style="margin-bottom: 0.5rem;">Notificación</h2>
+            <p id="notificationMessage" style="color: var(--text-muted); margin-bottom: 1.5rem;">Mensaje...</p>
+            <button class="btn-login" onclick="closeNotification()">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Confirmar</h3>
+            <p id="confirmMessage" class="modal-body">¿Está seguro?</p>
+            <div class="modal-actions">
+                <button id="btnConfirmCancel" class="btn-cancel">Cancelar</button>
+                <button id="btnConfirmOk" class="btn-login" style="width: auto;">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script src="js/templates.js"></script>
+    <script src="js/sistema.js"></script>
+
+    <!-- Generic Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeConfirmModal()">&times;</span>
+            <h2 id="confirmModalTitle">Confirmación</h2>
+            <p id="confirmModalMessage">¿Está seguro?</p>
+            <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                <button class="btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
+                <button id="confirmModalBtn" class="btn-login">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

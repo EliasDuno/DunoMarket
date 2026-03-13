@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        body {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+    <script>
+        (function () {
+            const session = sessionStorage.getItem('user_session');
+            try {
+                if (!session || session === 'null' || session === 'undefined') throw new Error('No session');
+                const parsed = JSON.parse(session);
+                if (!parsed || !parsed.id) throw new Error('Invalid session');
+
+                // Safer visibility logic
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.style.display = 'flex';
+                    setTimeout(() => document.body.style.opacity = '1', 50);
+                });
+            } catch (e) {
+                // If invalid, clear and redirect immediately
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'acceso.html';
+            }
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="inicio.html" class="nav-item active">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <!-- Mini User Profile (Optional, can rely on top bar) -->
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="main-container" style="max-width: 100%;">
+                <header class="page-header dashboard-header">
+                    <div class="header-content">
+                        <h1>Bienvenido</h1>
+                        <p>Panel de Control Principal</p>
+                    </div>
+
+                    <div class="user-profile-header" id="userProfileHeader" style="display: none;">
+                        <div class="profile-info">
+                            <span class="profile-name" id="profileName">Cargando...</span>
+                            <span class="profile-role" id="profileRole">...</span>
+                        </div>
+                        <div class="profile-avatar-container" id="profileAvatarContainer">
+                            <div class="user-avatar-placeholder small"><i class="fas fa-user"></i></div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <!-- User Management Card -->
+                    <div class="card" id="cardUsers">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-info">
+                            <h2>Gestión de Usuarios</h2>
+                            <p>Administrar cuentas, roles y accesos del sistema.</p>
+                        </div>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <!-- POS Card -->
+                    <div class="card" id="cardPOS" onclick="window.location.href='pdv.html'">
+                        <div class="card-icon">
+                            <i class="fas fa-cash-register"></i>
+                        </div>
+                        <div class="card-info">
+                            <h2>Punto de Venta</h2>
+                            <p>Facturación rápida y gestión de cajas.</p>
+                        </div>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <div class="card" id="cardInventory">
+                        <div class="card-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="card-info">
+                            <h2>Inventario</h2>
+                            <p>Gestionar productos, stock y precios (Dólar/Bs).</p>
+                        </div>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <!-- Categories Card -->
+                    <div class="card" id="cardCategories">
+                        <div class="card-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="card-info">
+                            <h2>Categorías</h2>
+                            <p>Organizar productos por grupos.</p>
+                        </div>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <!-- Suppliers Card -->
+                    <div class="card" id="cardSuppliers">
+                        <div class="card-icon">
+                            <i class="fas fa-truck-moving"></i>
+                        </div>
+                        <div class="card-info">
+                            <h2>Proveedores</h2>
+                            <p>Directorio de proveedores y RIFs.</p>
+                        </div>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Modal -->
+            <div id="notificationModal" class="modal">
+                <div class="modal-content login-container" style="margin: 0; text-align: center;">
+                    <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
+                        <h2 id="notificationTitle" style="color: var(--primary-color);">Aviso</h2>
+                    </div>
+                    <p id="notificationMessage" style="margin-bottom: 2rem; color: var(--text-color);"></p>
+                    <button class="btn-login" onclick="closeNotification()">Entendido</button>
+                </div>
+            </div>
+            <script src="js/nucleo.js"></script>
+            <script src="js/sistema.js"></script>
+</body>
+
+</html>

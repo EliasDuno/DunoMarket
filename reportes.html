@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es-VE">
+
+<head>
+    <style>
+        body {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+    <script>
+        (function () {
+            const session = sessionStorage.getItem('user_session');
+            try {
+                if (!session || session === 'null' || session === 'undefined') throw new Error('No session');
+                const parsed = JSON.parse(session);
+                if (!parsed || !parsed.id) throw new Error('Invalid session');
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.style.display = 'flex';
+                    setTimeout(() => document.body.style.opacity = '1', 50);
+                });
+            } catch (e) {
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'acceso.html';
+            }
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css?v=5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            alert("JS Error: " + msg + "\nLine: " + line);
+            return false;
+        };
+    </script>
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="inicio.html" class="nav-item">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item active">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="main-container">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1>Reportes y Estadísticas</h1>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Analiza el rendimiento de tu negocio</p>
+                    </div>
+
+                    <div class="header-right-group" style="display: flex; align-items: center; gap: 1.5rem;">
+                        <div class="user-profile-header" id="userProfileHeader" style="display: none;">
+                            <div class="profile-info">
+                                <span class="profile-name" id="profileName">Cargando...</span>
+                            </div>
+                            <div class="profile-avatar-container" id="profileAvatarContainer">
+                                <div class="user-avatar-placeholder small"><i class="fas fa-user"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Filters Section -->
+                <div class="table-container" style="padding: 1.5rem; margin-bottom: 2rem; overflow: visible;">
+                    <div style="display: flex; gap: 2rem; align-items: flex-end; flex-wrap: wrap;">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Desde</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="reportStartDate" class="search-input" style="width: auto;"
+                                    lang="es-VE">
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Hasta</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="reportEndDate" class="search-input" style="width: auto;"
+                                    lang="es-VE">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="btnGenerateReport" class="btn-login" style="height: 42px;">
+                                <i class="fas fa-search"></i> Generar Reporte
+                            </button>
+                            <button id="btnPrintReport" class="btn-cancel"
+                                style="height: 42px; color: var(--text-color); border: 1px solid var(--glass-border);">
+                                <i class="fas fa-print"></i> Imprimir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Type Toggle -->
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                    <button id="tabGeneral" class="btn-cancel active"
+                        style="border-color: var(--primary-color); color: var(--text-color); background: rgba(99, 102, 241, 0.2);">
+                        <i class="fas fa-chart-pie"></i> Resumen General
+                    </button>
+                    <button id="tabProducts" class="btn-cancel">
+                        <i class="fas fa-list-ol"></i> Desglose por Producto
+                    </button>
+                    <button id="tabHistory" class="btn-cancel">
+                        <i class="fas fa-history"></i> Historial de Ventas
+                    </button>
+                    <button id="tabAudit" class="btn-cancel">
+                        <i class="fas fa-user-secret"></i> Auditoría
+                    </button>
+                </div>
+
+                <!-- 1. General Summary View -->
+                <div id="viewGeneral">
+                    <div class="dashboard-grid">
+                        <div class="card"
+                            style="cursor: default; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+                            <div class="card-icon" style="color: #34d399;">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="card-info">
+                                <h2 id="totalSalesUSD">$0.00</h2>
+                                <p>Ventas Totales (USD)</p>
+                            </div>
+                        </div>
+
+                        <div class="card"
+                            style="cursor: default; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+                            <div class="card-icon" style="color: #34d399;">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="card-info">
+                                <h2 id="totalSalesBS">0.00 Bs</h2>
+                                <p>Ventas Totales (Bs)</p>
+                            </div>
+                        </div>
+
+                        <div class="card"
+                            style="cursor: default; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+                            <div class="card-icon" style="color: #fbbf24;">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="card-info">
+                                <h2 id="estProfitUSD" style="color: #fbbf24;">$0.00</h2>
+                                <p>Ganancia Estimada (USD)</p>
+                            </div>
+                        </div>
+
+                        <div class="card"
+                            style="cursor: default; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+                            <div class="card-icon" style="color: #fbbf24;">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="card-info">
+                                <h2 id="estProfitBS" style="color: #fbbf24;">0.00 Bs</h2>
+                                <p>Ganancia Estimada (Bs)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Product Breakdown View -->
+                <div id="viewProducts" style="display: none;">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Cant. Vendida</th>
+                                    <th>Total Ventas (USD)</th>
+                                    <th>Ganancia Est. (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <tr>
+                                    <td colspan="5"
+                                        style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                        Genera un reporte para ver los datos.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. Sales History View -->
+                <div id="viewHistory" style="display: none;">
+                    <div class="table-container">
+                        <div style="margin-bottom: 1rem; display: flex; gap: 10px;">
+                            <input type="text" id="historySearch" placeholder="Buscar por Cliente..."
+                                class="search-input" style="max-width: 300px;">
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>N° Control</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Total USD</th>
+                                    <th>Total Bs</th>
+                                    <th>Método</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr>
+                                    <td colspan="7"
+                                        style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                        Genera un reporte para ver el historial.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 4. Audit View -->
+                <div id="viewAudit" style="display: none;">
+                        <div class="table-container">
+                            <h3 style="margin-bottom: 1rem; color: var(--text-color);">Bitácora de Seguridad</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Usuario</th>
+                                        <th>Acción</th>
+                                        <th>Tabla</th>
+                                        <th>Detalle</th>
+                                        <th>IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTableBody">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; padding: 2rem;">Cargando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+        </main>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center; max-width: 400px;">
+            <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
+                <h2 id="notificationTitle" style="color: var(--primary-color);">Aviso</h2>
+            </div>
+            <p id="notificationMessage" style="margin-bottom: 2rem; color: var(--text-color);"></p>
+            <div class="button-group" id="notificationActions" style="justify-content: center;">
+                <button class="btn-login" onclick="closeNotification()">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content login-container" style="margin: 0; text-align: center; max-width: 400px;">
+            <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
+                <h3 id="confirmTitle" style="color: var(--primary-color);">Confirmar Acción</h3>
+            </div>
+            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color);">¿Estás seguro?</p>
+            <div class="button-group" style="justify-content: center; gap: 1rem;">
+                <button id="btnConfirmCancel" class="btn-cancel">Cancelar</button>
+                <button id="btnConfirmOk" class="btn-login">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script src="js/sistema.js"></script>
+</body>
+
+</html>

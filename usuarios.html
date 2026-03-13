@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        body {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+    <script>
+        (function () {
+            const session = sessionStorage.getItem('user_session');
+            try {
+                if (!session || session === 'null' || session === 'undefined') throw new Error('No session');
+                const parsed = JSON.parse(session);
+                if (!parsed || !parsed.id) throw new Error('Invalid session');
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.style.display = 'flex';
+                    setTimeout(() => document.body.style.opacity = '1', 50);
+                });
+            } catch (e) {
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'acceso.html';
+            }
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="inicio.html" class="nav-item">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item active">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="main-container" style="max-width: 100%;">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1>Gestión de Usuarios</h1>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="userSearch" class="search-input" placeholder="Buscar usuario...">
+                        </div>
+                        <button id="btnNewUser" class="btn-login"><i class="fas fa-user-plus"></i> Nuevo
+                            Usuario</button>
+                    </div>
+
+                    <div class="user-profile-header" id="userProfileHeader" style="display: none; margin-left: 1rem;">
+                        <div class="profile-info">
+                            <span class="profile-name" id="profileName">Cargando...</span>
+                            <span class="profile-role" id="profileRole">...</span>
+                        </div>
+                        <div class="profile-avatar-container" id="profileAvatarContainer">
+                            <div class="user-avatar-placeholder small"><i class="fas fa-user"></i></div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Avatar</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Add/Edit -->
+    <div id="userModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0;">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Usuario</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+
+                <div class="input-group">
+                    <label for="nombre">Nombre</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="nombre" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="avatar">Foto de Perfil</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-camera"></i>
+                        <input type="file" id="avatar" accept="image/*" style="padding-top: 0.7rem;">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="itemEmail">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="itemEmail" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="itemPassword">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="itemPassword" placeholder="Dejar en blanco para no cambiar">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="rol">Rol</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user-tag"></i>
+                        <select id="rol" required
+                            style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color); font-size: 1rem;">
+                            <option value="usuario">Usuario</option>
+                            <option value="admin">Administrador</option>
+                            <option value="fiscal">Fiscal (Auditor)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="estatus">Estatus</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-toggle-on"></i>
+                        <select id="estatus" required
+                            style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color); font-size: 1rem;">
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn-cancel" id="btnCancelModal">Cancelar</button>
+                    <button type="submit" class="btn-login">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 id="notificationTitle">Aviso</h2>
+            </div>
+            <p id="notificationMessage" style="margin-bottom: 1.5rem; color: var(--text-color);"></p>
+            <div class="button-group" style="justify-content: center;">
+                <button class="btn-login" onclick="closeNotification()">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Credentials Modal -->
+    <div id="sendStatsModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center;">
+            <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
+                <h2 style="color: var(--primary-color);"><i class="fas fa-paper-plane"></i> Establecer y Enviar Clave
+                </h2>
+            </div>
+            <p style="color: var(--text-color); margin-bottom: 1rem;">
+                Establece la contraseña para <strong id="sendUserEmail" style="color: var(--primary-color);"></strong>.
+                <br><span style="font-size: 0.85rem; color: #ef4444;">Nota: No se puede enviar la contraseña actual
+                    (está encriptada). Debes crear una nueva.</span>
+            </p>
+
+            <form id="sendCredsForm">
+                <input type="hidden" id="sendUserId">
+                <input type="hidden" id="sendUserName">
+
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-key"></i>
+                        <input type="text" id="newCredPassword" placeholder="Escribe la NUEVA contraseña..." required
+                            autocomplete="off">
+                        <i class="fas fa-random" id="btnGenPass" style="cursor: pointer;" title="Generar Aleatoria"></i>
+                    </div>
+                </div>
+
+                <div class="button-group" style="justify-content: center; margin-top: 1.5rem;">
+                    <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('sendStatsModal').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn-login"><i class="fas fa-paper-plane"></i> Guardar y Enviar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center;">
+            <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
+                <h2 id="confirmTitle" style="color: var(--primary-color);">Confirmación</h2>
+            </div>
+            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color);"></p>
+            <div class="button-group" style="justify-content: center; gap: 10px;">
+                <button class="btn-cancel" onclick="closeConfirm(false)">Cancelar</button>
+                <button class="btn-login" onclick="closeConfirm(true)">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script src="js/sistema.js"></script>
+</body>
+
+</html>

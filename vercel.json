@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "name": "pidunet-saas",
+  "builds": [
+    {
+      "src": "servidor.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "servidor.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}

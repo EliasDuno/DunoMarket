@@ -1,0 +1,10 @@
+node_modules/
+.env
+.DS_Store
+uploads/
+backups/
+backup_v*/
+*.log
+backup_dunos_market/
+*.zip
+.vscode/
