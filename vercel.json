@@ -2,14 +2,14 @@
   "version": 2,
   "name": "pidunet-saas",
   "functions": {
-    "servidor.js": {
+    "api/index.js": {
       "maxDuration": 10
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/servidor.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/acceso",

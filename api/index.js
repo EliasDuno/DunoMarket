@@ -12,14 +12,14 @@ const app = express();
 const port = 3000;
 
 // Asegurar que exista el directorio de subidas (uploads)
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname)); // Serve static files from root
+app.use(express.static(path.join(__dirname, '..'))); // Serve static files from root
 
 // Configure Multer for Memory Storage (BYTEA)
 const storage = multer.memoryStorage();

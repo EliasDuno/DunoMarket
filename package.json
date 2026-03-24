@@ -4,7 +4,7 @@
   "description": "Backend for PiduNet SaaS POS System",
   "main": "server.js",
   "scripts": {
-    "start": "node servidor.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
