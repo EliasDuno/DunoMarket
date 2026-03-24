@@ -8,3 +8,7 @@ backup_v*/
 backup_dunos_market/
 *.zip
 .vscode/
+Solxom/
+Solxom-CH/
+Solxom-VE/
+api/uploads/
