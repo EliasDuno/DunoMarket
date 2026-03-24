@@ -452,7 +452,7 @@ app.post('/api/login', async (req, res) => {
             const user = result.rows[0];
 
             // Compare provided password with stored hash
-            const match = await bcrypt.compare(password, user.password_hash);
+            const match = await bcrypt.compare(password, user.password);
 
             if (match) {
                 res.json({
@@ -475,6 +475,52 @@ app.post('/api/login', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Error del servidor' });
+    }
+});
+
+// INITIAL SETUP ROUTE
+app.get('/api/saas/setup-initial', async (req, res) => {
+    try {
+        // 1. Create Default Tenant
+        const slug = 'pidunet';
+        const tenantRes = await masterPool.query('SELECT * FROM tenants WHERE slug = $1', [slug]);
+        
+        if (tenantRes.rows.length === 0) {
+            await masterPool.query(
+                'INSERT INTO tenants (nombre, slug, db_url) VALUES ($1, $2, $3)',
+                ['PiduNet Master', slug, process.env.DATABASE_URL]
+            );
+        }
+
+        const pool = await getTenantPool(slug);
+        
+        // 2. Initialize Tables
+        await initializeTenantDB(pool);
+
+        // 3. Create Admin User
+        const email = 'admin@pidunet.com';
+        const userRes = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+        
+        if (userRes.rows.length === 0) {
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            await pool.query(
+                'INSERT INTO usuarios (nombre, email, password, rol) VALUES ($1, $2, $3, $4)',
+                ['Administrador PiduNet', email, hashedPassword, 'admin']
+            );
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Sistema inicializado.', 
+            credentials: { 
+                tenant: 'pidunet', 
+                email: 'admin@pidunet.com', 
+                password: 'admin123' 
+            } 
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: e.message });
     }
 });
 

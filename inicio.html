@@ -24,7 +24,7 @@
             } catch (e) {
                 // If invalid, clear and redirect immediately
                 sessionStorage.removeItem('user_session'); // Changed to sessionStorage
-                window.location.href = 'acceso.html';
+                window.location.href = 'acceso';
             }
         })();
     </script>
@@ -48,44 +48,51 @@
                 <img src="images/logo.png" alt="Logo" class="sidebar-logo">
             </div>
 
-            <div class="sidebar-nav">
-                <div class="sidebar-label">Principal</div>
-                <a href="resumen.html" target="content-main" class="nav-item active">
-                    <i class="fas fa-home"></i> Inicio
+            <nav class="sidebar-nav">
+                <div class="nav-separator">Principal</div>
+                <a href="resumen" target="content-main" class="nav-item active">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Resumen</span>
                 </a>
-                <a href="pdv.html" target="content-main" class="nav-item">
-                    <i class="fas fa-cash-register"></i> Punto de Venta
+                <a href="pdv" target="content-main" class="nav-item">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>PDV</span>
                 </a>
-                <a href="reportes.html" target="content-main" class="nav-item">
-                    <i class="fas fa-chart-line"></i> Reportes
+                <a href="reportes" target="content-main" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>Reportes</span>
                 </a>
-
-
-                <div class="sidebar-label">Gestión</div>
-                <a href="inventario.html" target="content-main" class="nav-item">
-                    <i class="fas fa-box"></i> Inventario
+                <div class="nav-separator">Gestión</div>
+                <a href="inventario" target="content-main" class="nav-item">
+                    <i class="fas fa-boxes"></i>
+                    <span>Inventario</span>
                 </a>
-                <a href="categorias.html" target="content-main" class="nav-item">
-                    <i class="fas fa-tags"></i> Categorías
+                <a href="categorias" target="content-main" class="nav-item">
+                    <i class="fas fa-tags"></i>
+                    <span>Categorías</span>
                 </a>
-                <a href="proveedores.html" target="content-main" class="nav-item">
-                    <i class="fas fa-truck"></i> Proveedores
+                <a href="proveedores" target="content-main" class="nav-item">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
                 </a>
-                <a href="clientes.html" target="content-main" class="nav-item">
-                    <i class="fas fa-user-friends"></i> Clientes
+                <a href="clientes" target="content-main" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Clientes</span>
                 </a>
-                <a href="cuentas.html" target="content-main" class="nav-item">
-                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                <a href="cuentas" target="content-main" class="nav-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Cuentas por Pagar</span>
                 </a>
-
-                <div class="sidebar-label">Admin</div>
-                <a href="usuarios.html" target="content-main" class="nav-item">
-                    <i class="fas fa-users"></i> Usuarios
+                <div class="nav-separator">Admin</div>
+                <a href="usuarios" target="content-main" class="nav-item">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Usuarios</span>
                 </a>
-                <a href="configuracion.html" target="content-main" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                <a href="configuracion" target="content-main" class="nav-item" id="config-link">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuración</span>
                 </a>
-            </div>
+            </nav>
 
             <!-- Mini User Profile (Optional, can rely on top bar) -->
             <div class="sidebar-footer">

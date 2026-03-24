@@ -5,8 +5,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Verificación Global de Auth (Omitir para acceso.html)
-    if (!window.location.pathname.includes('acceso.html')) {
+    // 1. Verificación Global de Auth (Omitir para acceso)
+    if (!window.location.pathname.includes('acceso')) {
         checkGlobalAuth();
         loadGlobalProfile();
         checkAlerts(); // From alerts.js
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let [resource, config] = args;
         const tenantSlug = sessionStorage.getItem('tenant_slug');
         
-        if (tenantSlug && resource.toString().includes('localhost:3000/api') && !resource.toString().includes('/api/saas')) {
+        if (tenantSlug && resource.toString().includes('/api') && !resource.toString().includes('/api/saas')) {
             if (!config) config = {};
             if (!config.headers) config.headers = {};
             
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const tenant = document.getElementById('tenant').value;
-                const res = await fetch('http://localhost:3000/api/login', {
+                const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
-                    window.location.href = 'inicio.html';
+                    window.location.href = 'inicio';
                 } else {
                     showNotification('Error', data.message || 'Credenciales inválidas');
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
@@ -109,7 +109,7 @@ function checkGlobalAuth() {
     const userSession = sessionStorage.getItem('user_session'); // Changed to sessionStorage
     // Check for null, undefined, empty string, or string "null"/"undefined"
     if (!userSession || userSession === 'null' || userSession === 'undefined') {
-        window.top.location.href = 'acceso.html';
+        window.top.location.href = 'acceso';
         return;
     }
 
@@ -120,7 +120,7 @@ function checkGlobalAuth() {
         }
     } catch (e) {
         sessionStorage.removeItem('user_session'); // Changed to sessionStorage
-        window.top.location.href = 'acceso.html';
+        window.top.location.href = 'acceso';
     }
 }
 
@@ -143,7 +143,7 @@ function loadGlobalProfile() {
 
         // Load Avatar
         if (avatarContainer) {
-            const avatarUrl = `http://localhost:3000/api/users/${user.id || 0}/avatar`;
+            const avatarUrl = `/api/users/${user.id || 0}/avatar`;
             const img = new Image();
             img.src = avatarUrl;
             img.onload = () => {
@@ -162,7 +162,7 @@ function loadGlobalProfile() {
 window.logout = function () {
     sessionStorage.removeItem('user_session'); // Changed to sessionStorage
     localStorage.removeItem('user_session'); // Clean up old sessions just in case
-    window.location.href = 'acceso.html';
+    window.location.href = 'acceso';
 };
 
 // --- INACTIVITY TIMER ---
@@ -387,7 +387,7 @@ async function checkAlerts() {
 
     // 2. Fetch Alerts
     try {
-        const res = await fetch('http://localhost:3000/api/alerts');
+        const res = await fetch('/api/alerts');
         const data = await res.json();
         const badge = document.getElementById('alertBadge');
         const list = document.getElementById('alertsList');
@@ -408,7 +408,7 @@ async function checkAlerts() {
                             <span style="color: #94a3b8;">$${alert.monto_total_usd} - Vence: ${new Date(alert.fecha_vencimiento).toLocaleDateString()}</span>
                         </div>
                     `;
-                    div.onclick = () => window.location.href = 'cuentas.html';
+                    div.onclick = () => window.location.href = 'cuentas';
                     list.appendChild(div);
                 });
             } else {

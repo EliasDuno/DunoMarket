@@ -1,3 +1,4 @@
+```javascript
 /**
  * MODULOS.JS - Restaurado y Corregido
  * Contiene la lógica específica de cada módulo del sistema.
@@ -6,50 +7,50 @@
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
 
-    // --- DASHBOARD (inicio.html y resumen.html) ---
-    if (path.includes('inicio.html') || path.includes('resumen.html') || path === '/' || path.endsWith('/')) {
+    // --- DASHBOARD (inicio y resumen) ---
+    if (path.includes('inicio') || path.includes('resumen') || path === '/' || path.endsWith('/')) {
         initDashboard();
     }
 
-    // --- INVENTARIO (inventario.html) ---
-    if (path.includes('inventario.html')) {
+    // --- INVENTARIO (inventario) ---
+    if (path.includes('inventario')) {
         console.log('INIT INVENTORY - Modulos v3 Loaded');
-        initInventory();
+        initInventario();
     }
 
-    // --- PUNTO DE VENTA (pdv.html) ---
-    if (path.includes('pdv.html')) {
-        initPOS();
+    // --- PUNTO DE VENTA (pdv) ---
+    if (path.includes('pdv')) {
+        initPDV();
     }
 
-    // --- REPORTES (reportes.html) ---
-    if (path.includes('reportes.html')) {
-        initReports();
+    // --- REPORTES (reportes) ---
+    if (path.includes('reportes')) {
+        initReportes();
     }
 
-    // --- USUARIOS (usuarios.html) ---
-    if (path.includes('usuarios.html')) {
-        initUsers();
+    // --- USUARIOS (usuarios) ---
+    if (path.includes('usuarios')) {
+        initUsuarios();
     }
 
-    // --- PROVEEDORES (proveedores.html) ---
-    if (path.includes('proveedores.html')) {
-        initSuppliers();
+    // --- PROVEEDORES (proveedores) ---
+    if (path.includes('proveedores')) {
+        initProveedores();
     }
 
-    // --- CATEGORIAS (categorias.html) ---
-    if (path.includes('categorias.html')) {
-        initCategories();
+    // --- CATEGORIAS (categorias) ---
+    if (path.includes('categorias')) {
+        initCategorias();
     }
 
-    // --- CLIENTES (clientes.html) ---
-    if (path.includes('clientes.html')) {
-        initClients();
+    // --- CLIENTES (clientes) ---
+    if (path.includes('clientes')) {
+        initClientes();
     }
 
-    // --- CONFIGURACION (configuracion.html) ---
-    if (path.includes('configuracion.html')) {
-        initSettings();
+    // --- CONFIGURACION (configuracion) ---
+    if (path.includes('configuracion')) {
+        initConfiguracion();
     }
 });
 
