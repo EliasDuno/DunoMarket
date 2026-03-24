@@ -1,36 +1,32 @@
 {
   "version": 2,
   "name": "pidunet-saas",
-  "builds": [
+  "functions": {
+    "servidor.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
     {
-      "src": "servidor.js",
-      "use": "@vercel/node"
+      "source": "/api/(.*)",
+      "destination": "/servidor.js"
+    },
+    {
+      "source": "/acceso",
+      "destination": "/acceso.html"
+    },
+    {
+      "source": "/inicio",
+      "destination": "/inicio.html"
+    },
+    {
+      "source": "/resumen",
+      "destination": "/resumen.html"
+    },
+    {
+      "source": "/",
+      "destination": "/acceso.html"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "servidor.js"
-    },
-    {
-      "src": "/acceso",
-      "dest": "/acceso.html"
-    },
-    {
-      "src": "/inicio",
-      "dest": "/inicio.html"
-    },
-    {
-        "src": "/resumen",
-        "dest": "/resumen.html"
-    },
-    {
-      "src": "/",
-      "dest": "/acceso.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ]
+  "cleanUrls": true
 }
