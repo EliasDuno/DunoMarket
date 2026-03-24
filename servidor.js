@@ -2549,7 +2549,7 @@ const sendDailyNotifications = async () => {
         if (result.rows.length > 0) {
             // Fetch Admin Email (Fallback to configured email if logic complex)
             const adminQuery = await req.pool.query("SELECT email FROM users WHERE rol = 'admin' LIMIT 1");
-            const adminEmail = adminQuery.rows.length > 0 ? adminQuery.rows[0].email : 'alertas@dunomarket.com';
+            const adminEmail = adminQuery.rows.length > 0 ? adminQuery.rows[0].email : 'contacto@pidunet.com';
 
             // Generate HTML
             let html = `<h2>Alertas de Pago - PiduNet</h2>
@@ -2572,7 +2572,7 @@ const sendDailyNotifications = async () => {
             // Send Email using global transporter (Assuming it exists as per user)
             if (typeof transporter !== 'undefined') {
                 await transporter.sendMail({
-                    from: '"PiduNet System" <alertas@dunomarket.com>',
+                    from: '"PiduNet System" <contacto@pidunet.com>',
                     to: adminEmail,
                     subject: `[ALERTA] ${result.rows.length} Pagos Pendientes - PiduNet`,
                     html: html

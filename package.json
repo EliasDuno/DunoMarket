@@ -1,7 +1,7 @@
 {
-  "name": "login-backend",
+  "name": "pidunet-saas",
   "version": "1.0.0",
-  "description": "Backend for PiduNet Login",
+  "description": "Backend for PiduNet SaaS POS System",
   "main": "server.js",
   "scripts": {
     "start": "node servidor.js"
