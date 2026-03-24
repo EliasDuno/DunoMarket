@@ -2,7 +2,7 @@
   "version": 2,
   "name": "pidunet-saas",
   "functions": {
-    "api/server.js": {
+    "api/index.js": {
       "memory": 1024,
       "maxDuration": 10
     }
@@ -10,7 +10,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/server.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/acceso",

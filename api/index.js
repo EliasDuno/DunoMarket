@@ -52,21 +52,30 @@ async function getTenantPool(slug) {
 
 // ATTACH TENANT POOL MIDDLEWARE
 app.use(async (req, res, next) => {
-    // SaaS endpoints always use master pool
-    if (req.path.startsWith('/api/saas')) {
+    // SaaS endpoints or static files always use master pool
+    if (req.path.startsWith('/api/saas') || !req.path.startsWith('/api')) {
         req.pool = masterPool;
         return next();
     }
 
     const slug = req.headers['x-tenant-slug'];
+    
+    // Login doesn't STRICTLY need a pool in the middleware if we handle it in the route,
+    // but the system is built to use req.pool.
     if (!slug) {
-        // For public assets or if forgotten, default to master or error
         req.pool = masterPool;
         return next();
     }
 
     const pool = await getTenantPool(slug);
-    if (!pool) return res.status(404).json({ message: 'Inquilino no encontrado o suspendido' });
+    if (!pool) {
+        // If it's the login route, we let it through to return a better error message from the route itself
+        if (req.path.includes('/api/login')) {
+            req.pool = masterPool; 
+            return next();
+        }
+        return res.status(404).json({ message: 'Inquilino no encontrado o suspendido' });
+    }
     
     req.pool = pool;
     next();
