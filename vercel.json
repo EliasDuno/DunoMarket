@@ -13,24 +13,20 @@
       "dest": "servidor.js"
     },
     {
-      "src": "/",
+      "src": "/acceso",
       "dest": "/acceso.html"
     },
     {
-      "src": "/(.*\\.html)",
-      "dest": "/$1"
+      "src": "/inicio",
+      "dest": "/inicio.html"
     },
     {
-      "src": "/(.*\\.js)",
-      "dest": "/$1"
+        "src": "/resumen",
+        "dest": "/resumen.html"
     },
     {
-      "src": "/(.*\\.css)",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.ico|.*\\.svg|.*\\.webp)",
-      "dest": "/$1"
+      "src": "/",
+      "dest": "/acceso.html"
     },
     {
       "src": "/(.*)",
