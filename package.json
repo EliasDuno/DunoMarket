@@ -2,9 +2,9 @@
   "name": "pidunet-saas",
   "version": "1.0.0",
   "description": "Backend for PiduNet SaaS POS System",
-  "main": "server.js",
+  "main": "api/server.js",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "node api/server.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
