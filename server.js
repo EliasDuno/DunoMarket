@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -10,6 +10,8 @@ const nodemailer = require('nodemailer');
 const { checkAndSendAlerts } = require('./alerts-module');
 const app = express();
 const port = 3000;
+
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // Asegurar que exista el directorio de subidas (uploads)
 const uploadDir = path.join(__dirname, 'uploads');
