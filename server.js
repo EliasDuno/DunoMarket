@@ -12,13 +12,9 @@ const app = express();
 const port = 3000;
 
 app.get('/api/health', (req, res) => {
-    const raw = process.env.DATABASE_URL || 'NOT_SET';
-    const masked = raw.replace(/:[^:]+@/, ':****@');
     res.json({ 
         status: 'ok', 
-        time: new Date().toISOString(),
-        db_connection: masked,
-        db_env_present: !!process.env.DATABASE_URL
+        time: new Date().toISOString()
     });
 });
 
@@ -184,9 +180,17 @@ async function initializeTenantDB(tenantPool) {
                 rol VARCHAR(20) DEFAULT 'vendedor',
                 activo BOOLEAN DEFAULT true,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                avatar_data BYTEA
+                avatar_data BYTEA,
+                avatar_mime VARCHAR(50)
             );
         `);
+        
+        // Ensure column 'password' exists if table was created with 'password_hash'
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password VARCHAR(255);`);
+        // If 'password' is null but 'password_hash' exists, copy it
+        try {
+            await client.query(`UPDATE usuarios SET password = password_hash WHERE password IS NULL;`);
+        } catch (e) { /* ignore if password_hash doesn't exist */ }
 
         // Add all existing migrations and tables
         await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_principal INTEGER DEFAULT 0;`);
@@ -325,11 +329,11 @@ app.post('/api/users', upload.single('avatar'), async (req, res) => {
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
-        let query = 'INSERT INTO usuarios (nombre, email, password_hash, rol, activo, creado_en) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id';
+        let query = 'INSERT INTO usuarios (nombre, email, password, rol, activo, creado_en) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id';
         let params = [nombre, email, passwordHash, rol, activo !== undefined ? activo : true];
 
         if (req.file) {
-            query = 'INSERT INTO usuarios (nombre, email, password_hash, rol, activo, creado_en, avatar_data, avatar_mime) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7) RETURNING id';
+            query = 'INSERT INTO usuarios (nombre, email, password, rol, activo, creado_en, avatar_data, avatar_mime) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7) RETURNING id';
             params = [nombre, email, passwordHash, rol, activo !== undefined ? activo : true, req.file.buffer, req.file.mimetype];
         }
 
@@ -422,7 +426,7 @@ app.put('/api/users/:id', upload.single('avatar'), async (req, res) => {
         if (password && password.trim() !== '') {
             const saltRounds = 10;
             const passwordHash = await bcrypt.hash(password, saltRounds);
-            addField('password_hash', passwordHash);
+            addField('password', passwordHash);
         }
 
         if (req.file) {
