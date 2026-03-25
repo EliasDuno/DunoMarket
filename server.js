@@ -176,7 +176,7 @@ async function initializeTenantDB(tenantPool) {
                 id SERIAL PRIMARY KEY,
                 nombre VARCHAR(100) NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
                 rol VARCHAR(20) DEFAULT 'vendedor',
                 activo BOOLEAN DEFAULT true,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -185,12 +185,13 @@ async function initializeTenantDB(tenantPool) {
             );
         `);
         
-        // Ensure column 'password' exists if table was created with 'password_hash'
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password VARCHAR(255);`);
-        // If 'password' is null but 'password_hash' exists, copy it
+        // Ensure column 'password_hash' exists (legacy support/migration)
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);`);
+        
+        // If 'password' column exists (from my previous attempt), sync and drop it if empty
         try {
-            await client.query(`UPDATE usuarios SET password = password_hash WHERE password IS NULL;`);
-        } catch (e) { /* ignore if password_hash doesn't exist */ }
+            await client.query(`UPDATE usuarios SET password_hash = password WHERE password_hash IS NULL AND password IS NOT NULL;`);
+        } catch (e) { /* ignore */ }
 
         // Add all existing migrations and tables
         await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_principal INTEGER DEFAULT 0;`);
@@ -329,11 +330,11 @@ app.post('/api/users', upload.single('avatar'), async (req, res) => {
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
-        let query = 'INSERT INTO usuarios (nombre, email, password, rol, activo, creado_en) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id';
+        let query = 'INSERT INTO usuarios (nombre, email, password_hash, rol, activo, creado_en) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id';
         let params = [nombre, email, passwordHash, rol, activo !== undefined ? activo : true];
 
         if (req.file) {
-            query = 'INSERT INTO usuarios (nombre, email, password, rol, activo, creado_en, avatar_data, avatar_mime) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7) RETURNING id';
+            query = 'INSERT INTO usuarios (nombre, email, password_hash, rol, activo, creado_en, avatar_data, avatar_mime) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7) RETURNING id';
             params = [nombre, email, passwordHash, rol, activo !== undefined ? activo : true, req.file.buffer, req.file.mimetype];
         }
 
@@ -426,7 +427,7 @@ app.put('/api/users/:id', upload.single('avatar'), async (req, res) => {
         if (password && password.trim() !== '') {
             const saltRounds = 10;
             const passwordHash = await bcrypt.hash(password, saltRounds);
-            addField('password', passwordHash);
+            addField('password_hash', passwordHash);
         }
 
         if (req.file) {
@@ -479,8 +480,8 @@ app.post('/api/login', async (req, res) => {
         if (result.rows.length > 0) {
             const user = result.rows[0];
 
-            // Compare provided password with stored hash
-            const match = await bcrypt.compare(password, user.password);
+            // Use password_hash (unified column)
+            const match = await bcrypt.compare(password, user.password_hash || user.password);
 
             if (match) {
                 res.json({
@@ -537,7 +538,7 @@ app.get('/api/saas/setup-initial', async (req, res) => {
         if (userRes.rows.length === 0) {
             const hashedPassword = await bcrypt.hash('admin123', 10);
             await pool.query(
-                'INSERT INTO usuarios (nombre, email, password, rol) VALUES ($1, $2, $3, $4)',
+                'INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES ($1, $2, $3, $4)',
                 ['Administrador PiduNet', email, hashedPassword, 'admin']
             );
         }
