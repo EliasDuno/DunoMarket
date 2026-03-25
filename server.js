@@ -11,7 +11,16 @@ const { checkAndSendAlerts } = require('./alerts-module');
 const app = express();
 const port = 3000;
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/api/health', (req, res) => {
+    const raw = process.env.DATABASE_URL || 'NOT_SET';
+    const masked = raw.replace(/:[^:]+@/, ':****@');
+    res.json({ 
+        status: 'ok', 
+        time: new Date().toISOString(),
+        db_connection: masked,
+        db_env_present: !!process.env.DATABASE_URL
+    });
+});
 
 // Asegurar que exista el directorio de subidas (solo logs, no mkdir)
 const uploadDir = path.join(__dirname, 'uploads');
