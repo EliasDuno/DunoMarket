@@ -26,9 +26,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // --- SaaS / Multi-Tenancy Configuration ---
+let mainConnectionString = process.env.DATABASE_URL || 'postgresql://postgres:Rodri%970@localhost:5432/PiduNet';
+if (process.env.DATABASE_URL) {
+    mainConnectionString = process.env.DATABASE_URL.replace(/^"|"$/g, '').trim();
+}
+
 const masterPool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:Rodri%970@localhost:5432/PiduNet',
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+    connectionString: mainConnectionString,
+    ssl: mainConnectionString.includes('supabase.com') || mainConnectionString.includes('supabase.co') ? { rejectUnauthorized: false } : false
 });
 
 const tenantPools = new Map();
@@ -40,7 +45,11 @@ async function getTenantPool(slug) {
         const result = await masterPool.query('SELECT db_url FROM tenants WHERE slug = $1 AND status = $2', [slug, 'active']);
         if (result.rows.length === 0) return null;
 
-        const tenantPool = new Pool({ connectionString: result.rows[0].db_url });
+        let tenantUrl = result.rows[0].db_url.replace(/^"|"$/g, '').trim();
+        const tenantPool = new Pool({ 
+            connectionString: tenantUrl,
+            ssl: tenantUrl.includes('supabase.com') || tenantUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false
+        });
         tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
         tenantPools.set(slug, tenantPool);
         return tenantPool;
