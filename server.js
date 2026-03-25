@@ -29,11 +29,15 @@ const upload = multer({ storage: storage });
 let mainConnectionString = process.env.DATABASE_URL || 'postgresql://postgres:Rodri%970@localhost:5432/PiduNet';
 if (process.env.DATABASE_URL) {
     mainConnectionString = process.env.DATABASE_URL.replace(/^"|"$/g, '').trim();
+    const masked = mainConnectionString.replace(/:[^:]+@/, ':****@');
+    console.log('[SaaS] Usando DATABASE_URL:', masked);
+} else {
+    console.log('[SaaS] ADVERTENCIA: DATABASE_URL no está definida. Usando fallback local.');
 }
 
 const masterPool = new Pool({
     connectionString: mainConnectionString,
-    ssl: mainConnectionString.includes('supabase.com') || mainConnectionString.includes('supabase.co') ? { rejectUnauthorized: false } : false
+    ssl: mainConnectionString.includes('supabase.com') || mainConnectionString.includes('supabase.co') || mainConnectionString.includes('pooler.supabase.com') ? { rejectUnauthorized: false } : false
 });
 
 const tenantPools = new Map();
