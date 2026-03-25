@@ -13,11 +13,9 @@ const port = 3000;
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// Asegurar que exista el directorio de subidas (uploads)
+// Asegurar que exista el directorio de subidas (solo logs, no mkdir)
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
+console.log('[Server] Directorio de subidas configurado:', uploadDir);
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -98,15 +96,10 @@ global.checkFiscal = async (req, res, next) => {
     next();
 };
 
-// Probar conexión a BD e Inicializar Tablas Maestras
-masterPool.connect(async (err, client, release) => {
-    if (err) {
-        return console.error('Error connecting to Master DB:', err.stack);
-    }
-    console.log('Master DB conectada exitosamente');
-
+// Function to init master tables (called from setup)
+async function initializeMasterDB() {
+    const client = await masterPool.connect();
     try {
-        // Tenants Table
         await client.query(`
             CREATE TABLE IF NOT EXISTS tenants (
                 id SERIAL PRIMARY KEY,
@@ -117,13 +110,11 @@ masterPool.connect(async (err, client, release) => {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
-        console.log('Tabla tenants verificada.');
-    } catch (e) {
-        console.error('Error init master tables', e);
+        console.log('[SaaS] Tabla tenants verificada.');
     } finally {
-        release();
+        client.release();
     }
-});
+}
 
 // --- SAAS API ENDPOINTS ---
 
@@ -492,6 +483,11 @@ app.post('/api/login', async (req, res) => {
 // INITIAL SETUP ROUTE
 app.get('/api/saas/setup-initial', async (req, res) => {
     try {
+        console.log('[Setup] Iniciando configuración inicial...');
+        
+        // 0. Initialize Master DB
+        await initializeMasterDB();
+
         // 1. Create Default Tenant
         const slug = 'pidunet';
         const tenantRes = await masterPool.query('SELECT * FROM tenants WHERE slug = $1', [slug]);
