@@ -55,11 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.onclick = (event) => {
         const notifModal = document.getElementById('notificationModal');
         const confirmModal = document.getElementById('confirmModal');
+        const recoverModal = document.getElementById('recoverModal');
         // Alerts dropdown handling is in checkAlerts/toggleAlerts
         // const alertsContainer = document.getElementById('alertsDropdownContainer');
 
         if (event.target == notifModal) closeNotification();
         if (event.target == confirmModal) closeConfirm(false);
+        if (event.target == recoverModal) closeRecoverModal();
     };
 
     // --- LOGIN HANDLER ---
@@ -98,6 +100,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error logging in:', error);
                 showNotification('Error', 'No se pudo conectar con el servidor.');
                 if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
+            }
+        });
+    }
+
+
+    // --- PASSWORD RECOVERY HANDLER ---
+    const recoverForm = document.getElementById('recoverForm');
+    if (recoverForm) {
+        recoverForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const recoverEmailEl = document.getElementById('recoverEmail');
+            const tenantEl = document.getElementById('tenant');
+            const submitBtn = recoverForm.querySelector('button[type="submit"]');
+            const email = recoverEmailEl ? recoverEmailEl.value.trim().toLowerCase() : '';
+            const tenant = tenantEl ? tenantEl.value.trim() : '';
+
+            if (!tenant) {
+                showNotification('Falta información', 'Ingresa el Código de Empresa para enviar la solicitud.');
+                return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Enviando...';
+            }
+
+            try {
+                const res = await fetch('/api/recover-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-tenant-slug': tenant
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    closeRecoverModal();
+                    recoverForm.reset();
+                    showNotification('Solicitud enviada', data.message || 'Se notificó a los administradores.');
+                } else {
+                    showNotification('Error', data.message || 'No se pudo enviar la solicitud.');
+                }
+            } catch (error) {
+                console.error('Error en recuperación de contraseña:', error);
+                showNotification('Error', 'No se pudo conectar con el servidor.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Enviar Solicitud';
+                }
             }
         });
     }
@@ -220,6 +276,16 @@ window.showNotification = function (title, message) {
 
 window.closeNotification = function () {
     const modal = document.getElementById('notificationModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.openRecoverModal = function () {
+    const modal = document.getElementById('recoverModal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeRecoverModal = function () {
+    const modal = document.getElementById('recoverModal');
     if (modal) modal.style.display = 'none';
 };
 
