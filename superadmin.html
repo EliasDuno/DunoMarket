@@ -73,7 +73,7 @@
 
         async function loadTenants() {
             try {
-                const res = await fetch('http://localhost:3000/api/saas/tenants');
+                const res = await fetch('/api/saas/tenants');
                 const tenants = await res.json();
                 const container = document.getElementById('tenantsList');
                 container.innerHTML = tenants.map(t => `
@@ -109,7 +109,7 @@
             };
 
             try {
-                const res = await fetch('http://localhost:3000/api/saas/tenants', {
+                const res = await fetch('/api/saas/tenants', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -128,7 +128,7 @@
         async function provisionTenant(slug) {
             showNotification('Procesando', 'Creando tablas en la base de datos del cliente...');
             try {
-                const res = await fetch('http://localhost:3000/api/saas/provision', {
+                const res = await fetch('/api/saas/provision', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ slug })
