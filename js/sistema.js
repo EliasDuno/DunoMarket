@@ -74,8 +74,8 @@ function initDashboard() {
 // =============================================================================
 function initInventory() {
     console.log('Inicializando Inventario...');
-    const API_URL_PRODUCTS = 'http://localhost:3000/api/products';
-    const API_URL_CONFIG = 'http://localhost:3000/api/config';
+    const API_URL_PRODUCTS = '/api/products';
+    const API_URL_CONFIG = '/api/config';
     let dollarRate = 1.0;
     let allProducts = [];
 
@@ -251,7 +251,7 @@ function initInventory() {
 
     async function loadCategories() {
         try {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch('/api/categories');
             const categories = await res.json();
             const select = document.getElementById('pCategoria');
             if (select) {
@@ -268,7 +268,7 @@ function initInventory() {
 
     async function loadSuppliers() {
         try {
-            const res = await fetch('http://localhost:3000/api/suppliers');
+            const res = await fetch('/api/suppliers');
             const suppliers = await res.json();
             const selectP = document.getElementById('pProveedor');
             const selectR = document.getElementById('receiveSupplier');
@@ -413,7 +413,7 @@ function initInventory() {
         const productSearch = document.getElementById('histProduct')?.value || '';
 
         const params = new URLSearchParams({ startDate, endDate, supplierId, productSearch });
-        const url = `http://localhost:3000/api/purchases?${params}`;
+        const url = `/api/purchases?${params}`;
 
         try {
             const res = await fetch(url);
@@ -426,7 +426,7 @@ function initInventory() {
 
     async function loadHistorySuppliers() {
         try {
-            const res = await fetch('http://localhost:3000/api/purchases/suppliers'); // Use specific endpoint or generic
+            const res = await fetch('/api/purchases/suppliers'); // Use specific endpoint or generic
             const suppliers = await res.json();
             const select = document.getElementById('histSupplier');
             if (select) {
@@ -681,7 +681,7 @@ function initInventory() {
             if (cantidad < 1) return showNotification('Error', 'Cantidad inválida.');
 
             try {
-                const res = await fetch(`http://localhost:3000/api/inventory/transfer`, {
+                const res = await fetch(`/api/inventory/transfer`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ producto_id, origen, destino, cantidad, isMerma, observacion })
@@ -708,8 +708,8 @@ function initInventory() {
 // =============================================================================
 function initPOS() {
     console.log('Inicializando POS...');
-    const API_URL_PRODUCTS = 'http://localhost:3000/api/products';
-    const API_URL_CONFIG = 'http://localhost:3000/api/config';
+    const API_URL_PRODUCTS = '/api/products';
+    const API_URL_CONFIG = '/api/config';
 
     let allProducts = [];
     let exchangeRate = 0;
@@ -732,7 +732,7 @@ function initPOS() {
         const user = JSON.parse(userSession);
 
         try {
-            const res = await fetch(`http://localhost:3000/api/caja/status/${user.id}`);
+            const res = await fetch(`/api/caja/status/${user.id}`);
             const data = await res.json();
             const overlay = document.getElementById('posLockOverlay');
             const layout = document.getElementById('posLayout');
@@ -758,7 +758,7 @@ function initPOS() {
         const amount = parseFloat(document.getElementById('openAmount').value) || 0;
 
         try {
-            const res = await fetch('http://localhost:3000/api/caja/abrir', {
+            const res = await fetch('/api/caja/abrir', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id, montoApertura: amount })
@@ -1050,7 +1050,7 @@ function initPOS() {
             if (!cedula) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/api/clients/${cedula}`);
+                const res = await fetch(`/api/clients/${cedula}`);
                 const data = await res.json();
                 
                 if (data.success && data.data) {
@@ -1116,7 +1116,7 @@ function initPOS() {
             const telefono = document.getElementById('newPosClientPhone').value;
 
             try {
-                const res = await fetch('http://localhost:3000/api/clients', {
+                const res = await fetch('/api/clients', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre, email, telefono })
@@ -1242,7 +1242,7 @@ function initReports() {
 
             try {
                 // 1. Fetch Dashboard
-                const resDash = await fetch('http://localhost:3000/api/reports/dashboard', {
+                const resDash = await fetch('/api/reports/dashboard', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
                 const dataDash = await resDash.json();
@@ -1254,7 +1254,7 @@ function initReports() {
                 }
 
                 // 2. Fetch Products
-                const resProd = await fetch('http://localhost:3000/api/reports/products', {
+                const resProd = await fetch('/api/reports/products', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
                 const dataProd = await resProd.json();
@@ -1280,7 +1280,7 @@ function initReports() {
                 }
 
                 // 3. Fetch History
-                const resHist = await fetch('http://localhost:3000/api/reports/history', {
+                const resHist = await fetch('/api/reports/history', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
                 const dataHist = await resHist.json();
@@ -1309,7 +1309,7 @@ function initReports() {
                 }
 
                 // 4. Fetch Audit
-                const resAudit = await fetch('http://localhost:3000/api/reports/audit', {
+                const resAudit = await fetch('/api/reports/audit', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
                 const dataAudit = await resAudit.json();
@@ -1406,7 +1406,7 @@ function initUsers() {
             }
 
             const method = id ? 'PUT' : 'POST';
-            const url = id ? `http://localhost:3000/api/users/${id}` : 'http://localhost:3000/api/users';
+            const url = id ? `/api/users/${id}` : 'http://localhost:3000/api/users';
 
             try {
                 const res = await fetch(url, {
@@ -1435,7 +1435,7 @@ function initUsers() {
 
     async function loadUsers() {
         try {
-            const res = await fetch('http://localhost:3000/api/users');
+            const res = await fetch('/api/users');
             allUsers = await res.json(); // Store in header scope variable
             const users = allUsers;
             const tbody = document.getElementById('usersTableBody');
@@ -1446,7 +1446,7 @@ function initUsers() {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${u.id}</td>
-                    <td><div class="user-avatar-small"><img src="http://localhost:3000/api/users/${u.id}/avatar" style="width: 40px; height: 40px; object-fit: cover; border-radius: 10px;" onerror="this.onerror=null; this.src='images/default-avatar.jpg'; this.style.width='40px'; this.style.height='40px'; this.style.objectFit='cover'; this.style.borderRadius='10px';"></div></td>
+                    <td><div class="user-avatar-small"><img src="/api/users/${u.id}/avatar" style="width: 40px; height: 40px; object-fit: cover; border-radius: 10px;" onerror="this.onerror=null; this.src='images/default-avatar.jpg'; this.style.width='40px'; this.style.height='40px'; this.style.objectFit='cover'; this.style.borderRadius='10px';"></div></td>
                     <td>${u.nombre || 'Sin Nombre'}</td>
                     <td>${u.email}</td>
                     <td><span class="badge badge-${u.rol === 'admin' ? 'primary' : 'secondary'}">${u.rol}</span></td>
@@ -1501,7 +1501,7 @@ function initUsers() {
         }
 
         try {
-            const res = await fetch(`http://localhost:3000/api/users/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) {
                 showNotification('Eliminado', 'Usuario eliminado correctamente.');
@@ -1524,7 +1524,7 @@ function initSuppliers() {
 
     async function loadSuppliers() {
         try {
-            const res = await fetch('http://localhost:3000/api/suppliers');
+            const res = await fetch('/api/suppliers');
             const suppliers = await res.json();
             const tbody = document.getElementById('suppliersBody');
             if (tbody) {
@@ -1573,13 +1573,13 @@ function initSuppliers() {
             try {
                 let res;
                 if (id) {
-                    res = await fetch(`http://localhost:3000/api/suppliers/${id}`, {
+                    res = await fetch(`/api/suppliers/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(supplierData)
                     });
                 } else {
-                    res = await fetch('http://localhost:3000/api/suppliers', {
+                    res = await fetch('/api/suppliers', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(supplierData)
@@ -1643,7 +1643,7 @@ function initCategories() {
 
     async function loadCategories() {
         try {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch('/api/categories');
             const data = await res.json();
             const tbody = document.getElementById('categoriesBody');
             if (tbody) {
@@ -1726,7 +1726,7 @@ function initClients() {
             };
 
             try {
-                const res = await fetch('http://localhost:3000/api/clients', {
+                const res = await fetch('/api/clients', {
                     method: 'POST', // The backend handles both Create and Update on POST w/ logic or we can separate if needed, but per servidor.js analysis line 2178 it handles update if ID exists.
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(clientData)
@@ -1753,7 +1753,7 @@ function initClients() {
 
     async function loadClients() {
         try {
-            const res = await fetch('http://localhost:3000/api/clients');
+            const res = await fetch('/api/clients');
             const data = await res.json();
             const tbody = document.getElementById('clientsBody');
             if (tbody) {
@@ -1790,7 +1790,7 @@ function initClients() {
 // =============================================================================
 function initSettings() {
     console.log('Inicializando Configuración...');
-    const API_URL = 'http://localhost:3000/api/config';
+    const API_URL = '/api/config';
     loadPaymentMethods();
     loadPresentations();
     loadGeneralConfig();
@@ -1910,7 +1910,7 @@ function initSettings() {
     const alertDaysInput = document.getElementById('alertDays');
 
     // Load initial alert config
-    fetch('http://localhost:3000/api/config/alerts')
+    fetch('/api/config/alerts')
         .then(res => res.json())
         .then(data => {
             if (alertDaysInput && data.alert_days) {
@@ -1925,7 +1925,7 @@ function initSettings() {
             const days = alertDaysInput ? alertDaysInput.value : 3;
 
             try {
-                const res = await fetch('http://localhost:3000/api/config/alerts', {
+                const res = await fetch('/api/config/alerts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ alert_days: days })
@@ -2107,7 +2107,7 @@ function initSettings() {
                             return;
                         }
 
-                        const res = await fetch(`http://localhost:3000${apiEndpoint}`, {
+                        const res = await fetch(`${apiEndpoint}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ items: items, products: items }) // send as both for compat
@@ -2160,7 +2160,7 @@ function initSettings() {
                 async () => {
                     try {
                         const items = await readExcel(file);
-                        const res = await fetch('http://localhost:3000/api/products/bulk-create', {
+                        const res = await fetch('/api/products/bulk-create', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ products: items })
@@ -2193,7 +2193,7 @@ function initSettings() {
                 async () => {
                     try {
                         const items = await readExcel(file);
-                        const res = await fetch('http://localhost:3000/api/products/bulk-receive', {
+                        const res = await fetch('/api/products/bulk-receive', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ items: items })
@@ -2253,7 +2253,7 @@ window.closeMermasModal = () => {
 window.loadMermasData = async () => {
     const start = document.getElementById('mermaStart').value;
     const end = document.getElementById('mermaEnd').value;
-    let url = 'http://localhost:3000/api/mermas';
+    let url = '/api/mermas';
     if (start && end) url += `?startDate=${start}&endDate=${end}`;
 
     try {
@@ -2301,7 +2301,7 @@ window.reportMermaFromEdit = async (warehouse) => {
     if (!confirm(`¿Reportar merma de ${qty} unidades de Bodega ${warehouse === 'principal' ? 'Principal' : 'Secundaria'}?`)) return;
 
     try {
-        const res = await fetch('http://localhost:3000/api/products/merma', {
+        const res = await fetch('/api/products/merma', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: id, cantidad: qty, bodega: warehouse })
@@ -2456,7 +2456,7 @@ function initCuentas() {
     // Load Suppliers Helper
     async function loadSuppliersForSelect() {
         try {
-            const res = await fetch('http://localhost:3000/api/suppliers');
+            const res = await fetch('/api/suppliers');
             const suppliers = await res.json();
             const select = document.getElementById('newSupplierId');
             if (select) {
@@ -2473,7 +2473,7 @@ function initCuentas() {
     window.loadCommitments = async function () {
         try {
             const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : 'ALL';
-            let url = 'http://localhost:3000/api/commitments';
+            let url = '/api/commitments';
             if (statusFilter !== 'ALL') {
                 url += `?status=${statusFilter}`;
             }
@@ -2560,7 +2560,7 @@ let globalAlertDays = 3; // Default
 
 async function updateAlertConfig() {
     try {
-        const res = await fetch('http://localhost:3000/api/config/alerts');
+        const res = await fetch('/api/config/alerts');
         const data = await res.json();
         globalAlertDays = data.alert_days || 3;
     } catch (e) { console.error('Error fetching alert config:', e); }
@@ -2586,7 +2586,7 @@ window.saveCommitment = async () => {
     // alert('Datos a enviar: ' + JSON.stringify(data)); // DEBUG
 
     try {
-        const res = await fetch('http://localhost:3000/api/commitments', {
+        const res = await fetch('/api/commitments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -2618,7 +2618,7 @@ window.loadCommitments = async function () {
         await updateAlertConfig(); // Ensure we have latest config
 
         const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : 'ALL';
-        let url = 'http://localhost:3000/api/commitments';
+        let url = '/api/commitments';
         if (statusFilter !== 'ALL') {
             url += `?status=${statusFilter}`;
         }
@@ -2749,7 +2749,7 @@ function initCategories() {
             };
 
             try {
-                const res = await fetch('http://localhost:3000/api/categories', {
+                const res = await fetch('/api/categories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(catData)
@@ -2773,7 +2773,7 @@ function initCategories() {
     // Helper: Load Categories
     async function loadCategories() {
         try {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch('/api/categories');
             const categories = await res.json();
             const tbody = document.getElementById('categoriesBody');
             if (tbody) {
