@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
-                    window.location.href = 'inicio.html';
+                    window.location.href = '/';
                 } else {
                     showNotification('Error', data.message || 'Credenciales inválidas');
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
