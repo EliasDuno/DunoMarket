@@ -1406,7 +1406,7 @@ function initUsers() {
             }
 
             const method = id ? 'PUT' : 'POST';
-            const url = id ? `/api/users/${id}` : 'http://localhost:3000/api/users';
+            const url = id ? `/api/users/${id}` : '/api/users';
 
             try {
                 const res = await fetch(url, {
