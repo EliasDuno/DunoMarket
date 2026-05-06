@@ -25,7 +25,7 @@
     },
     {
       "source": "/",
-      "destination": "/acceso.html"
+      "destination": "/inicio.html"
     }
   ],
   "cleanUrls": true
