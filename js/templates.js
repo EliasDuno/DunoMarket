@@ -117,7 +117,7 @@ function initBulkOperations() {
             for (const r of rows) {
                 if (!r.nombre) continue;
                 try {
-                    await fetch('http://localhost:3000/api/categories', {
+                    await fetch('/api/categories', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ nombre: r.nombre, descripcion: r.descripcion })
@@ -142,7 +142,7 @@ function initBulkOperations() {
             for (const r of rows) {
                 if (!r.rif || !r.nombre) continue;
                 try {
-                    await fetch('http://localhost:3000/api/suppliers', {
+                    await fetch('/api/suppliers', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ rif: r.rif, nombre: r.nombre, telefono: r.telefono, direccion: r.direccion, dias_credito: r.dias_credito })
@@ -178,7 +178,7 @@ function initBulkOperations() {
             }));
 
             try {
-                const res = await fetch('http://localhost:3000/api/products/bulk-create', {
+                const res = await fetch('/api/products/bulk-create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ products })
@@ -209,7 +209,7 @@ function initBulkOperations() {
             for (const r of rows) {
                 if (!r.cedula || !r.nombre) continue;
                 try {
-                    await fetch('http://localhost:3000/api/clients', {
+                    await fetch('/api/clients', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(r)
@@ -234,7 +234,7 @@ function initBulkOperations() {
             for (const r of rows) {
                 if (!r.email || !r.password) continue;
                 try {
-                    await fetch('http://localhost:3000/api/auth/register', {
+                    await fetch('/api/auth/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(r)
@@ -260,7 +260,7 @@ function initBulkOperations() {
             // Simple map of code -> id
             let productMap = {};
             try {
-                const pRes = await fetch('http://localhost:3000/api/products');
+                const pRes = await fetch('/api/products');
                 const allP = await pRes.json();
                 allP.forEach(p => productMap[p.codigo] = p.id);
             } catch (e) { log('Error cargando mapa de productos', false); return; }
@@ -272,7 +272,7 @@ function initBulkOperations() {
                 if (!pid) { log(`Producto no encontrado: ${r.codigo_producto}`, false); continue; }
 
                 try {
-                    await fetch('http://localhost:3000/api/products/receive', {
+                    await fetch('/api/products/receive', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
