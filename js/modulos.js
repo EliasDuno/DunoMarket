@@ -66,8 +66,8 @@ function initDashboard() {
 // =============================================================================
 function initInventory() {
     console.log('Inicializando Inventario...');
-    const API_URL_PRODUCTS = 'http://localhost:3000/api/products';
-    const API_URL_CONFIG = 'http://localhost:3000/api/config';
+    const API_URL_PRODUCTS = '/api/products';
+    const API_URL_CONFIG = '/api/config';
     let dollarRate = 1.0;
     let allProducts = [];
 
@@ -135,7 +135,7 @@ function initInventory() {
 
     async function loadCategories() {
         try {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch('/api/categories');
             const categories = await res.json();
             const select = document.getElementById('pCategoria');
             if (select) {
@@ -152,7 +152,7 @@ function initInventory() {
 
     async function loadSuppliers() {
         try {
-            const res = await fetch('http://localhost:3000/api/suppliers');
+            const res = await fetch('/api/suppliers');
             const suppliers = await res.json();
             const selectP = document.getElementById('pProveedor');
             const selectR = document.getElementById('receiveSupplier');
@@ -290,8 +290,8 @@ function initInventory() {
 // =============================================================================
 function initPOS() {
     console.log('Inicializando POS...');
-    const API_URL_PRODUCTS = 'http://localhost:3000/api/products';
-    const API_URL_CONFIG = 'http://localhost:3000/api/config';
+    const API_URL_PRODUCTS = '/api/products';
+    const API_URL_CONFIG = '/api/config';
 
     let allProducts = [];
     let exchangeRate = 0;
@@ -307,7 +307,7 @@ function initPOS() {
         const user = JSON.parse(userSession);
 
         try {
-            const res = await fetch(`http://localhost:3000/api/caja/status/${user.id}`);
+            const res = await fetch(`/api/caja/status/${user.id}`);
             const data = await res.json();
             const overlay = document.getElementById('posLockOverlay');
             const layout = document.getElementById('posLayout');
@@ -333,7 +333,7 @@ function initPOS() {
         const amount = parseFloat(document.getElementById('openAmount').value) || 0;
 
         try {
-            const res = await fetch('http://localhost:3000/api/caja/abrir', {
+            const res = await fetch('/api/caja/abrir', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id, montoApertura: amount })
@@ -428,7 +428,7 @@ function initReports() {
             // Backend expects ISO YYYY-MM-DD from input[type=date] usually
 
             try {
-                const res = await fetch('http://localhost:3000/api/reports/detailed', {
+                const res = await fetch('/api/reports/detailed', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ startDate, endDate })
@@ -473,7 +473,7 @@ function initUsers() {
 
     async function loadUsers() {
         try {
-            const res = await fetch('http://localhost:3000/api/users');
+            const res = await fetch('/api/users');
             const users = await res.json();
             const tbody = document.getElementById('usersTableBody');
             if (tbody) {
@@ -523,7 +523,7 @@ function initSuppliers() {
 
     async function loadSuppliers() {
         try {
-            const res = await fetch('http://localhost:3000/api/suppliers');
+            const res = await fetch('/api/suppliers');
             const suppliers = await res.json();
             const tbody = document.getElementById('suppliersBody');
             if (tbody) {
@@ -569,7 +569,7 @@ function initCategories() {
 
     async function loadCategories() {
         try {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch('/api/categories');
             const data = await res.json();
             const tbody = document.getElementById('categoriesBody');
             if (tbody) {
@@ -610,7 +610,7 @@ function initClients() {
 
     async function loadClients() {
         try {
-            const res = await fetch('http://localhost:3000/api/clients');
+            const res = await fetch('/api/clients');
             const data = await res.json();
             const tbody = document.getElementById('clientsBody');
             if (tbody) {
@@ -647,7 +647,7 @@ function initClients() {
 // =============================================================================
 function initSettings() {
     console.log('Inicializando Configuración...');
-    const API_URL = 'http://localhost:3000/api/config';
+    const API_URL = '/api/config';
     loadPaymentMethods();
     loadPresentations();
     loadGeneralConfig();
@@ -927,7 +927,7 @@ function initSettings() {
                             return;
                         }
 
-                        const res = await fetch(`http://localhost:3000${apiEndpoint}`, {
+                        const res = await fetch(`${apiEndpoint}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ items: items, products: items }) // send as both for compat
@@ -980,7 +980,7 @@ function initSettings() {
                 async () => {
                     try {
                         const items = await readExcel(file);
-                        const res = await fetch('http://localhost:3000/api/products/bulk-create', {
+                        const res = await fetch('/api/products/bulk-create', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ products: items })
@@ -1013,7 +1013,7 @@ function initSettings() {
                 async () => {
                     try {
                         const items = await readExcel(file);
-                        const res = await fetch('http://localhost:3000/api/products/bulk-receive', {
+                        const res = await fetch('/api/products/bulk-receive', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ items: items })
@@ -1082,7 +1082,7 @@ function initSettings() {
     window.loadMermasData = async () => {
         const start = document.getElementById('mermaStart').value;
         const end = document.getElementById('mermaEnd').value;
-        let url = 'http://localhost:3000/api/mermas';
+        let url = '/api/mermas';
         if (start && end) url += `?startDate=${start}&endDate=${end}`;
 
         try {
@@ -1147,7 +1147,7 @@ function initSettings() {
             // Based on server file view, I didn't see explicit adjust. 
             // I will add the FETCH here assuming I will create the endpoint.
 
-            const res = await fetch('http://localhost:3000/api/products/merma', {
+            const res = await fetch('/api/products/merma', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ productId: id, cantidad: qty, bodega: warehouse })
@@ -1253,7 +1253,7 @@ window.closeMermasModal = () => {
 window.loadMermasData = async () => {
     const start = document.getElementById('mermaStart').value;
     const end = document.getElementById('mermaEnd').value;
-    let url = 'http://localhost:3000/api/mermas';
+    let url = '/api/mermas';
     if (start && end) url += `?startDate=${start}&endDate=${end}`;
 
     try {
@@ -1301,7 +1301,7 @@ window.reportMermaFromEdit = async (warehouse) => {
     if (!confirm(`¿Reportar merma de ${qty} unidades de Bodega ${warehouse === 'principal' ? 'Principal' : 'Secundaria'}?`)) return;
 
     try {
-        const res = await fetch('http://localhost:3000/api/products/merma', {
+        const res = await fetch('/api/products/merma', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: id, cantidad: qty, bodega: warehouse })
