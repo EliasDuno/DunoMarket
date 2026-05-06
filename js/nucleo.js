@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let [resource, config] = args;
         const tenantSlug = sessionStorage.getItem('tenant_slug');
         
-        if (tenantSlug && resource.toString().includes('localhost:3000/api') && !resource.toString().includes('/api/saas')) {
+        if (tenantSlug && resource.toString().includes('/api') && !resource.toString().includes('/api/saas')) {
             if (!config) config = {};
             if (!config.headers) config.headers = {};
             
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const tenant = document.getElementById('tenant').value;
-                const res = await fetch('http://localhost:3000/api/login', {
+                const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
-                    window.location.href = '/';
+                    window.location.href = 'inicio.html';
                 } else {
                     showNotification('Error', data.message || 'Credenciales inválidas');
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
@@ -199,7 +199,7 @@ function loadGlobalProfile() {
 
         // Load Avatar
         if (avatarContainer) {
-            const avatarUrl = `http://localhost:3000/api/users/${user.id || 0}/avatar`;
+            const avatarUrl = `/api/users/${user.id || 0}/avatar`;
             const img = new Image();
             img.src = avatarUrl;
             img.onload = () => {
@@ -453,7 +453,7 @@ async function checkAlerts() {
 
     // 2. Fetch Alerts
     try {
-        const res = await fetch('http://localhost:3000/api/alerts');
+        const res = await fetch('/api/alerts');
         const data = await res.json();
         const badge = document.getElementById('alertBadge');
         const list = document.getElementById('alertsList');
