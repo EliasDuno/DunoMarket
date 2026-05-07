@@ -60,10 +60,18 @@
             <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
                 <h2 style="color: var(--primary-color);">Recuperar Acceso</h2>
             </div>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Ingresa tu correo para notificar a un
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Ingresa el código de tu empresa y tu correo para notificar a un
                 administrador.</p>
             <form id="recoverForm">
                 <div class="input-group">
+                                        <label for="recoverTenant">Código de Empresa</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-building"></i>
+                        <input type="text" id="recoverTenant" placeholder="ej: mipos" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="recoverEmail">Correo Electrónico</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope"></i>
                         <input type="email" id="recoverEmail" placeholder="tu@correo.com" required>
