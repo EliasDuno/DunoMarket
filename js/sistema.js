@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
     // alert('DEBUG: Path is ' + path);
 
-    // --- DASHBOARD (inicio.html y resumen.html) ---
+    // --- DASHBOARD (index.html y resumen.html) ---
     if (isDashboardRoute(path)) {
         initDashboard();
     }
