@@ -4,9 +4,15 @@
  * Reemplaza app.js, alerts.js y partes compartidas de script.js
  */
 
+function isAccessPage() {
+    const path = window.location.pathname.replace(/\/+$/, '');
+    const page = path.split('/').pop();
+    return page === 'acceso' || page === 'acceso.html';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Verificación Global de Auth (Omitir para acceso.html)
-    if (!window.location.pathname.includes('acceso.html')) {
+    if (!isAccessPage()) {
         checkGlobalAuth();
         loadGlobalProfile();
         checkAlerts(); // From alerts.js
