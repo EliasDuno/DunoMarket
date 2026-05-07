@@ -10,23 +10,19 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
-    },
-    {
-      "source": "/acceso",
-      "destination": "/acceso.html"
-    },
-    {
-      "source": "/inicio",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/resumen",
-      "destination": "/resumen.html"
-    },
-    {
-      "source": "/",
-      "destination": "/index.html"
     }
   ],
-  "cleanUrls": true
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/inicio",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": false
+    }
+  ]
 }
