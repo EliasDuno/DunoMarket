@@ -3,19 +3,86 @@
 
 <head>
     <script>
-        try {
-            const session = sessionStorage.getItem('user_session');
-            if (session) {
-                const parsed = JSON.parse(session);
-                if (parsed && parsed.id) {
-                    window.location.href = 'index.html';
-                } else {
-                    sessionStorage.removeItem('user_session'); // Clear if invalid
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('debugAuth') === '1') sessionStorage.setItem('auth_debug', '1');
+            if (params.get('debugAuth') === '0') sessionStorage.removeItem('auth_debug');
+
+            const debugEnabled = sessionStorage.getItem('auth_debug') === '1';
+            let debugStep = 0;
+
+            window.authDebugAlert = function (step, details) {
+                if (!debugEnabled) return;
+
+                debugStep += 1;
+                const payload = details ? `\nDatos: ${JSON.stringify(details)}` : '';
+                const message = [
+                    `[AUTH DEBUG #${debugStep}] ${step}`,
+                    `URL: ${window.location.href}`,
+                    `Path: ${window.location.pathname}`,
+                    `Top window: ${window.self === window.top}`,
+                    `Ready state: ${document.readyState}`,
+                    `user_session existe: ${Boolean(sessionStorage.getItem('user_session'))}`,
+                    `tenant_slug: ${sessionStorage.getItem('tenant_slug') || '(vacío)'}`,
+                    payload
+                ].join('\n');
+
+                console.log(message);
+                alert(message);
+            };
+
+            window.addEventListener('error', function (event) {
+                window.authDebugAlert('Error JS capturado en acceso.html', {
+                    message: event.message,
+                    source: event.filename,
+                    line: event.lineno,
+                    column: event.colno
+                });
+            });
+
+            window.addEventListener('unhandledrejection', function (event) {
+                window.authDebugAlert('Promesa rechazada no controlada en acceso.html', {
+                    reason: String(event.reason && event.reason.message ? event.reason.message : event.reason)
+                });
+            });
+
+            window.authDebugAlert('A0: inicio del script temprano de acceso.html');
+
+            try {
+                const session = sessionStorage.getItem('user_session');
+                const tenant = sessionStorage.getItem('tenant_slug');
+                window.authDebugAlert('A1: sessionStorage leído', {
+                    hasSession: Boolean(session),
+                    hasTenant: Boolean(tenant)
+                });
+
+                // La pantalla de acceso NO debe redirigir automáticamente al dashboard.
+                // Si queda una sesión vieja/incompleta, el navegador puede entrar en un
+                // rebote acceso -> dashboard -> acceso. Aquí solo saneamos datos inválidos.
+                if (!session) {
+                    window.authDebugAlert('A2: no hay user_session; se debe mostrar login');
+                    return;
                 }
+
+                const parsed = JSON.parse(session);
+                window.authDebugAlert('A3: user_session parseado', {
+                    parsedId: parsed && parsed.id,
+                    hasTenant: Boolean(tenant)
+                });
+
+                if (!parsed || !parsed.id || !tenant) {
+                    sessionStorage.removeItem('user_session');
+                    sessionStorage.removeItem('tenant_slug');
+                    window.authDebugAlert('A4: sesión inválida/incompleta limpiada');
+                } else {
+                    window.authDebugAlert('A5: sesión existente completa; acceso.html NO redirige automáticamente');
+                }
+            } catch (e) {
+                sessionStorage.removeItem('user_session');
+                sessionStorage.removeItem('tenant_slug');
+                window.authDebugAlert('A6: excepción parseando sesión; storage limpiado', { error: e.message });
             }
-        } catch (e) {
-            sessionStorage.removeItem('user_session');
-        }
+        })();
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -118,8 +185,19 @@
         </div>
     </div>
 
-    <script src="js/nucleo.js"></script>
-    <script src="js/sistema.js"></script>
+    <script>window.authDebugAlert && window.authDebugAlert('B0: antes de cargar js/nucleo.js');</script>
+    <script src="js/nucleo.js" onload="window.authDebugAlert && window.authDebugAlert('B1: js/nucleo.js cargado')" onerror="window.authDebugAlert && window.authDebugAlert('B1-ERROR: js/nucleo.js no cargó')"></script>
+    <script>window.authDebugAlert && window.authDebugAlert('B2: antes de cargar js/sistema.js');</script>
+    <script src="js/sistema.js" onload="window.authDebugAlert && window.authDebugAlert('B3: js/sistema.js cargado')" onerror="window.authDebugAlert && window.authDebugAlert('B3-ERROR: js/sistema.js no cargó')"></script>
+    <script>
+        window.authDebugAlert && window.authDebugAlert('B4: scripts finales de acceso.html ejecutados');
+        document.addEventListener('DOMContentLoaded', function () {
+            window.authDebugAlert && window.authDebugAlert('B5: DOMContentLoaded en acceso.html');
+        });
+        window.addEventListener('load', function () {
+            window.authDebugAlert && window.authDebugAlert('B6: window load completo en acceso.html');
+        });
+    </script>
 </body>
 
 </html>
