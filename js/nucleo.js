@@ -118,10 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const recoverEmailEl = document.getElementById('recoverEmail');
-            const tenantEl = document.getElementById('tenant');
+            const recoverTenantEl = document.getElementById('recoverTenant');
+            const loginTenantEl = document.getElementById('tenant');
             const submitBtn = recoverForm.querySelector('button[type="submit"]');
             const email = recoverEmailEl ? recoverEmailEl.value.trim().toLowerCase() : '';
-            const tenant = tenantEl ? tenantEl.value.trim() : '';
+            const tenant = recoverTenantEl?.value.trim() || loginTenantEl?.value.trim() || '';
 
             if (!tenant) {
                 showNotification('Falta información', 'Ingresa el Código de Empresa para enviar la solicitud.');
@@ -299,6 +300,13 @@ window.closeNotification = function () {
 
 window.openRecoverModal = function () {
     const modal = document.getElementById('recoverModal');
+    const loginTenantEl = document.getElementById('tenant');
+    const recoverTenantEl = document.getElementById('recoverTenant');
+
+    if (recoverTenantEl && loginTenantEl?.value.trim()) {
+        recoverTenantEl.value = loginTenantEl.value.trim();
+    }
+
     if (modal) modal.style.display = 'flex';
 };
 
