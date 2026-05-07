@@ -4,12 +4,19 @@
  */
 console.log('SISTEMA.JS LOADED - v5');
 
+function isDashboardRoute(path) {
+    const normalizedPath = path.replace(/\/+$/, '');
+    const page = normalizedPath.split('/').pop();
+
+    return path === '/' || page === 'inicio' || page === 'inicio.html' || page === 'resumen' || page === 'resumen.html';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
     // alert('DEBUG: Path is ' + path);
 
     // --- DASHBOARD (inicio.html y resumen.html) ---
-    if (path.includes('inicio.html') || path.includes('resumen.html') || path === '/' || path.endsWith('/')) {
+    if (isDashboardRoute(path)) {
         initDashboard();
     }
 
