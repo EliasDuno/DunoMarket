@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
-                    window.location.href = 'index.html';
+                    window.location.href = '/';
                 } else {
                     showNotification('Error', data.message || 'Credenciales inválidas');
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
@@ -167,11 +167,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- AUTENTICACIÓN ---
 
+function redirectToAccess() {
+    sessionStorage.removeItem('user_session');
+    sessionStorage.removeItem('tenant_slug');
+    localStorage.removeItem('user_session');
+
+    if (!isAccessPage()) {
+        window.top.location.replace('/acceso');
+    }
+}
+
 function checkGlobalAuth() {
-    const userSession = sessionStorage.getItem('user_session'); // Changed to sessionStorage
-    // Check for null, undefined, empty string, or string "null"/"undefined"
-    if (!userSession || userSession === 'null' || userSession === 'undefined') {
-        window.top.location.href = 'acceso.html';
+    const userSession = sessionStorage.getItem('user_session');
+    const tenantSlug = sessionStorage.getItem('tenant_slug');
+
+    // Check for null, undefined, empty string, string "null"/"undefined", or incomplete tenant data.
+    if (!userSession || userSession === 'null' || userSession === 'undefined' || !tenantSlug) {
+        redirectToAccess();
         return;
     }
 
@@ -181,8 +193,7 @@ function checkGlobalAuth() {
             throw new Error('Invalid session');
         }
     } catch (e) {
-        sessionStorage.removeItem('user_session'); // Changed to sessionStorage
-        window.top.location.href = 'acceso.html';
+        redirectToAccess();
     }
 }
 
@@ -222,9 +233,10 @@ function loadGlobalProfile() {
 
 // Global Logout Function
 window.logout = function () {
-    sessionStorage.removeItem('user_session'); // Changed to sessionStorage
+    sessionStorage.removeItem('user_session');
+    sessionStorage.removeItem('tenant_slug');
     localStorage.removeItem('user_session'); // Clean up old sessions just in case
-    window.location.href = 'acceso.html';
+    window.location.replace('/acceso');
 };
 
 // --- INACTIVITY TIMER ---
