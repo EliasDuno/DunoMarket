@@ -12,8 +12,9 @@
     <script>
         (function () {
             const session = sessionStorage.getItem('user_session');
+            const tenant = sessionStorage.getItem('tenant_slug');
             try {
-                if (!session || session === 'null' || session === 'undefined') throw new Error('No session');
+                if (!session || session === 'null' || session === 'undefined' || !tenant) throw new Error('No session');
                 const parsed = JSON.parse(session);
                 if (!parsed || !parsed.id) throw new Error('Invalid session');
 
@@ -25,7 +26,8 @@
             } catch (e) {
                 // If invalid, clear and redirect immediately
                 sessionStorage.removeItem('user_session');
-                window.location.href = 'acceso.html';
+                sessionStorage.removeItem('tenant_slug');
+                window.top.location.replace('/acceso');
             }
         })();
     </script>
@@ -51,7 +53,7 @@
 
             <div class="sidebar-nav">
                 <div class="sidebar-label">Principal</div>
-                <a href="index.html" class="nav-item active">
+                <a href="/" class="nav-item active">
                     <i class="fas fa-home"></i> Inicio
                 </a>
                 <a href="pdv.html" class="nav-item">
