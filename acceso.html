@@ -8,7 +8,7 @@
             if (session) {
                 const parsed = JSON.parse(session);
                 if (parsed && parsed.id) {
-                    window.location.href = 'inicio.html';
+                    window.location.href = 'index.html';
                 } else {
                     sessionStorage.removeItem('user_session'); // Clear if invalid
                 }
