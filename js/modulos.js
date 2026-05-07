@@ -6,8 +6,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
 
-    // --- DASHBOARD (inicio.html y resumen.html) ---
-    if (path.includes('inicio.html') || path.includes('resumen.html') || path === '/' || path.endsWith('/')) {
+    // --- DASHBOARD (index.html y resumen.html) ---
+    if (path.includes('index.html') || path.includes('inicio.html') || path.includes('resumen.html') || path === '/' || path.endsWith('/')) {
         initDashboard();
     }
 
