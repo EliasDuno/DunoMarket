@@ -11,7 +11,6 @@ function isAccessPage() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-        window.authDebugAlert && window.authDebugAlert('N0: DOMContentLoaded dentro de js/nucleo.js', { isAccessPage: isAccessPage() });
     // 1. Verificación Global de Auth (Omitir para acceso.html)
     if (!isAccessPage()) {
         checkGlobalAuth();
@@ -74,10 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LOGIN HANDLER ---
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
-                window.authDebugAlert && window.authDebugAlert('N1: formulario de login encontrado; handler instalado');
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-                        window.authDebugAlert && window.authDebugAlert('N2: submit de login capturado');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const btn = loginForm.querySelector('button[type="submit"]');
@@ -86,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const tenant = document.getElementById('tenant').value;
-                                window.authDebugAlert && window.authDebugAlert('N3: antes de fetch /api/login', { tenant, email });
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
@@ -98,21 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await res.json();
 
-                                window.authDebugAlert && window.authDebugAlert('N4: respuesta recibida de /api/login', { ok: res.ok, status: res.status, hasUser: Boolean(data && data.user), message: data && data.message });
-
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
-                                        window.authDebugAlert && window.authDebugAlert('N5: sesión guardada; redirigiendo a /', { userId: data.user && data.user.id, tenant });
                     window.location.href = '/';
                 } else {
-                        window.authDebugAlert && window.authDebugAlert('N6: login rechazado por API', { status: res.status, message: data && data.message });
                     showNotification('Error', data.message || 'Credenciales inválidas');
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
                 }
             } catch (error) {
                 console.error('Error logging in:', error);
-                    window.authDebugAlert && window.authDebugAlert('N7: excepción durante login', { error: error.message });
                 showNotification('Error', 'No se pudo conectar con el servidor.');
                 if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
             }
@@ -177,8 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- AUTENTICACIÓN ---
 
 function redirectToAccess() {
-
-    window.authDebugAlert && window.authDebugAlert('N8: redirectToAccess ejecutado', { from: window.location.href });
     sessionStorage.removeItem('user_session');
     sessionStorage.removeItem('tenant_slug');
     localStorage.removeItem('user_session');
@@ -191,8 +180,6 @@ function redirectToAccess() {
 function checkGlobalAuth() {
     const userSession = sessionStorage.getItem('user_session');
     const tenantSlug = sessionStorage.getItem('tenant_slug');
-
-    window.authDebugAlert && window.authDebugAlert('N9: checkGlobalAuth ejecutado', { hasSession: Boolean(userSession), hasTenant: Boolean(tenantSlug), isAccessPage: isAccessPage() });
 
     // Check for null, undefined, empty string, string "null"/"undefined", or incomplete tenant data.
     if (!userSession || userSession === 'null' || userSession === 'undefined' || !tenantSlug) {
