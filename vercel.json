@@ -17,7 +17,7 @@
     },
     {
       "source": "/inicio",
-      "destination": "/inicio.html"
+      "destination": "/index.html"
     },
     {
       "source": "/resumen",
@@ -25,7 +25,7 @@
     },
     {
       "source": "/",
-      "destination": "/inicio.html"
+      "destination": "/index.html"
     }
   ],
   "cleanUrls": true
