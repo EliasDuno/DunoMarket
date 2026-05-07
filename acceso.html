@@ -3,86 +3,11 @@
 
 <head>
     <script>
-        (function () {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('debugAuth') === '1') sessionStorage.setItem('auth_debug', '1');
-            if (params.get('debugAuth') === '0') sessionStorage.removeItem('auth_debug');
-
-            const debugEnabled = sessionStorage.getItem('auth_debug') === '1';
-            let debugStep = 0;
-
-            window.authDebugAlert = function (step, details) {
-                if (!debugEnabled) return;
-
-                debugStep += 1;
-                const payload = details ? `\nDatos: ${JSON.stringify(details)}` : '';
-                const message = [
-                    `[AUTH DEBUG #${debugStep}] ${step}`,
-                    `URL: ${window.location.href}`,
-                    `Path: ${window.location.pathname}`,
-                    `Top window: ${window.self === window.top}`,
-                    `Ready state: ${document.readyState}`,
-                    `user_session existe: ${Boolean(sessionStorage.getItem('user_session'))}`,
-                    `tenant_slug: ${sessionStorage.getItem('tenant_slug') || '(vacío)'}`,
-                    payload
-                ].join('\n');
-
-                console.log(message);
-                alert(message);
-            };
-
-            window.addEventListener('error', function (event) {
-                window.authDebugAlert('Error JS capturado en acceso.html', {
-                    message: event.message,
-                    source: event.filename,
-                    line: event.lineno,
-                    column: event.colno
-                });
-            });
-
-            window.addEventListener('unhandledrejection', function (event) {
-                window.authDebugAlert('Promesa rechazada no controlada en acceso.html', {
-                    reason: String(event.reason && event.reason.message ? event.reason.message : event.reason)
-                });
-            });
-
-            window.authDebugAlert('A0: inicio del script temprano de acceso.html');
-
-            try {
-                const session = sessionStorage.getItem('user_session');
-                const tenant = sessionStorage.getItem('tenant_slug');
-                window.authDebugAlert('A1: sessionStorage leído', {
-                    hasSession: Boolean(session),
-                    hasTenant: Boolean(tenant)
-                });
-
-                // La pantalla de acceso NO debe redirigir automáticamente al dashboard.
-                // Si queda una sesión vieja/incompleta, el navegador puede entrar en un
-                // rebote acceso -> dashboard -> acceso. Aquí solo saneamos datos inválidos.
-                if (!session) {
-                    window.authDebugAlert('A2: no hay user_session; se debe mostrar login');
-                    return;
-                }
 
                 const parsed = JSON.parse(session);
-                window.authDebugAlert('A3: user_session parseado', {
-                    parsedId: parsed && parsed.id,
-                    hasTenant: Boolean(tenant)
-                });
-
-                if (!parsed || !parsed.id || !tenant) {
-                    sessionStorage.removeItem('user_session');
-                    sessionStorage.removeItem('tenant_slug');
-                    window.authDebugAlert('A4: sesión inválida/incompleta limpiada');
                 } else {
-                    window.authDebugAlert('A5: sesión existente completa; acceso.html NO redirige automáticamente');
                 }
-            } catch (e) {
-                sessionStorage.removeItem('user_session');
-                sessionStorage.removeItem('tenant_slug');
-                window.authDebugAlert('A6: excepción parseando sesión; storage limpiado', { error: e.message });
             }
-        })();
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -95,21 +20,6 @@
 </head>
 
 <body>
-        <div id="accessWelcomeProbe" style="position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px);">
-        <div style="width: min(92vw, 520px); border-radius: 18px; padding: 1.5rem; background: #ffffff; color: #0f172a; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); text-align: center; font-family: Inter, Arial, sans-serif;">
-            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">👋</div>
-            <h2 style="margin: 0 0 0.75rem; font-size: 1.35rem;">Modal de prueba en acceso.html</h2>
-            <p style="margin: 0 0 1rem; line-height: 1.5; color: #334155;">
-                Si ves este mensaje, el navegador sí alcanzó a renderizar el cuerpo de <strong>acceso.html</strong> antes de cargar la pantalla principal.
-            </p>
-            <p style="margin: 0 0 1.25rem; font-size: 0.9rem; color: #64748b;">
-                Este modal está insertado antes de <code>&lt;div class="background-animation"&gt;</code> y no depende de Supabase, API, nucleo.js ni sistema.js.
-            </p>
-            <button type="button" onclick="document.getElementById('accessWelcomeProbe').style.display='none'" style="border: 0; border-radius: 999px; padding: 0.75rem 1.25rem; cursor: pointer; background: #2563eb; color: white; font-weight: 700;">
-                Continuar a la pantalla de acceso
-            </button>
-        </div>
-    </div>
     <div class="background-animation"></div>
     <div class="login-container">
         <div class="login-header">
@@ -199,20 +109,6 @@
             </div>
         </div>
     </div>
-
-    <script>window.authDebugAlert && window.authDebugAlert('B0: antes de cargar js/nucleo.js');</script>
-    <script src="js/nucleo.js" onload="window.authDebugAlert && window.authDebugAlert('B1: js/nucleo.js cargado')" onerror="window.authDebugAlert && window.authDebugAlert('B1-ERROR: js/nucleo.js no cargó')"></script>
-    <script>window.authDebugAlert && window.authDebugAlert('B2: antes de cargar js/sistema.js');</script>
-    <script src="js/sistema.js" onload="window.authDebugAlert && window.authDebugAlert('B3: js/sistema.js cargado')" onerror="window.authDebugAlert && window.authDebugAlert('B3-ERROR: js/sistema.js no cargó')"></script>
-    <script>
-        window.authDebugAlert && window.authDebugAlert('B4: scripts finales de acceso.html ejecutados');
-        document.addEventListener('DOMContentLoaded', function () {
-            window.authDebugAlert && window.authDebugAlert('B5: DOMContentLoaded en acceso.html');
-        });
-        window.addEventListener('load', function () {
-            window.authDebugAlert && window.authDebugAlert('B6: window load completo en acceso.html');
-        });
-    </script>
 </body>
 
 </html>
