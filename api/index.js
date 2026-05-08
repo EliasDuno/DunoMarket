@@ -7,7 +7,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
-const { checkAndSendAlerts } = require('./alerts-module');
+const { checkAndSendAlerts } = require('../alerts-module');
 const app = express();
 const port = 3000;
 
@@ -26,10 +26,20 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // --- SaaS / Multi-Tenancy Configuration ---
-const masterPool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:Rodri%970@localhost:5432/PiduNet',
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
-});
+const masterPoolConfig = process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    }
+    : {
+        user: 'postgres',
+        host: 'localhost',
+        database: 'PiduNet',
+        password: 'Rodri%970',
+        port: 5432
+    };
+
+const masterPool = new Pool(masterPoolConfig);
 
 const tenantPools = new Map();
 
@@ -2426,7 +2436,7 @@ app.post('/api/debug/force-alerts', async (req, res) => {
         // OPTIONAL: Clear last_sent to allow re-testing
         // await req.pool.query("UPDATE compromisos_pago SET last_alert_sent_at = NULL WHERE estado != 'PAGADO'");
 
-        const result = await checkAndSendAlerts(pool);
+        const result = await checkAndSendAlerts(req.pool);
         res.json({ success: true, result });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -2537,50 +2547,21 @@ app.get('/api/alerts', async (req, res) => {
 // 2. Email Notification Service
 const sendDailyNotifications = async () => {
     console.log('Checking for payment alerts...');
+
     try {
-        const result = await req.pool.query(`
-            SELECT cp.*, p.nombre as proveedor_nombre,
-            (cp.fecha_vencimiento - CURRENT_DATE) as days_remaining
-            FROM compromisos_pago cp
-            JOIN proveedores p ON cp.proveedor_id = p.id
-            WHERE cp.estado != 'PAGADO' AND (cp.fecha_vencimiento - CURRENT_DATE) <= 1
-        `);
+        const tenantsRes = await masterPool.query(
+            "SELECT slug FROM tenants WHERE status = $1",
+            ['active']
+        );
 
-        if (result.rows.length > 0) {
-            // Fetch Admin Email (Fallback to configured email if logic complex)
-            const adminQuery = await req.pool.query("SELECT email FROM users WHERE rol = 'admin' LIMIT 1");
-            const adminEmail = adminQuery.rows.length > 0 ? adminQuery.rows[0].email : 'contacto@pidunet.com';
-
-            // Generate HTML
-            let html = `<h2>Alertas de Pago - PiduNet</h2>
-                        <p>Se han detectado ${result.rows.length} compromisos por vencer o vencidos:</p>
-                        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-                            <tr style="background-color: #f2f2f2;"><th>Proveedor</th><th>Descripción</th><th>Monto Total</th><th>Vencimiento</th><th>Días</th></tr>`;
-
-            result.rows.forEach(item => {
-                const color = item.days_remaining < 0 ? 'red' : 'orange';
-                html += `<tr>
-                            <td>${item.proveedor_nombre}</td>
-                            <td>${item.descripcion}</td>
-                            <td>$${item.monto_total_usd}</td>
-                            <td>${new Date(item.fecha_vencimiento).toLocaleDateString()}</td>
-                            <td style="color: ${color}; font-weight: bold;">${item.days_remaining}</td>
-                         </tr>`;
-            });
-            html += `</table>`;
-
-            // Send Email using global transporter (Assuming it exists as per user)
-            if (typeof transporter !== 'undefined') {
-                await transporter.sendMail({
-                    from: '"PiduNet System" <contacto@pidunet.com>',
-                    to: adminEmail,
-                    subject: `[ALERTA] ${result.rows.length} Pagos Pendientes - PiduNet`,
-                    html: html
-                });
-                console.log(`Email de alerta enviado a ${adminEmail}`);
-            } else {
-                console.log('ADVERTENCIA: Objeto transporter no definido en server.js. No se pudo enviar correo.');
+        for (const tenant of tenantsRes.rows) {
+            const tenantPool = await getTenantPool(tenant.slug);
+            if (!tenantPool) {
+                console.warn(`[Alerts] Tenant ${tenant.slug} no disponible. Omitiendo.`);
+                continue;
             }
+
+            await checkAndSendAlerts(tenantPool);
         }
     } catch (err) {
         console.error('Error sending notifications:', err);
