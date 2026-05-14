@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
+const { getMasterPoolConfig, getTenantPoolConfig } = require('../config/db');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
@@ -26,20 +27,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // --- SaaS / Multi-Tenancy Configuration ---
-const masterPoolConfig = process.env.DATABASE_URL
-    ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-    }
-    : {
-        user: 'postgres',
-        host: 'localhost',
-        database: 'PiduNet',
-        password: 'Rodri%970',
-        port: 5432
-    };
-
-const masterPool = new Pool(masterPoolConfig);
+const masterPool = new Pool(getMasterPoolConfig());
 
 const tenantPools = new Map();
 
@@ -50,7 +38,7 @@ async function getTenantPool(slug) {
         const result = await masterPool.query('SELECT db_url FROM tenants WHERE slug = $1 AND status = $2', [slug, 'active']);
         if (result.rows.length === 0) return null;
 
-        const tenantPool = new Pool({ connectionString: result.rows[0].db_url });
+        const tenantPool = new Pool(getTenantPoolConfig(result.rows[0].db_url));
         tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
         tenantPools.set(slug, tenantPool);
         return tenantPool;
