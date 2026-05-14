@@ -1,14 +1,10 @@
 const { Pool } = require('pg');
+const { getMasterPoolConfig } = require('../config/db');
 
-const connectionString = "postgresql://postgres:YwFk3lyzPHz73noL@db.cschliqvwwuggscdryfo.supabase.co:5432/postgres";
-
-const pool = new Pool({
-    connectionString,
-    ssl: { rejectUnauthorized: false }
-});
+const pool = new Pool(getMasterPoolConfig());
 
 async function initMaster() {
-    console.log('Connecting to Supabase Master DB...');
+    console.log('Connecting to configured master database...');
     const client = await pool.connect();
     try {
         console.log('Creating tenants table...');
