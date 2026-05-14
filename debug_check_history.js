@@ -1,12 +1,7 @@
 const { Pool } = require('pg');
+const { getMasterPoolConfig } = require('./config/db');
 
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'PiduNet',
-    password: 'Rodri%970',
-    port: 5432,
-});
+const pool = new Pool(getMasterPoolConfig());
 
 async function checkHistory() {
     try {
