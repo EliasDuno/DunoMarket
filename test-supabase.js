@@ -1,13 +1,11 @@
 const { Pool } = require('pg');
+const { getMasterPoolConfig } = require('./config/db');
 
-const pool = new Pool({
-    connectionString: 'postgresql://postgres:JyvniBhS60rK80jf@db.jisbfuwwvjqmardhvqts.supabase.co:5432/postgres',
-    ssl: { rejectUnauthorized: false }
-});
+const pool = new Pool(getMasterPoolConfig());
 
 async function testConnection() {
     try {
-        console.log('Testing connection to Supabase...');
+        console.log('Testing connection to configured PostgreSQL database...');
         const res = await pool.query('SELECT NOW()');
         console.log('Connected successfully! Current time in DB:', res.rows[0].now);
 
@@ -26,7 +24,7 @@ async function testConnection() {
         }
 
     } catch (err) {
-        console.error('Error connecting to Supabase:', err.message);
+        console.error('Error connecting to the configured database:', err.message);
     } finally {
         await pool.end();
     }
