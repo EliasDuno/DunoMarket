@@ -48,6 +48,11 @@ async function getTenantPool(slug) {
     }
 }
 
+// Lightweight API health check for deployment/routing diagnostics.
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, service: 'pidunet-api' });
+});
+
 // ATTACH TENANT POOL MIDDLEWARE
 app.use(async (req, res, next) => {
     // SaaS endpoints always use master pool
