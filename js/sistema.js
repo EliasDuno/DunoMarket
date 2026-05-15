@@ -735,25 +735,15 @@ function initPOS() {
 
     async function checkCajaStatus() {
         const userSession = sessionStorage.getItem('user_session');
-        console.log('DEBUG POS: user_session =', userSession);
-        if (!userSession) {
-            console.error('POS: No hay sesión de usuario en sessionStorage');
-            return;
-        }
+        if (!userSession) return;
         const user = JSON.parse(userSession);
 
         try {
-            console.log('DEBUG POS: Consultando estado para usuario', user.id);
             const res = await fetch(`/api/caja/status/${user.id}`);
             const data = await res.json();
-            console.log('DEBUG POS: Respuesta servidor =', data);
 
             const overlay = document.getElementById('posLockOverlay');
             const layout = document.getElementById('posLayout');
-            
-            if (!overlay || !layout) {
-                console.error('POS: Elementos de UI (posLockOverlay o posLayout) no encontrados');
-            }
 
             if (data.isOpen) {
                 if (data.needsClosure) {
@@ -800,17 +790,10 @@ function initPOS() {
     }
 
     window.openCaja = async function () {
-        console.log('DEBUG POS: Ejecutando openCaja...');
         const userSession = sessionStorage.getItem('user_session');
-        if (!userSession) {
-            alert('Error: No se encontró la sesión de usuario.');
-            return;
-        }
+        if (!userSession) return;
         const user = JSON.parse(userSession);
-        const amountInput = document.getElementById('openAmount');
-        const amount = parseFloat(amountInput.value) || 0;
-
-        console.log('DEBUG POS: Enviando apertura...', { userId: user.id, montoApertura: amount });
+        const amount = parseFloat(document.getElementById('openAmount').value) || 0;
 
         try {
             const res = await fetch('/api/caja/abrir', {
@@ -819,19 +802,16 @@ function initPOS() {
                 body: JSON.stringify({ userId: user.id, montoApertura: amount })
             });
             const data = await res.json();
-            console.log('DEBUG POS: Respuesta apertura =', data);
 
             if (data.success) {
                 document.getElementById('openCajaModal').style.display = 'none';
                 checkCajaStatus();
                 showNotification('Éxito', 'Caja abierta correctamente.');
             } else {
-                alert('Error al abrir caja: ' + (data.message || 'Error desconocido'));
                 showNotification('Error', data.message);
             }
         } catch (err) { 
             console.error('Error en openCaja:', err);
-            alert('Error crítico de conexión al abrir caja. Revisa la consola.');
         }
     };
 
