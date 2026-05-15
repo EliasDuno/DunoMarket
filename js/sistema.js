@@ -856,6 +856,7 @@ function initInventory() {
             if (origen === destino) return showNotification('Error', 'El origen y destino deben ser diferentes.');
             if (cantidad < 1) return showNotification('Error', 'Cantidad inválida.');
 
+            console.log('DEBUG: Intentando llamar a /api/inventory/transfer...');
             try {
                 const res = await fetch(`/api/inventory/transfer`, {
                     method: 'POST',
