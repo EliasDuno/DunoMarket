@@ -36,6 +36,11 @@ function isBcryptHash(value) {
     return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
+function normalizeTenantSlug(value) {
+    if (Array.isArray(value)) value = value[0];
+    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
 async function getUsuarioColumnNames(pool) {
     const result = await pool.query(`
         SELECT column_name
@@ -126,9 +131,13 @@ app.use(async (req, res, next) => {
         return next();
     }
 
-    const slug = req.headers['x-tenant-slug'];
+    const slug = normalizeTenantSlug(req.headers['x-tenant-slug']);
     if (!slug) {
-        // For public assets or if forgotten, default to master or error
+        if (req.path === '/api/login') {
+            return res.status(400).json({ success: false, message: 'Código de empresa requerido' });
+        }
+
+        // For public assets or if forgotten, default to master.
         req.pool = masterPool;
         return next();
     }
@@ -600,13 +609,14 @@ app.post('/api/login', async (req, res) => {
     }
 
     try {
+        await ensureUsuarioSchema(req.pool);
         const columns = await getUsuarioColumnNames(req.pool);
 
-        if (!columns.has('email')) {
+        if (!columns.has('id') || !columns.has('email')) {
             return res.status(500).json({ success: false, message: 'La tabla de usuarios no está configurada correctamente.' });
         }
 
-        const selectFields = ['id', 'nombre', 'email'];
+        const selectFields = ['id', columns.has('nombre') ? 'nombre' : 'email AS nombre', 'email'];
         selectFields.push(columns.has('rol') ? 'rol' : "'vendedor' AS rol");
         selectFields.push(columns.has('activo') ? 'activo' : 'true AS activo');
         selectFields.push(columns.has('password_hash') ? 'password_hash' : 'NULL AS password_hash');
