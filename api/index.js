@@ -40,6 +40,21 @@ function isBcryptHash(value) {
     return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
+// --- GLOBAL AUDIT LOGGING ---
+global.logAudit = async (req, userId, accion, tabla, registro_id, detalle, ip) => {
+    try {
+        const pool = req.pool;
+        if (!pool) return;
+        
+        await pool.query(
+            'INSERT INTO auditoria (usuario_id, accion, tabla, registro_id, detalle, ip) VALUES ($1, $2, $3, $4, $5, $6)',
+            [userId || null, accion, tabla, registro_id || null, JSON.stringify(detalle || {}), ip || '']
+        );
+    } catch (e) {
+        console.error('ERROR IN AUDIT LOG:', e);
+    }
+};
+
 function normalizeTenantSlug(value) {
     if (Array.isArray(value)) value = value[0];
     return typeof value === 'string' ? value.trim().toLowerCase() : '';
