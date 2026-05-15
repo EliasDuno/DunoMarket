@@ -10,6 +10,21 @@ function isAccessPage() {
     return page === 'acceso' || page === 'acceso.html';
 }
 
+
+async function readApiResponse(res) {
+    const contentType = res.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        return res.json();
+    }
+
+    const text = await res.text();
+    return {
+        success: false,
+        message: text || `Respuesta inesperada del servidor (${res.status})`
+    };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Verificación Global de Auth (Omitir para acceso.html)
     if (!isAccessPage()) {
@@ -92,14 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email, password })
                 });
 
-                const data = await res.json();
+                const data = await readApiResponse(res);
 
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
                     window.location.href = '/';
                 } else {
-                    showNotification('Error', data.message || 'Credenciales inválidas');
+                    showNotification('Error', data.message || `Error del servidor (${res.status})`);
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
                 }
             } catch (error) {
@@ -144,14 +159,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email })
                 });
 
-                const data = await res.json();
+                const data = await readApiResponse(res);
 
                 if (res.ok && data.success) {
                     closeRecoverModal();
                     recoverForm.reset();
                     showNotification('Solicitud enviada', data.message || 'Se notificó a los administradores.');
                 } else {
-                    showNotification('Error', data.message || 'No se pudo enviar la solicitud.');
+                    showNotification('Error', data.message || `Error del servidor (${res.status})`);
                 }
             } catch (error) {
                 console.error('Error en recuperación de contraseña:', error);
