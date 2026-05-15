@@ -735,14 +735,25 @@ function initPOS() {
 
     async function checkCajaStatus() {
         const userSession = sessionStorage.getItem('user_session');
-        if (!userSession) return;
+        console.log('DEBUG POS: user_session =', userSession);
+        if (!userSession) {
+            console.error('POS: No hay sesión de usuario en sessionStorage');
+            return;
+        }
         const user = JSON.parse(userSession);
 
         try {
+            console.log('DEBUG POS: Consultando estado para usuario', user.id);
             const res = await fetch(`/api/caja/status/${user.id}`);
             const data = await res.json();
+            console.log('DEBUG POS: Respuesta servidor =', data);
+
             const overlay = document.getElementById('posLockOverlay');
             const layout = document.getElementById('posLayout');
+            
+            if (!overlay || !layout) {
+                console.error('POS: Elementos de UI (posLockOverlay o posLayout) no encontrados');
+            }
 
             if (data.isOpen) {
                 if (data.needsClosure) {
