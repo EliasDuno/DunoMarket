@@ -14,8 +14,12 @@ const port = 3000;
 
 // Asegurar que exista el directorio de subidas (uploads)
 const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+try {
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+} catch (e) {
+    console.warn('Advertencia: No se pudo crear el directorio de uploads (posible entorno de solo lectura):', e.message);
 }
 // Middleware
 app.use(cors());
