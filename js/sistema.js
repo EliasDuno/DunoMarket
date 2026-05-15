@@ -134,19 +134,35 @@ function initInventory() {
     const pCosto = document.getElementById('pCosto');
     const pMargen = document.getElementById('pMargen');
     const pSalePrice = document.getElementById('pSalePrice');
+    const pPriceTypeRadios = document.getElementsByName('pPriceType');
+    const pCalcIcon = document.getElementById('pCalcIcon');
 
     function updatePriceFromMargin() {
         const cost = parseFloat(pCosto.value) || 0;
         const margin = parseFloat(pMargen.value) || 0;
-        const price = cost * (1 + (margin / 100));
-        pSalePrice.value = price.toFixed(2);
+        const priceUsd = cost * (1 + (margin / 100));
+        
+        const isBs = Array.from(pPriceTypeRadios).find(r => r.checked)?.value === 'bs';
+        if (isBs) {
+            pSalePrice.value = (priceUsd * dollarRate).toFixed(2);
+            if (pCalcIcon) pCalcIcon.className = 'fas fa-money-bill-wave'; // Bs Icon
+        } else {
+            pSalePrice.value = priceUsd.toFixed(2);
+            if (pCalcIcon) pCalcIcon.className = 'fas fa-dollar-sign'; // USD Icon
+        }
     }
 
     function updateMarginFromPrice() {
         const cost = parseFloat(pCosto.value) || 0;
-        const price = parseFloat(pSalePrice.value) || 0;
+        let priceUsd = parseFloat(pSalePrice.value) || 0;
+        
+        const isBs = Array.from(pPriceTypeRadios).find(r => r.checked)?.value === 'bs';
+        if (isBs && dollarRate > 0) {
+            priceUsd = priceUsd / dollarRate;
+        }
+
         if (cost > 0) {
-            const margin = ((price / cost) - 1) * 100;
+            const margin = ((priceUsd / cost) - 1) * 100;
             pMargen.value = margin.toFixed(1);
         }
     }
@@ -154,6 +170,7 @@ function initInventory() {
     if (pCosto) pCosto.addEventListener('input', updatePriceFromMargin);
     if (pMargen) pMargen.addEventListener('input', updatePriceFromMargin);
     if (pSalePrice) pSalePrice.addEventListener('input', updateMarginFromPrice);
+    pPriceTypeRadios.forEach(r => r.addEventListener('change', updatePriceFromMargin));
 
     if (histProductInput && histProductResults) {
         histProductInput.addEventListener('input', function () {
