@@ -745,14 +745,43 @@ function initPOS() {
             const layout = document.getElementById('posLayout');
 
             if (data.isOpen) {
-                console.log('POS: Caja Abierta');
-                if (overlay) overlay.style.display = 'none';
-                if (layout) layout.classList.remove('locked');
-                addCloseCajaButton();
+                if (data.needsClosure) {
+                    console.log('POS: Caja de día anterior detectada');
+                    if (overlay) {
+                        overlay.style.display = 'flex';
+                        const title = overlay.querySelector('.pos-lock-title');
+                        const desc = overlay.querySelector('.pos-lock-desc');
+                        const btn = overlay.querySelector('.btn-large-open');
+                        if (title) title.textContent = 'Cierre de Caja Pendiente';
+                        if (desc) desc.textContent = 'Tienes una sesión abierta de un día anterior. Debes cerrarla para continuar.';
+                        if (btn) {
+                            btn.textContent = 'Cerrar Caja de Ayer';
+                            btn.onclick = () => openCloseCajaModal(data.session.id);
+                        }
+                    }
+                    if (layout) layout.classList.add('locked');
+                } else {
+                    console.log('POS: Caja Abierta');
+                    if (overlay) overlay.style.display = 'none';
+                    if (layout) layout.classList.remove('locked');
+                    addCloseCajaButton();
+                }
             } else {
                 console.log('POS: Caja Cerrada');
                 if (overlay) overlay.style.display = 'flex';
                 if (layout) layout.classList.add('locked');
+                
+                // Reset overlay to default "Abrir Caja" in case it was changed by needsClosure
+                const title = overlay.querySelector('.pos-lock-title');
+                const desc = overlay.querySelector('.pos-lock-desc');
+                const btn = overlay.querySelector('.btn-large-open');
+                if (title) title.textContent = 'Caja Cerrada';
+                if (desc) desc.textContent = 'Debes abrir la caja para comenzar a realizar ventas.';
+                if (btn) {
+                    btn.textContent = 'Abrir Caja';
+                    btn.onclick = () => document.getElementById('openCajaModal').style.display = 'flex';
+                }
+
                 const modal = document.getElementById('openCajaModal');
                 if (modal) modal.style.display = 'flex';
             }
@@ -789,10 +818,115 @@ function initPOS() {
             btn.className = 'btn-login';
             btn.style.background = '#ef4444';
             btn.innerHTML = '<i class="fas fa-cash-register"></i> Cerrar Caja';
-            btn.onclick = () => document.getElementById('closeCajaModal').style.display = 'flex';
+            btn.onclick = () => openCloseCajaModal();
             headerActions.appendChild(btn);
         }
     }
+
+    window.openCloseCajaModal = async function (sessionId) {
+        if (!sessionId) {
+            const userSession = sessionStorage.getItem('user_session');
+            const user = JSON.parse(userSession);
+            const res = await fetch(`/api/caja/status/${user.id}`);
+            const data = await res.json();
+            if (data.isOpen) sessionId = data.session.id;
+            else return;
+        }
+
+        try {
+            const res = await fetch(`/api/caja/totals/${sessionId}`);
+            const data = await res.json();
+            if (data.success) {
+                const t = data.totals;
+                document.getElementById('sys_cash').textContent = t.efectivo.toFixed(2);
+                document.getElementById('sys_card').textContent = t.tdc.toFixed(2);
+                document.getElementById('sys_mobile').textContent = t.pago_movil.toFixed(2);
+                document.getElementById('sys_other').textContent = t.otros.toFixed(2);
+
+                // Reset declared inputs
+                ['dec_cash', 'dec_card', 'dec_mobile', 'dec_other'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                const reason = document.getElementById('diff_reason');
+                if (reason) reason.value = '';
+
+                window.currentClosingSessionId = sessionId;
+                document.getElementById('closeCajaModal').style.display = 'flex';
+                calculateDiff();
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    window.processCloseCaja = async function () {
+        const sessionId = window.currentClosingSessionId;
+        const decCash = parseFloat(document.getElementById('dec_cash').value) || 0;
+        const decCard = parseFloat(document.getElementById('dec_card').value) || 0;
+        const decMobile = parseFloat(document.getElementById('dec_mobile').value) || 0;
+        const decOther = parseFloat(document.getElementById('dec_other').value) || 0;
+        const totalDeclarado = decCash + decCard + decMobile + decOther;
+
+        const userSession = sessionStorage.getItem('user_session');
+        const user = JSON.parse(userSession);
+
+        try {
+            const res = await fetch('/api/caja/cerrar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: sessionId,
+                    userId: user.id,
+                    montoDeclarado: totalDeclarado,
+                    observaciones: document.getElementById('diff_reason').value,
+                    declarado: {
+                        efectivo: decCash,
+                        tdc: decCard,
+                        pago_movil: decMobile,
+                        otros: decOther
+                    }
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('closeCajaModal').style.display = 'none';
+                showNotification('Éxito', 'Caja cerrada correctamente.');
+                checkCajaStatus(); // Re-check to show Open Caja modal
+            } else {
+                showNotification('Error', data.message);
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    function calculateDiff() {
+        const sysTotal = parseFloat(document.getElementById('sys_cash').textContent) +
+            parseFloat(document.getElementById('sys_card').textContent) +
+            parseFloat(document.getElementById('sys_mobile').textContent) +
+            parseFloat(document.getElementById('sys_other').textContent);
+
+        const decCash = parseFloat(document.getElementById('dec_cash').value) || 0;
+        const decCard = parseFloat(document.getElementById('dec_card').value) || 0;
+        const decMobile = parseFloat(document.getElementById('dec_mobile').value) || 0;
+        const decOther = parseFloat(document.getElementById('dec_other').value) || 0;
+        const decTotal = decCash + decCard + decMobile + decOther;
+
+        const diff = decTotal - sysTotal;
+        const diffDisplay = document.getElementById('diff_display');
+        if (diffDisplay) {
+            diffDisplay.textContent = diff.toFixed(2) + ' Bs';
+            diffDisplay.style.color = Math.abs(diff) < 0.01 ? '#4ade80' : '#ef4444';
+        }
+
+        const reasonContainer = document.getElementById('diff_reason_container');
+        if (reasonContainer) {
+            reasonContainer.style.display = Math.abs(diff) >= 0.01 ? 'block' : 'none';
+        }
+    }
+
+    // Add input listeners for real-time diff
+    ['dec_cash', 'dec_card', 'dec_mobile', 'dec_other'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', calculateDiff);
+    });
 
     async function loadConfig() {
         try {

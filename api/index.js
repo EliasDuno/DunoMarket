@@ -303,13 +303,40 @@ async function initializeTenantDB(tenantPool) {
         `);
 
         await client.query(`
+            CREATE TABLE IF NOT EXISTS caja_sesiones (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL,
+                fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                fecha_cierre TIMESTAMP,
+                monto_apertura DECIMAL(12, 2) DEFAULT 0.00,
+                monto_cierre DECIMAL(12, 2),
+                estado VARCHAR(20) DEFAULT 'abierta'
+            );
+        `);
+
+        await client.query(`
             CREATE TABLE IF NOT EXISTS ventas (
                 id SERIAL PRIMARY KEY,
                 fecha TIMESTAMP DEFAULT NOW(),
                 metodo_pago VARCHAR(50) NOT NULL,
                 total_usd NUMERIC(10, 2) NOT NULL,
                 tasa_bcv NUMERIC(10, 2),
-                total_bs NUMERIC(12, 2)
+                total_bs NUMERIC(12, 2),
+                caja_id INTEGER REFERENCES caja_sesiones(id),
+                cliente_id INTEGER,
+                observaciones TEXT
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS detalle_ventas (
+                id SERIAL PRIMARY KEY,
+                venta_id INTEGER REFERENCES ventas(id) ON DELETE CASCADE,
+                producto_id INTEGER,
+                cantidad DECIMAL(12, 2),
+                precio_unitario_usd DECIMAL(12, 2),
+                costo_unitario_usd DECIMAL(12, 2),
+                subtotal_usd DECIMAL(12, 2)
             );
         `);
 
@@ -2047,11 +2074,15 @@ app.get('/api/caja/status/:userId', async (req, res) => {
     const { userId } = req.params;
     try {
         const result = await req.pool.query(
-            "SELECT * FROM caja_sesiones WHERE usuario_id = $1 AND estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1",
+            "SELECT *, (fecha_apertura::date < CURRENT_DATE) as needs_closure FROM caja_sesiones WHERE usuario_id = $1 AND estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1",
             [userId]
         );
         if (result.rows.length > 0) {
-            res.json({ isOpen: true, session: result.rows[0] });
+            res.json({ 
+                isOpen: true, 
+                session: result.rows[0],
+                needsClosure: result.rows[0].needs_closure
+            });
         } else {
             res.json({ isOpen: false });
         }
