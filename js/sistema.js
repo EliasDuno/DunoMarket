@@ -102,6 +102,7 @@ function initInventory() {
     loadProducts();
     loadCategories();
     loadSuppliers();
+    loadPresentations();
 
     // --- Listeners ---
     if (btnNewProduct) btnNewProduct.onclick = () => openProductModal();
@@ -282,16 +283,38 @@ function initInventory() {
             const suppliers = await res.json();
             const selectP = document.getElementById('pProveedor');
             const selectR = document.getElementById('receiveSupplier');
+            const selectH = document.getElementById('histSupplier');
 
-            if (selectP) {
-                selectP.innerHTML = '<option value="">Seleccionar...</option>';
-                suppliers.forEach(s => selectP.innerHTML += `<option value="${s.id}">${s.nombre}</option>`);
+            const options = suppliers.map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
+            
+            if (selectP) selectP.innerHTML = '<option value="">Seleccionar...</option>' + options;
+            if (selectR) selectR.innerHTML = '<option value="">Mantener Actual / Seleccionar...</option>' + options;
+            if (selectH) selectH.innerHTML = '<option value="">Todos</option>' + options;
+
+            console.log('DEBUG INV: Proveedores cargados =', suppliers.length);
+        } catch (err) { console.error('Error loadSuppliers:', err); }
+    }
+
+    async function loadPresentations() {
+        try {
+            const res = await fetch('/api/config/presentations');
+            const presentations = await res.json();
+            const select = document.getElementById('pPresentacion');
+            if (select) {
+                select.innerHTML = '<option value="">Seleccionar...</option>';
+                presentations.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.nombre;
+                    select.appendChild(opt);
+                });
             }
-            if (selectR) {
-                selectR.innerHTML = '<option value="">Mantener Actual / Seleccionar...</option>';
-                suppliers.forEach(s => selectR.innerHTML += `<option value="${s.id}">${s.nombre}</option>`);
-            }
-        } catch (err) { console.error(err); }
+            console.log('DEBUG INV: Presentaciones cargadas =', presentations.length);
+        } catch (err) { 
+            console.error('Error loadPresentations:', err);
+            const select = document.getElementById('pPresentacion');
+            if (select) select.innerHTML = '<option value="">Error al cargar</option>';
+        }
     }
 
     function renderProductTableForInventory(products, tab = 'venta') {
