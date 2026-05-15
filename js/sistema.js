@@ -373,15 +373,9 @@ function initInventory() {
         }
 
         products.forEach(p => {
-            const costo = parseFloat(p.costo_usd);
-            const margen = parseFloat(p.margen_ganancia);
-            const precioUSD = costo * (1 + (margen / 100));
-            const precioBS = precioUSD * dollarRate;
-
             // Determine stock to show
             let stockToShow = p.stock;
             let mermaToShow = 0;
-            let badgeClass = 'badge-user';
 
             if (tab === 'principal') {
                 stockToShow = p.stock_principal || 0;
@@ -390,13 +384,20 @@ function initInventory() {
                 stockToShow = p.stock_secundaria || 0;
                 mermaToShow = p.stock_merma_secundaria || 0;
             } else {
-                // Venta
-                // In generic stock (p.stock) we assume it is the summation of available stock in warehouses if implemented that way,
-                // but usually 'venta' tab might show total available.
-                // For now sticking to p.stock as logic implies.
                 stockToShow = p.stock;
-                mermaToShow = 0; // No merma in sales tab
+                mermaToShow = 0;
             }
+
+            // FILTER: If we are in a warehouse tab and stock is 0, skip this product
+            if ((tab === 'principal' || tab === 'secundaria') && stockToShow <= 0) {
+                return;
+            }
+
+            const costo = parseFloat(p.costo_usd);
+            const margen = parseFloat(p.margen_ganancia);
+            const precioUSD = costo * (1 + (margen / 100));
+            const precioBS = precioUSD * dollarRate;
+            let badgeClass = 'badge-user';
 
             const isLowStock = stockToShow <= p.stock_minimo;
             badgeClass = isLowStock ? 'badge-low-stock' : 'badge-user';
@@ -408,7 +409,7 @@ function initInventory() {
             if (tab === 'principal' || tab === 'secundaria') {
                 mermaCell = `<td style="color: #ef4444; font-weight: bold;">${mermaToShow}</td>`;
             } else {
-                mermaCell = `<td style="display: none;"></td>`; // Maintain column count/structure hidden
+                mermaCell = `<td style="display: none;"></td>`; 
             }
 
             tr.innerHTML = `
@@ -505,12 +506,10 @@ function initInventory() {
                 } else {
                     const errorData = await res.json().catch(() => ({ message: 'Respuesta no es JSON' }));
                     console.error('DEBUG ERROR SERVER:', errorData);
-                    alert('ERROR DEL SERVIDOR: ' + (errorData.message || JSON.stringify(errorData)));
-                    showNotification('Error', 'No se pudo guardar el producto.');
+                    showNotification('Error', errorData.message || 'No se pudo guardar el producto.');
                 }
             } catch (err) {
                 console.error('DEBUG CONNECTION ERROR:', err);
-                alert('ERROR DE CONEXIÓN: ' + err.message);
                 showNotification('Error', 'Error de conexión.');
             }
         };
