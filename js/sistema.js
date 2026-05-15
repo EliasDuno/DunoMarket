@@ -835,8 +835,11 @@ function initInventory() {
 
     const transferForm = document.getElementById('transfer-form');
     if (transferForm) {
+        console.log('DEBUG: Listener de transferencia vinculado.');
         transferForm.onsubmit = async (e) => {
             e.preventDefault();
+            console.log('DEBUG: Botón Transferir clickeado.');
+            
             const producto_id = document.getElementById('transId').value;
             const origen = document.getElementById('transOrigin').value;
             const destino = document.getElementById('transDest').value;
@@ -844,7 +847,12 @@ function initInventory() {
             const isMerma = document.getElementById('checkMerma')?.checked || false;
             const observacion = document.getElementById('transObs').value;
 
-            if (!producto_id) return showNotification('Atención', 'Debe seleccionar un producto.');
+            console.log('DEBUG: Datos a transferir:', { producto_id, origen, destino, cantidad, isMerma });
+
+            if (!producto_id) {
+                console.warn('DEBUG: Falta producto_id');
+                return showNotification('Atención', 'Debe seleccionar un producto.');
+            }
             if (origen === destino) return showNotification('Error', 'El origen y destino deben ser diferentes.');
             if (cantidad < 1) return showNotification('Error', 'Cantidad inválida.');
 
@@ -861,10 +869,11 @@ function initInventory() {
                     loadProducts(); // Refresh tables
                     showNotification('Éxito', data.message || 'Traspaso completado.');
                 } else {
+                    console.error('DEBUG: Error en respuesta de transferencia:', data);
                     showNotification('Error', data.message || 'Error al procesar el traspaso.');
                 }
             } catch (err) {
-                console.error(err);
+                console.error('DEBUG: ERROR FATAL TRANSFERENCIA:', err);
                 showNotification('Error', 'Fallo conexión con el servidor.');
             }
         };
