@@ -1399,9 +1399,14 @@ function initPOS() {
             }
         };
 
-        // Trigger search on Enter
+        // Trigger search on Enter or Blur (loses focus)
         inputClientCedula.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') btnSearchClient.click();
+        });
+
+        inputClientCedula.addEventListener('blur', () => {
+            const cedula = inputClientCedula.value.trim();
+            if (cedula) btnSearchClient.click();
         });
     }
 
