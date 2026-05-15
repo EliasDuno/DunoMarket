@@ -97,7 +97,7 @@ if (tenantSlug && resource.toString().includes('/api') && !resource.toString().i
             if (btn) { btn.disabled = true; btn.innerText = 'Cargando...'; }
 
             try {
-                const tenant = document.getElementById('tenant').value;
+                const tenant = document.getElementById('tenant').value.trim().toLowerCase();
 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
@@ -137,7 +137,7 @@ showNotification('Error', data.message || `Error del servidor (${res.status})`);
             const loginTenantEl = document.getElementById('tenant');
             const submitBtn = recoverForm.querySelector('button[type="submit"]');
             const email = recoverEmailEl ? recoverEmailEl.value.trim().toLowerCase() : '';
-            const tenant = recoverTenantEl?.value.trim() || loginTenantEl?.value.trim() || '';
+            const tenant = (recoverTenantEl?.value.trim() || loginTenantEl?.value.trim() || '').toLowerCase();
 
             if (!tenant) {
                 showNotification('Falta información', 'Ingresa el Código de Empresa para enviar la solicitud.');
