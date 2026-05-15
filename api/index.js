@@ -2113,6 +2113,37 @@ app.post('/api/caja/abrir', async (req, res) => {
     }
 });
 
+// GET Totals for Closure
+app.get('/api/caja/totals/:sessionId', async (req, res) => {
+    const { sessionId } = req.params;
+    try {
+        const breakdownRes = await req.pool.query(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN metodo_pago = 'EFECTIVO_BS' THEN total_bs ELSE 0 END), 0) as efectivo,
+                COALESCE(SUM(CASE WHEN metodo_pago = 'TDC' THEN total_bs ELSE 0 END), 0) as tdc,
+                COALESCE(SUM(CASE WHEN metodo_pago = 'PAGO_MOVIL' THEN total_bs ELSE 0 END), 0) as pago_movil,
+                COALESCE(SUM(CASE WHEN metodo_pago = 'OTROS' THEN total_bs ELSE 0 END), 0) as otros
+            FROM ventas 
+            WHERE caja_id = $1
+        `, [sessionId]);
+
+        const sessionRes = await req.pool.query('SELECT monto_apertura FROM caja_sesiones WHERE id = $1', [sessionId]);
+        const montoApertura = sessionRes.rows.length > 0 ? parseFloat(sessionRes.rows[0].monto_apertura) : 0;
+
+        const totals = breakdownRes.rows[0];
+        // Add opening cash to efectivo
+        totals.efectivo = parseFloat(totals.efectivo) + montoApertura;
+        totals.tdc = parseFloat(totals.tdc);
+        totals.pago_movil = parseFloat(totals.pago_movil);
+        totals.otros = parseFloat(totals.otros);
+
+        res.json({ success: true, totals });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error al calcular totales' });
+    }
+});
+
 // CLOSE Caja & Generate Report Data
 // CLOSE Caja & Generate Report Data
 app.post('/api/caja/cerrar', async (req, res) => {
