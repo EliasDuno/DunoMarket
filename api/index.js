@@ -31,6 +31,47 @@ const masterPool = new Pool(getMasterPoolConfig());
 
 const tenantPools = new Map();
 
+async function ensureUsuarioSchema(pool) {
+    const client = await pool.connect();
+    try {
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password_hash VARCHAR(255),
+                rol VARCHAR(20) DEFAULT 'vendedor',
+                activo BOOLEAN DEFAULT true,
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                avatar_data BYTEA,
+                avatar_mime VARCHAR(50)
+            );
+        `);
+
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);`);
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) DEFAULT 'vendedor';`);
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true;`);
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_data BYTEA;`);
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_mime VARCHAR(50);`);
+
+        const legacyPassword = await client.query(`
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'usuarios'
+              AND column_name = 'password'
+        `);
+
+        if (legacyPassword.rows.length > 0) {
+            await client.query(`ALTER TABLE usuarios ALTER COLUMN password DROP NOT NULL;`);
+            await client.query(`UPDATE usuarios SET password_hash = password WHERE password_hash IS NULL AND password IS NOT NULL;`);
+        }
+    } finally {
+        client.release();
+    }
+}
+
 async function getTenantPool(slug) {
     if (tenantPools.has(slug)) return tenantPools.get(slug);
 
@@ -40,6 +81,7 @@ async function getTenantPool(slug) {
 
         const tenantPool = new Pool(getTenantPoolConfig(result.rows[0].db_url));
         tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
+        await ensureUsuarioSchema(tenantPool);
         tenantPools.set(slug, tenantPool);
         return tenantPool;
     } catch (err) {
@@ -159,15 +201,98 @@ async function initializeTenantDB(tenantPool) {
                 id SERIAL PRIMARY KEY,
                 nombre VARCHAR(100) NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(255),
                 rol VARCHAR(20) DEFAULT 'vendedor',
                 activo BOOLEAN DEFAULT true,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                avatar_data BYTEA
+                avatar_data BYTEA,
+                avatar_mime VARCHAR(50)
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS configuracion (
+                clave VARCHAR(50) PRIMARY KEY,
+                valor VARCHAR(255) NOT NULL,
+                actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        await client.query(`
+            INSERT INTO configuracion (clave, valor)
+            VALUES ('precio_dolar', '45.00')
+            ON CONFLICT (clave) DO NOTHING;
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS categorias (
+                id SERIAL PRIMARY KEY,
+                nombre VARCHAR(100) UNIQUE NOT NULL,
+                descripcion TEXT,
+                activo BOOLEAN DEFAULT true,
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS proveedores (
+                id SERIAL PRIMARY KEY,
+                rif VARCHAR(50) UNIQUE,
+                nombre VARCHAR(255) NOT NULL,
+                telefono VARCHAR(50),
+                email VARCHAR(100),
+                direccion TEXT,
+                activo BOOLEAN DEFAULT true,
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS productos (
+                id SERIAL PRIMARY KEY,
+                codigo VARCHAR(50) UNIQUE NOT NULL,
+                nombre VARCHAR(255) NOT NULL,
+                descripcion TEXT,
+                costo_usd DECIMAL(12, 2) DEFAULT 0.00,
+                margen_ganancia DECIMAL(12, 2) DEFAULT 0.00,
+                stock INTEGER DEFAULT 0,
+                stock_minimo INTEGER DEFAULT 5,
+                categoria VARCHAR(100),
+                categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
+                proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
+                activo BOOLEAN DEFAULT true,
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ventas (
+                id SERIAL PRIMARY KEY,
+                fecha TIMESTAMP DEFAULT NOW(),
+                metodo_pago VARCHAR(50) NOT NULL,
+                total_usd NUMERIC(10, 2) NOT NULL,
+                tasa_bcv NUMERIC(10, 2),
+                total_bs NUMERIC(12, 2)
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS compromisos_pago (
+                id SERIAL PRIMARY KEY,
+                proveedor_id INTEGER,
+                descripcion TEXT NOT NULL,
+                monto_total_usd DECIMAL(10, 2) NOT NULL,
+                monto_pagado_usd DECIMAL(10, 2) DEFAULT 0,
+                fecha_vencimiento DATE NOT NULL,
+                estado VARCHAR(20) DEFAULT 'PENDIENTE',
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
         // Add all existing migrations and tables
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);`);
+        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_mime VARCHAR(50);`);
         await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_principal INTEGER DEFAULT 0;`);
         await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_secundaria INTEGER DEFAULT 0;`);
         await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma INTEGER DEFAULT 0;`);
@@ -442,41 +567,60 @@ app.delete('/api/users/:id', global.checkFiscal, async (req, res) => {
 
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
-    let { email, password } = req.body;
+    let { email, password } = req.body || {};
 
-    // Enforce lowercase email
-    if (email) email = email.toLowerCase();
+    email = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    password = typeof password === 'string' ? password : '';
+
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: 'Email y contraseña son requeridos' });
+    }
 
     try {
-        const query = 'SELECT * FROM usuarios WHERE email = $1';
+        await ensureUsuarioSchema(req.pool);
+
+        const query = `
+            SELECT id, nombre, email, rol, activo, password_hash, avatar_data
+            FROM usuarios
+            WHERE email = $1
+        `;
         const result = await req.pool.query(query, [email]);
 
-        if (result.rows.length > 0) {
-            const user = result.rows[0];
-
-            // Compare provided password with stored hash
-            const match = await bcrypt.compare(password, user.password_hash);
-
-            if (match) {
-                res.json({
-                    success: true,
-                    message: 'Login exitoso',
-                    user: {
-                        id: user.id, // Critical for avatar fetching
-                        email: user.email,
-                        rol: user.rol,
-                        nombre: user.nombre,
-                        has_avatar: !!user.avatar_data // Helper to avoid 404 checks
-                    }
-                });
-            } else {
-                res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
-            }
-        } else {
-            res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
         }
+
+        const user = result.rows[0];
+
+        if (user.activo === false) {
+            return res.status(403).json({ success: false, message: 'Usuario inactivo' });
+        }
+
+        if (!user.password_hash) {
+            console.error(`Usuario ${email} no tiene password_hash configurado`);
+            return res.status(500).json({ success: false, message: 'La contraseña del usuario no está configurada. Contacta al administrador.' });
+        }
+
+        // Compare provided password with stored hash
+        const match = await bcrypt.compare(password, user.password_hash);
+
+        if (!match) {
+            return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Login exitoso',
+            user: {
+                id: user.id, // Critical for avatar fetching
+                email: user.email,
+                rol: user.rol,
+                nombre: user.nombre,
+                has_avatar: !!user.avatar_data // Helper to avoid 404 checks
+            }
+        });
     } catch (err) {
-        console.error(err);
+        console.error('Error en /api/login:', err);
         res.status(500).json({ success: false, message: 'Error del servidor' });
     }
 });
