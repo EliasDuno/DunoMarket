@@ -30,6 +30,22 @@ const upload = multer({ storage: storage });
 const masterPool = new Pool(getMasterPoolConfig());
 
 const tenantPools = new Map();
+const tenantSchemaEnsured = new Set();
+
+function isBcryptHash(value) {
+    return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
+}
+
+async function getUsuarioColumnNames(pool) {
+    const result = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'usuarios'
+    `);
+
+    return new Set(result.rows.map(row => row.column_name));
+}
 
 async function ensureUsuarioSchema(pool) {
     const client = await pool.connect();
@@ -81,7 +97,14 @@ async function getTenantPool(slug) {
 
         const tenantPool = new Pool(getTenantPoolConfig(result.rows[0].db_url));
         tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
-        await ensureUsuarioSchema(tenantPool);
+
+        try {
+            await ensureUsuarioSchema(tenantPool);
+            tenantSchemaEnsured.add(slug);
+        } catch (schemaErr) {
+            console.error(`No se pudo verificar el esquema del tenant ${slug}:`, schemaErr);
+        }
+
         tenantPools.set(slug, tenantPool);
         return tenantPool;
     } catch (err) {
@@ -577,14 +600,24 @@ app.post('/api/login', async (req, res) => {
     }
 
     try {
-        await ensureUsuarioSchema(req.pool);
+        const columns = await getUsuarioColumnNames(req.pool);
 
-        const query = `
-            SELECT id, nombre, email, rol, activo, password_hash, avatar_data
+        if (!columns.has('email')) {
+            return res.status(500).json({ success: false, message: 'La tabla de usuarios no está configurada correctamente.' });
+        }
+
+        const selectFields = ['id', 'nombre', 'email'];
+        selectFields.push(columns.has('rol') ? 'rol' : "'vendedor' AS rol");
+        selectFields.push(columns.has('activo') ? 'activo' : 'true AS activo');
+        selectFields.push(columns.has('password_hash') ? 'password_hash' : 'NULL AS password_hash');
+        selectFields.push(columns.has('password') ? 'password AS legacy_password' : 'NULL AS legacy_password');
+        selectFields.push(columns.has('avatar_data') ? 'avatar_data' : 'NULL AS avatar_data');
+
+        const result = await req.pool.query(`
+            SELECT ${selectFields.join(', ')}
             FROM usuarios
-            WHERE email = $1
-        `;
-        const result = await req.pool.query(query, [email]);
+            WHERE LOWER(email) = $1
+        `, [email]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
@@ -596,16 +629,31 @@ app.post('/api/login', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Usuario inactivo' });
         }
 
-        if (!user.password_hash) {
-            console.error(`Usuario ${email} no tiene password_hash configurado`);
-            return res.status(500).json({ success: false, message: 'La contraseña del usuario no está configurada. Contacta al administrador.' });
+        let match = false;
+        const storedPassword = user.password_hash || user.legacy_password;
+
+        if (isBcryptHash(storedPassword)) {
+            match = await bcrypt.compare(password, storedPassword);
+        } else if (typeof storedPassword === 'string' && storedPassword.length > 0) {
+            match = password === storedPassword;
         }
 
-        // Compare provided password with stored hash
-        const match = await bcrypt.compare(password, user.password_hash);
+        if (!storedPassword) {
+            console.error(`Usuario ${email} no tiene contraseña configurada`);
+            return res.status(409).json({ success: false, message: 'La contraseña del usuario no está configurada. Contacta al administrador.' });
+        }
 
         if (!match) {
             return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+        }
+
+        if (columns.has('password_hash') && !isBcryptHash(user.password_hash)) {
+            try {
+                const upgradedHash = await bcrypt.hash(password, 10);
+                await req.pool.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [upgradedHash, user.id]);
+            } catch (upgradeErr) {
+                console.error(`No se pudo actualizar password_hash para ${email}:`, upgradeErr);
+            }
         }
 
         res.json({
