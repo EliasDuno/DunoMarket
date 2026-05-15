@@ -355,6 +355,27 @@
 
                 <input type="hidden" id="pStock" value="0">
 
+                <div id="warehouseSelectionContainer" class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; padding: 10px; background: rgba(var(--primary-color-rgb), 0.1); border-radius: 8px; border: 1px dashed var(--primary-color);">
+                    <div class="input-group">
+                        <label>Bodega de Ingreso</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-warehouse"></i>
+                            <select id="pBodegaIngreso">
+                                <option value="venta">Disponible para Ventas</option>
+                                <option value="principal" selected>Bodega Principal</option>
+                                <option value="secundaria">Bodega Secundaria</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Stock Inicial</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-boxes"></i>
+                            <input type="number" id="pStockInicial" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="input-grid"
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div class="input-group">
@@ -368,7 +389,6 @@
                             </select>
                         </div>
                     </div>
-
                 </div>
 
                 <div class="button-group" style="margin-top: 1.5rem;">

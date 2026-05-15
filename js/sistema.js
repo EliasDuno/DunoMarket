@@ -447,6 +447,20 @@ function initInventory() {
             document.getElementById('pMinimo').value = product ? product.stock_minimo : '5';
             document.getElementById('pActivo').value = product ? (product.activo ? 'true' : 'false') : 'true';
 
+            // New fields: Bodega and Initial Stock (only for new products)
+            const bodegaEl = document.getElementById('pBodegaIngreso');
+            const stockIniEl = document.getElementById('pStockInicial');
+            const warehouseContainer = document.getElementById('warehouseSelectionContainer');
+
+            if (product) {
+                if (warehouseContainer) warehouseContainer.style.display = 'none';
+                if (stockIniEl) stockIniEl.value = '0';
+            } else {
+                if (warehouseContainer) warehouseContainer.style.display = 'block';
+                if (bodegaEl) bodegaEl.value = 'venta';
+                if (stockIniEl) stockIniEl.value = '0';
+            }
+
             // Recalculate price
             const cost = parseFloat(document.getElementById('pCosto').value) || 0;
             const margin = parseFloat(document.getElementById('pMargen').value) || 0;
@@ -454,6 +468,80 @@ function initInventory() {
             document.getElementById('pSalePrice').value = price.toFixed(2);
         }
     };
+
+    // --- Product Form Submission ---
+    const productForm = document.getElementById('productForm');
+    if (productForm) {
+        productForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('productId').value;
+            const data = {
+                id: id || null,
+                codigo: document.getElementById('pCodigo').value,
+                nombre: document.getElementById('pNombre').value,
+                categoria_id: document.getElementById('pCategoria').value,
+                proveedor_id: document.getElementById('pProveedor').value,
+                costo_usd: document.getElementById('pCosto').value,
+                margen_ganancia: document.getElementById('pMargen').value,
+                stock: document.getElementById('pStock').value,
+                stock_minimo: document.getElementById('pMinimo').value,
+                activo: document.getElementById('pActivo').value === 'true',
+                bodega_ingreso: document.getElementById('pBodegaIngreso')?.value,
+                stock_inicial: document.getElementById('pStockInicial')?.value
+            };
+
+            try {
+                const res = await fetch(API_URL_PRODUCTS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    if (productModal) productModal.style.display = 'none';
+                    showNotification('Éxito', 'Producto guardado correctamente.');
+                    loadProducts();
+                } else {
+                    showNotification('Error', 'No se pudo guardar el producto.');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('Error', 'Error de conexión.');
+            }
+        };
+    }
+
+    // --- Receive Stock Form Submission ---
+    const receiveForm = document.getElementById('receiveForm');
+    if (receiveForm) {
+        receiveForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                id: document.getElementById('receiveProductId').value,
+                cantidad: document.getElementById('receiveQty').value,
+                nuevo_costo_usd: document.getElementById('receiveCost').value,
+                nuevo_margen: document.getElementById('receiveMargin').value,
+                destino: document.getElementById('receiveDestino').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL_PRODUCTS}/receive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    if (receiveModal) receiveModal.style.display = 'none';
+                    showNotification('Éxito', 'Stock actualizado correctamente.');
+                    loadProducts();
+                } else {
+                    showNotification('Error', 'No se pudo actualizar el stock.');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('Error', 'Error de conexión.');
+            }
+        };
+    }
 
     window.openDollarModal = () => {
         const dModal = document.getElementById('dollarModal');

@@ -816,49 +816,7 @@ app.delete('/api/categories/:id', global.checkFiscal, async (req, res) => {
 
 
 
-// --- CATEGORIAS ---
 
-// LISTAR Categorías
-app.get('/api/categories', async (req, res) => {
-    try {
-        const result = await req.pool.query('SELECT * FROM categorias ORDER BY id ASC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error al obtener categorías' });
-    }
-});
-
-// GUARDAR Categoría (Create/Update)
-app.post('/api/categories', async (req, res) => {
-    const { id, nombre, activo } = req.body;
-    try {
-        // Enforce defaults or validations if needed
-        const isActive = activo !== undefined ? activo : true;
-
-        if (id) {
-            await req.pool.query('UPDATE categorias SET nombre=$1, activo=$2 WHERE id=$3', [nombre, isActive, id]);
-        } else {
-            await req.pool.query('INSERT INTO categorias (nombre, descripcion, activo) VALUES ($1, $2, $3)', [nombre, '', isActive]);
-        }
-        res.json({ success: true, message: 'Categoría guardada' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error al guardar categoría' });
-    }
-});
-
-// ELIMINAR Categoría
-app.delete('/api/categories/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        await req.pool.query('DELETE FROM categorias WHERE id=$1', [id]);
-        res.json({ success: true, message: 'Categoría eliminada' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error al eliminar categoría' });
-    }
-});
 
 // --- SUPPLIERS ENDPOINTS ---
 app.get('/api/suppliers', async (req, res) => {
@@ -942,11 +900,12 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// CREATE/UPDATE Product (Updated for FKs)
+// CREATE/UPDATE Product (Updated for FKs & Warehouses)
 app.post('/api/products', async (req, res) => {
-    const { id, codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id, proveedor_id, activo, aplica_iva, presentacion, marca } = req.body;
+    const { id, codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id, proveedor_id, activo, aplica_iva, presentacion, marca, bodega_ingreso, stock_inicial } = req.body;
     try {
         if (id) {
+            // Update existing product
             await req.pool.query(
                 `UPDATE productos SET 
                 codigo = $1, nombre = $2, descripcion = $3, costo_usd = $4, 
@@ -958,10 +917,31 @@ app.post('/api/products', async (req, res) => {
                 [codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id || null, proveedor_id || null, activo, aplica_iva, presentacion || null, marca || null, id]
             );
         } else {
+            // Create new product with initial stock in selected warehouse
+            const initialQty = parseInt(stock_inicial) || 0;
+            let stock_disponible = 0;
+            let stock_principal = 0;
+            let stock_secundaria = 0;
+
+            if (bodega_ingreso === 'venta') stock_disponible = initialQty;
+            else if (bodega_ingreso === 'principal') stock_principal = initialQty;
+            else if (bodega_ingreso === 'secundaria') stock_secundaria = initialQty;
+            else stock_disponible = initialQty; // Default
+
             const resInsert = await req.pool.query(
-                `INSERT INTO productos (codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id, proveedor_id, activo, aplica_iva, presentacion, marca) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
-                [codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id || null, proveedor_id || null, activo !== undefined ? activo : true, aplica_iva !== undefined ? aplica_iva : true, presentacion || null, marca || null]
+                `INSERT INTO productos (
+                    codigo, nombre, descripcion, costo_usd, margen_ganancia, 
+                    stock, stock_principal, stock_secundaria,
+                    stock_minimo, categoria_id, proveedor_id, activo, aplica_iva, presentacion, marca
+                ) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
+                [
+                    codigo, nombre, descripcion, costo_usd, margen_ganancia, 
+                    stock_disponible, stock_principal, stock_secundaria,
+                    stock_minimo, categoria_id || null, proveedor_id || null, 
+                    activo !== undefined ? activo : true, aplica_iva !== undefined ? aplica_iva : true, 
+                    presentacion || null, marca || null
+                ]
             );
         }
         res.json({ success: true, message: 'Producto guardado' });
