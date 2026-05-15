@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let [resource, config] = args;
         const tenantSlug = sessionStorage.getItem('tenant_slug');
         
-        if (tenantSlug && resource.toString().includes('/api') && !resource.toString().includes('/api/saas')) {
+if (tenantSlug && resource.toString().includes('/api') && !resource.toString().includes('/api/saas')) {
             if (!config) config = {};
             if (!config.headers) config.headers = {};
             
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const tenant = document.getElementById('tenant').value;
-                const res = await fetch('/api/login', {
+const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -107,14 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email, password })
                 });
 
-                const data = await readApiResponse(res);
+const data = await readApiResponse(res);
 
                 if (res.ok) {
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
                     window.location.href = '/';
                 } else {
-                    showNotification('Error', data.message || `Error del servidor (${res.status})`);
+showNotification('Error', data.message || `Error del servidor (${res.status})`);
                     if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
                 }
             } catch (error) {
