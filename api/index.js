@@ -974,6 +974,9 @@ app.post('/api/products', async (req, res) => {
 // GET PRODUCTS
 app.get('/api/products', async (req, res) => {
     try {
+        const slug = req.headers['x-tenant-slug'];
+        console.log(`DEBUG API: Consultando productos para tenant [${slug}]`);
+        
         const result = await req.pool.query(`
             SELECT p.id, p.codigo, p.nombre, p.costo_usd, p.margen_ganancia, 
                    p.stock, p.stock_minimo, p.activo, p.stock_principal, p.stock_secundaria,
@@ -985,10 +988,12 @@ app.get('/api/products', async (req, res) => {
             LEFT JOIN proveedores pr ON p.proveedor_id = pr.id
             ORDER BY p.id ASC
         `);
+        
+        console.log(`DEBUG API: Se encontraron ${result.rows.length} productos en la DB.`);
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al obtener productos' });
+        console.error('DEBUG API ERROR:', err);
+        res.status(500).json({ error: 'Error al obtener productos: ' + err.message });
     }
 });
 
