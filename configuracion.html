@@ -282,6 +282,39 @@
                         </div>
                     </details>
 
+                    <!-- SECTION 3.2: Presentaciones Manual -->
+                    <details id="presentationsSection">
+                        <summary class="section-title">
+                            <span><i class="fas fa-box" style="color: var(--primary-color);"></i> Gestión de Presentaciones</span>
+                            <i class="fas fa-chevron-down arrow-icon"></i>
+                        </summary>
+                        <div class="section-content">
+                            <div class="input-group" style="margin-bottom: 1.5rem;">
+                                <label>Nueva Presentación (Ej: Unidad, Pack x6, Caja)</label>
+                                <div class="input-wrapper" style="display: flex; gap: 10px;">
+                                    <input type="text" id="newPresentationName" placeholder="Nombre de la presentación..." style="flex: 1;">
+                                    <button id="btnAddPresentation" class="btn-login" style="width: auto; padding: 0 1.5rem;">
+                                        <i class="fas fa-plus"></i> Añadir
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+                                <table style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th style="width: 50px;">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="presentationsTableBody">
+                                        <!-- JS populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </details>
+
                     <!-- SECTION 4: Bulk Operations -->
                     <details>
                         <summary class="section-title">

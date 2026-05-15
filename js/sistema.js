@@ -2115,40 +2115,63 @@ function initSettings() {
         });
     }
 
-    // --- PRESENTATIONS ---
+    // --- PRESENTATIONS MANAGEMENT ---
     async function loadPresentations() {
+        const tbody = document.getElementById('presentationsTableBody');
+        if (!tbody) return;
+
         try {
-            const res = await fetch(`${API_URL}/presentations`);
+            const res = await fetch('/api/config/presentations');
             const items = await res.json();
-            const container = document.getElementById('presentationsList');
-            if (container) {
-                container.innerHTML = items.map(p => `
-                    <div class="tag-item" style="background: var(--primary-color); color: white; padding: 0.5rem 1rem; border-radius: 20px; display: flex; align-items: center; gap: 0.5rem;">
-                        ${p.nombre}
-                        <span onclick="deletePresentation(${p.id})" style="cursor: pointer; font-weight: bold;">&times;</span>
-                    </div>
-                `).join('');
-            }
-        } catch (e) { }
+            
+            tbody.innerHTML = '';
+            items.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.nombre}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-action btn-delete" onclick="deletePresentation(${p.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (e) { console.error('Error loading presentations:', e); }
     }
 
-    window.addPresentation = async () => {
-        const name = document.getElementById('newPresentation').value;
-        if (!name) return;
-        try {
-            await fetch(`${API_URL}/presentations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: name }) });
-            document.getElementById('newPresentation').value = '';
-            loadPresentations();
-        } catch (e) { }
-    };
+    const btnAddPresentation = document.getElementById('btnAddPresentation');
+    if (btnAddPresentation) {
+        btnAddPresentation.onclick = async () => {
+            const input = document.getElementById('newPresentationName');
+            const name = input?.value.trim();
+            if (!name) return;
+
+            try {
+                const res = await fetch('/api/config/presentations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre: name })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    input.value = '';
+                    loadPresentations();
+                } else {
+                    alert('Error: ' + (data.message || data.error));
+                }
+            } catch (e) { console.error(e); }
+        };
+    }
 
     window.deletePresentation = async (id) => {
-        if (!confirm('¿Eliminar?')) return;
+        if (!confirm('¿Seguro que deseas eliminar esta presentación?')) return;
         try {
-            await fetch(`${API_URL}/presentations/${id}`, { method: 'DELETE' });
-            loadPresentations();
-        } catch (e) { }
-    };
+            const res = await fetch(`/api/config/presentations/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) loadPresentations();
+        } catch (e) { console.error(e); }
+    }
 
     // --- BULK OPERATIONS LOGIC ---
     function readExcel(file) {
