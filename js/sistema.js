@@ -130,6 +130,31 @@ function initInventory() {
     const histProductInput = document.getElementById('histProduct');
     const histProductResults = document.getElementById('histProductResults');
 
+    // --- Pricing Calculator Listeners ---
+    const pCosto = document.getElementById('pCosto');
+    const pMargen = document.getElementById('pMargen');
+    const pSalePrice = document.getElementById('pSalePrice');
+
+    function updatePriceFromMargin() {
+        const cost = parseFloat(pCosto.value) || 0;
+        const margin = parseFloat(pMargen.value) || 0;
+        const price = cost * (1 + (margin / 100));
+        pSalePrice.value = price.toFixed(2);
+    }
+
+    function updateMarginFromPrice() {
+        const cost = parseFloat(pCosto.value) || 0;
+        const price = parseFloat(pSalePrice.value) || 0;
+        if (cost > 0) {
+            const margin = ((price / cost) - 1) * 100;
+            pMargen.value = margin.toFixed(1);
+        }
+    }
+
+    if (pCosto) pCosto.addEventListener('input', updatePriceFromMargin);
+    if (pMargen) pMargen.addEventListener('input', updatePriceFromMargin);
+    if (pSalePrice) pSalePrice.addEventListener('input', updateMarginFromPrice);
+
     if (histProductInput && histProductResults) {
         histProductInput.addEventListener('input', function () {
             const query = this.value.toLowerCase();
