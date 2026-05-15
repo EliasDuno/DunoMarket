@@ -491,20 +491,26 @@ function initInventory() {
             };
 
             try {
+                console.log('DEBUG: Enviando datos de producto:', data);
                 const res = await fetch(API_URL_PRODUCTS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+
                 if (res.ok) {
                     if (productModal) productModal.style.display = 'none';
                     showNotification('Éxito', 'Producto guardado correctamente.');
                     loadProducts();
                 } else {
+                    const errorData = await res.json().catch(() => ({ message: 'Respuesta no es JSON' }));
+                    console.error('DEBUG ERROR SERVER:', errorData);
+                    alert('ERROR DEL SERVIDOR: ' + (errorData.message || JSON.stringify(errorData)));
                     showNotification('Error', 'No se pudo guardar el producto.');
                 }
             } catch (err) {
-                console.error(err);
+                console.error('DEBUG CONNECTION ERROR:', err);
+                alert('ERROR DE CONEXIÓN: ' + err.message);
                 showNotification('Error', 'Error de conexión.');
             }
         };

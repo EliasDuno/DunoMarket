@@ -903,6 +903,7 @@ app.get('/api/products', async (req, res) => {
 // CREATE/UPDATE Product (Updated for FKs & Warehouses)
 app.post('/api/products', async (req, res) => {
     const { id, codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id, proveedor_id, activo, aplica_iva, presentacion, marca, bodega_ingreso, stock_inicial } = req.body;
+    console.log(`[API DEBUG] POST /api/products - Tenant: ${req.headers['x-tenant-slug']}, Product: ${nombre}, Code: ${codigo}`);
     try {
         if (id) {
             // Update existing product
