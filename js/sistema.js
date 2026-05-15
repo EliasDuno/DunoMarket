@@ -20,14 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
         initDashboard();
     }
 
-    // --- INVENTARIO (inventario.html) ---
-    if (path.includes('inventario.html')) {
+    // --- INVENTARIO ---
+    if (path.includes('inventario')) {
         console.log('INIT INVENTORY - Modulos v5 Loaded');
         initInventory();
     }
 
-    // --- PUNTO DE VENTA (pdv.html) ---
-    if (path.includes('pdv.html')) {
+    // --- PUNTO DE VENTA ---
+    if (path.includes('pdv')) {
         initPOS();
     }
 
@@ -56,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initClients();
     }
 
-    // --- CONFIGURACION (configuracion.html) ---
-    if (path.includes('configuracion.html')) {
+    // --- CONFIGURACION ---
+    if (path.includes('configuracion')) {
         initSettings();
         if (typeof initBulkOperations === 'function') initBulkOperations();
     }
