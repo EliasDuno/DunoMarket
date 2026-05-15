@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INVENTARIO ---
     if (path.includes('inventario')) {
-        console.log('INIT INVENTORY - Modulos v5 Loaded');
         initInventory();
     }
 
@@ -31,28 +30,28 @@ document.addEventListener('DOMContentLoaded', () => {
         initPOS();
     }
 
-    // --- REPORTES (reportes.html) ---
-    if (path.includes('reportes.html')) {
+    // --- REPORTES ---
+    if (path.includes('reportes')) {
         initReports();
     }
 
-    // --- USUARIOS (usuarios.html) ---
-    if (path.includes('usuarios.html')) {
+    // --- USUARIOS ---
+    if (path.includes('usuarios')) {
         initUsers();
     }
 
-    // --- PROVEEDORES (proveedores.html) ---
-    if (path.includes('proveedores.html')) {
+    // --- PROVEEDORES ---
+    if (path.includes('proveedores')) {
         initSuppliers();
     }
 
-    // --- CATEGORIAS (categorias.html) ---
-    if (path.includes('categorias.html')) {
+    // --- CATEGORIAS ---
+    if (path.includes('categorias')) {
         initCategories();
     }
 
-    // --- CLIENTES (clientes.html) ---
-    if (path.includes('clientes.html')) {
+    // --- CLIENTES ---
+    if (path.includes('clientes')) {
         initClients();
     }
 
@@ -62,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initBulkOperations === 'function') initBulkOperations();
     }
 
-    // --- CUENTAS (cuentas.html) ---
-    if (path.includes('cuentas.html')) {
+    // --- CUENTAS ---
+    if (path.includes('cuentas')) {
         initCuentas();
     }
 });
@@ -250,10 +249,14 @@ function initInventory() {
 
     async function loadProducts() {
         try {
+            console.log('DEBUG INV: Cargando productos...');
             const res = await fetch(API_URL_PRODUCTS);
             allProducts = await res.json();
+            console.log('DEBUG INV: Productos recibidos =', allProducts.length);
             renderProductTableForInventory(allProducts);
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error('DEBUG INV ERROR:', err);
+        }
     }
 
     async function loadCategories() {
