@@ -143,7 +143,7 @@ app.use(async (req, res, next) => {
     }
 
     const pool = await getTenantPool(slug);
-    if (!pool) return res.status(404).json({ message: 'Inquilino no encontrado o suspendido' });
+    if (!pool) return res.status(404).json({ success: false, message: 'Código de empresa no encontrado o servicio suspendido' });
     
     req.pool = pool;
     next();
@@ -609,11 +609,10 @@ app.post('/api/login', async (req, res) => {
     }
 
     try {
-        await ensureUsuarioSchema(req.pool);
         const columns = await getUsuarioColumnNames(req.pool);
 
         if (!columns.has('id') || !columns.has('email')) {
-            return res.status(500).json({ success: false, message: 'La tabla de usuarios no está configurada correctamente.' });
+            return res.status(500).json({ success: false, message: 'La tabla de usuarios no está configurada correctamente en esta empresa.' });
         }
 
         const selectFields = ['id', columns.has('nombre') ? 'nombre' : 'email AS nombre', 'email'];
@@ -678,8 +677,12 @@ app.post('/api/login', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Error en /api/login:', err);
-        res.status(500).json({ success: false, message: 'Error del servidor' });
+        console.error('Error crítico en /api/login:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor al procesar el login',
+            error: process.env.NODE_ENV === 'production' ? null : err.message
+        });
     }
 });
 

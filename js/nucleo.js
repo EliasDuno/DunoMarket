@@ -119,7 +119,7 @@ showNotification('Error', data.message || `Error del servidor (${res.status})`);
                 }
             } catch (error) {
                 console.error('Error logging in:', error);
-                showNotification('Error', 'No se pudo conectar con el servidor.');
+                showNotification('Error de Conexión', error.message || 'No se pudo conectar con el servidor.');
                 if (btn) { btn.disabled = false; btn.innerText = 'Acceder'; }
             }
         });
