@@ -1165,7 +1165,8 @@ app.post('/api/inventory/transfer', async (req, res) => {
     console.log(`[API TRANSFER] Iniciando transferencia para producto ${producto_id} de ${origen} a ${destino} (Cant: ${cantidad}, Merma: ${isMerma})`);
     
     const colOrigin = colMap[origen];
-    const colDest = isMerma ? colMapMerma[origen] : colMap[destino];
+    // If it's merma, use the destination warehouse to store it if provided, else use origin's merma col
+    const colDest = isMerma ? (colMapMerma[destino] || colMapMerma[origen]) : colMap[destino];
 
     if (!colOrigin || !colDest) {
         console.error(`[API TRANSFER] Ubicación inválida: origen=${origen}, destino=${destino}`);
@@ -1196,13 +1197,13 @@ app.post('/api/inventory/transfer', async (req, res) => {
         await client.query(
             `INSERT INTO historial_movimientos (producto_id, cantidad, origen, destino, es_merma, observacion, costo_unitario_snap, usuario_id)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [producto_id, cantidad, origen, isMerma ? `merma_${origen}` : destino, !!isMerma, observacion || '', currentCost, userId]
+            [producto_id, cantidad, origen, isMerma ? `merma_${destino || origen}` : destino, !!isMerma, observacion || '', currentCost, userId]
         );
 
         await client.query('COMMIT');
 
         // Audit Log
-        await global.logAudit(req, req.headers['x-user-id'], 'TRANSFER_STOCK', 'productos', producto_id, { from: origen, to: isMerma ? `merma_${origen}` : destino, qty: cantidad, merma: !!isMerma }, req.ip);
+        await global.logAudit(req, req.headers['x-user-id'], 'TRANSFER_STOCK', 'productos', producto_id, { from: origen, to: isMerma ? `merma_${destino || origen}` : destino, qty: cantidad, merma: !!isMerma }, req.ip);
 
         res.json({ success: true, message: isMerma ? 'Registrado como Merma' : 'Transferencia exitosa' });
     } catch (err) {
