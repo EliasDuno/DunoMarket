@@ -366,7 +366,7 @@ function initInventory() {
         tbody.innerHTML = '';
 
         // Toggle Merma Header
-        if (tab === 'principal' || tab === 'secundaria') {
+        if (tab === 'principal' || tab === 'secundaria' || tab === 'venta') {
             if (thMerma) thMerma.style.display = '';
         } else {
             if (thMerma) thMerma.style.display = 'none';
@@ -385,7 +385,7 @@ function initInventory() {
                 mermaToShow = p.stock_merma_secundaria || 0;
             } else {
                 stockToShow = p.stock;
-                mermaToShow = 0;
+                mermaToShow = p.stock_merma_venta || 0;
             }
 
             // FILTER: If we are in a warehouse tab and stock is 0, skip this product
@@ -406,7 +406,7 @@ function initInventory() {
 
             // Build Row
             let mermaCell = '';
-            if (tab === 'principal' || tab === 'secundaria') {
+            if (tab === 'principal' || tab === 'secundaria' || tab === 'venta') {
                 mermaCell = `<td style="color: #ef4444; font-weight: bold;">${mermaToShow}</td>`;
             } else {
                 mermaCell = `<td style="display: none;"></td>`; 

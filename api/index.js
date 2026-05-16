@@ -1009,6 +1009,7 @@ app.get('/api/products', async (req, res) => {
         const result = await req.pool.query(`
             SELECT p.id, p.codigo, p.nombre, p.costo_usd, p.margen_ganancia, 
                    p.stock, p.stock_minimo, p.activo, p.stock_principal, p.stock_secundaria,
+                   p.stock_merma_venta, p.stock_merma_principal, p.stock_merma_secundaria,
                    c.nombre as categoria_nombre, 
                    pr.nombre as proveedor_nombre,
                    p.categoria_id, p.proveedor_id
