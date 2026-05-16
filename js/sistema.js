@@ -594,7 +594,7 @@ function initInventory() {
 
     async function loadHistorySuppliers() {
         try {
-            const res = await fetch('/api/purchases/suppliers'); // Use specific endpoint or generic
+            const res = await fetch('/api/suppliers'); // Use generic suppliers endpoint
             const suppliers = await res.json();
             const select = document.getElementById('histSupplier');
             if (select) {

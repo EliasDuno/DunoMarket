@@ -395,10 +395,10 @@ async function initializeTenantDB(tenantPool) {
         await client.query(`
             CREATE TABLE IF NOT EXISTS historial_compras (
                 id SERIAL PRIMARY KEY,
-                producto_id INTEGER,
-                proveedor_id INTEGER,
+                producto_id INTEGER REFERENCES productos(id),
+                proveedor_id INTEGER REFERENCES proveedores(id),
                 cantidad INTEGER NOT NULL,
-                costo_unitario_usd DECIMAL(10, 2) NOT NULL,
+                costo_unitario_usd DECIMAL(12,2) NOT NULL,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
