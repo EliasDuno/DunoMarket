@@ -366,7 +366,7 @@ function initInventory() {
         tbody.innerHTML = '';
 
         // Toggle Merma Header
-        if (tab === 'principal' || tab === 'secundaria' || tab === 'venta') {
+        if (tab === 'principal' || tab === 'secundaria') {
             if (thMerma) thMerma.style.display = '';
         } else {
             if (thMerma) thMerma.style.display = 'none';
@@ -406,7 +406,7 @@ function initInventory() {
 
             // Build Row
             let mermaCell = '';
-            if (tab === 'principal' || tab === 'secundaria' || tab === 'venta') {
+            if (tab === 'principal' || tab === 'secundaria') {
                 mermaCell = `<td style="color: #ef4444; font-weight: bold;">${mermaToShow}</td>`;
             } else {
                 mermaCell = `<td style="display: none;"></td>`; 
