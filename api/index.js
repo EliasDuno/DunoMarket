@@ -1382,7 +1382,7 @@ app.get('/api/mermas', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         let query = `
-            SELECT h.fecha, p.nombre as producto, h.cantidad, h.costo_unitario_snap as costo_unitario_usd, 'MERMA' as tipo_movimiento, h.observacion
+            SELECT h.fecha, p.nombre as producto, h.origen as bodega, h.cantidad, h.costo_unitario_snap as costo_unitario_usd, 'MERMA' as tipo_movimiento, h.observacion
             FROM historial_movimientos h
             JOIN productos p ON h.producto_id = p.id
             WHERE h.es_merma = true

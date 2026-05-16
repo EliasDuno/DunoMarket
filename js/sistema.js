@@ -2623,11 +2623,11 @@ window.loadMermasData = async () => {
                         <tr>
                             <td>${dateStr}</td>
                             <td>${m.producto}</td>
-                            <td>${m.observacion || '-'}</td>
+                            <td>${m.bodega || '-'}</td>
                             <td>${qty}</td>
                             <td>$${cost.toFixed(2)}</td>
                             <td>$${subtotal.toFixed(2)}</td>
-                            <td>${m.tipo_movimiento}</td>
+                            <td>${m.observacion || 'MERMA'}</td>
                         </tr>
                     `;
             });
