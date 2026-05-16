@@ -1128,16 +1128,22 @@ app.post('/api/inventory/transfer', async (req, res) => {
         'secundaria': 'stock_merma_secundaria'
     };
 
+    console.log(`[API TRANSFER] Iniciando transferencia para producto ${producto_id} de ${origen} a ${destino} (Cant: ${cantidad}, Merma: ${isMerma})`);
+    
     const colOrigin = colMap[origen];
-    const colDest = isMerma ? colMapMerma[origen] : colMap[destino]; // If merma, stay in origin warehouse but in merma column
+    const colDest = isMerma ? colMapMerma[origen] : colMap[destino];
 
-    if (!colOrigin || !colDest) return res.status(400).json({ success: false, message: 'Ubicación inválida' });
+    if (!colOrigin || !colDest) {
+        console.error(`[API TRANSFER] Ubicación inválida: origen=${origen}, destino=${destino}`);
+        return res.status(400).json({ success: false, message: 'Ubicación inválida' });
+    }
 
     const client = await pool.connect();
+    console.log('[API TRANSFER] Conectado a la base de datos del cliente.');
     try {
         await client.query('BEGIN');
+        console.log('[API TRANSFER] Transacción iniciada (BEGIN).');
 
-        // Check availability AND Cost
         const resProd = await client.query(`SELECT ${colOrigin} as current_stock, costo_usd FROM productos WHERE id = $1`, [producto_id]);
         if (resProd.rows.length === 0) throw new Error('Producto no encontrado');
 
