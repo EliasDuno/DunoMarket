@@ -172,6 +172,64 @@ function initInventory() {
     if (pSalePrice) pSalePrice.addEventListener('input', updateMarginFromPrice);
     pPriceTypeRadios.forEach(r => r.addEventListener('change', updatePriceFromMargin));
 
+    // --- Product Search for Receive Stock ---
+    const receiveSearch = document.getElementById('receiveSearch');
+    const receiveSearchResults = document.getElementById('receiveSearchResults');
+    const receiveProductId = document.getElementById('receiveProductId');
+    const receiveFinalMargin = document.getElementById('receiveFinalMargin');
+    const calcMarginResult = document.getElementById('calcMarginResult');
+
+    if (receiveSearch && receiveSearchResults) {
+        receiveSearch.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            receiveSearchResults.innerHTML = '';
+            if (query.length < 2) {
+                receiveSearchResults.style.display = 'none';
+                return;
+            }
+
+            const matches = allProducts.filter(p =>
+                p.nombre.toLowerCase().includes(query) ||
+                p.codigo.toLowerCase().includes(query)
+            ).slice(0, 10);
+
+            if (matches.length > 0) {
+                receiveSearchResults.style.display = 'block';
+                matches.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item';
+                    div.style.padding = '0.5rem';
+                    div.style.cursor = 'pointer';
+                    div.style.borderBottom = '1px solid #eee';
+                    div.innerHTML = `<strong>${p.nombre}</strong> <small>(${p.codigo})</small>`;
+                    div.onclick = () => {
+                        receiveSearch.value = p.nombre;
+                        receiveProductId.value = p.id;
+                        receiveSearchResults.style.display = 'none';
+                        
+                        // LOAD CURRENT MARGIN as starting point
+                        const currentMargin = parseFloat(p.margen_ganancia) || 0;
+                        if (receiveFinalMargin) receiveFinalMargin.value = currentMargin.toFixed(2);
+                        if (calcMarginResult) calcMarginResult.innerText = currentMargin.toFixed(1) + '%';
+                        
+                        // Set current supplier if available
+                        const selectR = document.getElementById('receiveSupplier');
+                        if (selectR) selectR.value = p.proveedor_id || '';
+                    };
+                    receiveSearchResults.appendChild(div);
+                });
+            } else {
+                receiveSearchResults.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!receiveSearch.contains(e.target) && !receiveSearchResults.contains(e.target)) {
+                receiveSearchResults.style.display = 'none';
+            }
+        });
+    }
+
     if (histProductInput && histProductResults) {
         histProductInput.addEventListener('input', function () {
             const query = this.value.toLowerCase();
@@ -275,8 +333,8 @@ function initInventory() {
     });
 
     // Calculator Listeners
-    setupCalculator('pCosto', 'pSalePrice', 'pPriceType', 'pMargen', 'pCalcIcon');
-    setupCalculator('receiveNewCost', 'receiveSalePrice', 'priceType', 'receiveFinalMargin', 'calcIcon');
+    setupCalculator('pCosto', 'pSalePrice', 'pPriceType', 'pMargen', 'pCalcIcon', 'pCostType', 'pCostIcon');
+    setupCalculator('receiveNewCost', 'receiveSalePrice', 'priceType', 'receiveFinalMargin', 'calcIcon', 'receiveCostType', 'receiveCostIcon');
 
     // --- Functions ---
     async function loadConfig() {
@@ -520,12 +578,17 @@ function initInventory() {
     if (receiveForm) {
         receiveForm.onsubmit = async (e) => {
             e.preventDefault();
+            const costVal = parseFloat(document.getElementById('receiveNewCost').value) || 0;
+            const costType = document.querySelector('input[name="receiveCostType"]:checked')?.value || 'usd';
+            const costUsd = costType === 'bs' ? (costVal / dollarRate) : costVal;
+
             const data = {
                 id: document.getElementById('receiveProductId').value,
                 cantidad: document.getElementById('receiveQty').value,
-                nuevo_costo_usd: document.getElementById('receiveCost').value,
-                nuevo_margen: document.getElementById('receiveMargin').value,
-                destino: document.getElementById('receiveDestino').value
+                nuevo_costo_usd: costUsd,
+                nuevo_margen: document.getElementById('receiveFinalMargin').value,
+                destino: document.getElementById('receiveDestino').value,
+                proveedor_id: document.getElementById('receiveSupplier').value // Optional update
             };
 
             try {
@@ -561,6 +624,8 @@ function initInventory() {
         if (rModal) {
             rModal.style.display = 'flex';
             document.getElementById('receiveForm').reset();
+            const marginDisp = document.getElementById('calcMarginResult');
+            if (marginDisp) marginDisp.innerText = '0%';
         }
     };
 
@@ -650,26 +715,72 @@ function initInventory() {
     window.loadHistorySuppliers = loadHistorySuppliers;
 
     // --- Utils ---
-    function setupCalculator(costId, saleId, typeName, marginId, iconId) {
+    function setupCalculator(costId, saleId, typeName, marginId, iconId, costTypeName, costIconId) {
         const costInput = document.getElementById(costId);
         const saleInput = document.getElementById(saleId);
-        const marginInput = document.getElementById(marginId);
+        const marginHidden = document.getElementById(marginId); // Hidden field to store margin
+        const marginDisplay = document.getElementById('calcMarginResult'); // Visual display
         const icon = document.getElementById(iconId);
 
-        if (!costInput || !saleInput || !marginInput) return;
+        if (!costInput || !saleInput) return;
 
-        const updateFromMargin = () => {
-            const cost = parseFloat(costInput.value) || 0;
-            const margin = parseFloat(marginInput.value) || 0;
-            let type = document.querySelector(`input[name="${typeName}"]:checked`)?.value || 'usd';
-
-            if (cost <= 0) return;
-            let sale = cost * (1 + (margin / 100));
-            if (type === 'bs') sale *= dollarRate;
+        const getCostInUsd = () => {
+            const val = parseFloat(costInput.value) || 0;
+            const type = document.querySelector(`input[name="${costTypeName}"]:checked`)?.value || 'usd';
+            return type === 'bs' ? (val / dollarRate) : val;
         };
 
-        costInput.addEventListener('input', updateFromMargin);
-        marginInput.addEventListener('input', updateFromMargin);
+        const updateSalePrice = () => {
+            const costUsd = getCostInUsd();
+            const margin = parseFloat(marginHidden.value) || 0;
+            const saleType = document.querySelector(`input[name="${typeName}"]:checked`)?.value || 'usd';
+            
+            if (costUsd <= 0) return;
+            
+            let saleVal = costUsd * (1 + (margin / 100));
+            if (saleType === 'bs') saleVal *= dollarRate;
+            
+            saleInput.value = saleVal.toFixed(2);
+        };
+
+        const updateMargin = () => {
+            const costUsd = getCostInUsd();
+            const saleVal = parseFloat(saleInput.value) || 0;
+            const saleType = document.querySelector(`input[name="${typeName}"]:checked`)?.value || 'usd';
+            
+            if (costUsd <= 0 || saleVal <= 0) return;
+            
+            const saleUsd = saleType === 'bs' ? (saleVal / dollarRate) : saleVal;
+            const margin = ((saleUsd / costUsd) - 1) * 100;
+            
+            marginHidden.value = margin.toFixed(2);
+            if (marginDisplay) {
+                marginDisplay.innerText = margin.toFixed(1) + '%';
+                marginDisplay.style.color = margin >= 0 ? '#4ade80' : '#ef4444';
+            }
+        };
+
+        // Event Listeners
+        costInput.addEventListener('input', updateSalePrice);
+        
+        saleInput.addEventListener('input', updateMargin);
+
+        // Currency toggles for Cost
+        document.querySelectorAll(`input[name="${costTypeName}"]`).forEach(r => {
+            r.addEventListener('change', () => {
+                const iconC = document.getElementById(costIconId);
+                if (iconC) iconC.className = r.value === 'bs' ? 'fas fa-coins' : 'fas fa-dollar-sign';
+                updateSalePrice();
+            });
+        });
+
+        // Currency toggles for Sale Price
+        document.querySelectorAll(`input[name="${typeName}"]`).forEach(r => {
+            r.addEventListener('change', () => {
+                if (icon) icon.className = r.value === 'bs' ? 'fas fa-coins' : 'fas fa-dollar-sign';
+                updateSalePrice(); // Recalculate price in new currency keeping the margin
+            });
+        });
     }
     
     // --- Transfer Logic ---

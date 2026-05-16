@@ -269,9 +269,17 @@
 
                     <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="input-group">
-                            <label for="pCosto">Costo (USD $)</label>
+                            <label>Costo</label>
+                            <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                                <label style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
+                                    <input type="radio" name="pCostType" value="usd" checked> USD
+                                </label>
+                                <label style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
+                                    <input type="radio" name="pCostType" value="bs"> Bs.
+                                </label>
+                            </div>
                             <div class="input-wrapper">
-                                <i class="fas fa-dollar-sign"></i>
+                                <i id="pCostIcon" class="fas fa-dollar-sign"></i>
                                 <input type="number" id="pCosto" step="0.01" value="0.00" required>
                             </div>
                         </div>
@@ -473,9 +481,17 @@
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>Nuevo Costo (Bs.)</label>
+                        <label>Nuevo Costo</label>
+                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                            <label style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
+                                <input type="radio" name="receiveCostType" value="usd" checked> USD
+                            </label>
+                            <label style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
+                                <input type="radio" name="receiveCostType" value="bs"> Bs.
+                            </label>
+                        </div>
                         <div class="input-wrapper">
-                            <i class="fas fa-coins"></i>
+                            <i id="receiveCostIcon" class="fas fa-dollar-sign"></i>
                             <input type="number" id="receiveNewCost" step="0.01" required>
                         </div>
                     </div>

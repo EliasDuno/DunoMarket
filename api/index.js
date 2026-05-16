@@ -1097,7 +1097,7 @@ app.delete('/api/presentations/:id', async (req, res) => {
 
 // RECEIVE Stock (Direct Update) - Supports Multi-Warehouse
 app.post('/api/products/receive', async (req, res) => {
-    const { id, cantidad, nuevo_costo_usd, nuevo_margen, nuevo_aplica_iva, destino, fecha_vencimiento } = req.body; // destino: 'venta', 'principal', 'secundaria'
+    const { id, cantidad, nuevo_costo_usd, nuevo_margen, nuevo_aplica_iva, destino, fecha_vencimiento, proveedor_id } = req.body; // destino: 'venta', 'principal', 'secundaria'
     try {
         const prodRes = await req.pool.query('SELECT proveedor_id FROM productos WHERE id = $1', [id]);
         if (prodRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Producto no encontrado' });
@@ -1114,9 +1114,10 @@ app.post('/api/products/receive', async (req, res) => {
             margen_ganancia = $3, 
             aplica_iva = $4,
             fecha_vencimiento = COALESCE($6, fecha_vencimiento),
+            proveedor_id = COALESCE($7, proveedor_id),
             actualizado_en = NOW() 
             WHERE id = $5`,
-            [cantidad, nuevo_costo_usd, nuevo_margen, nuevo_aplica_iva, id, fecha_vencimiento]
+            [cantidad, nuevo_costo_usd, nuevo_margen, nuevo_aplica_iva, id, fecha_vencimiento, proveedor_id]
         );
 
         // Log History
