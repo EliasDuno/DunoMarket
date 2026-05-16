@@ -1220,7 +1220,7 @@ app.post('/api/products/bulk-create', async (req, res) => {
     if (!products || !Array.isArray(products)) return res.status(400).json({ success: false, message: 'Formato inválido' });
 
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -1303,7 +1303,7 @@ app.post('/api/products/bulk-receive', async (req, res) => {
     if (!items || !Array.isArray(items)) return res.status(400).json({ success: false, message: 'Formato inválido' });
 
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -1411,7 +1411,7 @@ app.post('/api/products/merma', async (req, res) => {
     if (!productId || !cantidad || cantidad <= 0)
         return res.status(400).json({ success: false, message: 'Datos inválidos' });
 
-    const client = await pool.connect();
+    const client = await req.pool.connect();
     try {
         await client.query('BEGIN');
 
@@ -1450,7 +1450,7 @@ app.post('/api/categories/bulk-create', async (req, res) => {
     if (!items || !Array.isArray(items)) return res.status(400).json({ success: false, message: 'Formato inválido' });
 
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -1488,7 +1488,7 @@ app.post('/api/suppliers/bulk-create', async (req, res) => {
     if (!items || !Array.isArray(items)) return res.status(400).json({ success: false, message: 'Formato inválido' });
 
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -1538,7 +1538,7 @@ app.post('/api/clients/bulk-create', async (req, res) => {
     if (!items || !Array.isArray(items)) return res.status(400).json({ success: false, message: 'Formato inválido' });
 
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -1579,7 +1579,7 @@ app.post('/api/users/bulk-create', async (req, res) => {
     if (!items || !Array.isArray(items)) return res.status(400).json({ success: false, message: 'Formato inválido' });
 
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -1624,7 +1624,7 @@ app.post('/api/users/bulk-create', async (req, res) => {
 app.post('/api/sales', async (req, res) => {
     const { items, paymentMethod, totalUsd, rate, cajaId, clientId, sendEmail, observaciones } = req.body;
 
-    const client = await pool.connect();
+    const client = await req.pool.connect();
     let alerts = [];
     let invoiceHtml = '';
     let customerEmail = '';
@@ -2920,7 +2920,7 @@ app.delete('/api/products/:id', global.checkFiscal, async (req, res) => {
 // Helper: Process Bulk Insertion
 async function processBulkInsert(table, fields, items, conflictKey = null) {
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await pool.connect();
+    const client = await req.pool.connect();
     try {
         await client.query('BEGIN');
         for (const item of items) {
