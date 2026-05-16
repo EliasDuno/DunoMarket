@@ -324,7 +324,12 @@ async function initializeTenantDB(tenantPool) {
                 fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 fecha_cierre TIMESTAMP,
                 monto_apertura DECIMAL(12, 2) DEFAULT 0.00,
-                monto_cierre DECIMAL(12, 2),
+                monto_cierre_declarado DECIMAL(12, 2),
+                monto_teorico DECIMAL(12, 2) DEFAULT 0,
+                monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0,
+                diferencia DECIMAL(12, 2) DEFAULT 0,
+                detalles_cierre JSONB,
+                observaciones TEXT,
                 estado VARCHAR(20) DEFAULT 'abierta'
             );
         `);
@@ -433,6 +438,34 @@ async function initializeTenantDB(tenantPool) {
                 ip VARCHAR(45),
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS historial_movimientos (
+                id SERIAL PRIMARY KEY,
+                producto_id INTEGER REFERENCES productos(id),
+                cantidad DECIMAL(12, 2) NOT NULL,
+                origen VARCHAR(50),
+                destino VARCHAR(50),
+                es_merma BOOLEAN DEFAULT false,
+                observacion TEXT,
+                costo_unitario_snap DECIMAL(12, 2),
+                usuario_id INTEGER REFERENCES usuarios(id),
+                fecha TIMESTAMP DEFAULT NOW()
+            );
+        `);
+
+        // Migration for existing caja_sesiones tables
+        await client.query(`
+            DO $$ 
+            BEGIN 
+                BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_cierre_declarado DECIMAL(12, 2); EXCEPTION WHEN duplicate_column THEN NULL; END;
+                BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_teorico DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                BEGIN ALTER TABLE caja_sesiones ADD COLUMN diferencia DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                BEGIN ALTER TABLE caja_sesiones ADD COLUMN detalles_cierre JSONB; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                BEGIN ALTER TABLE caja_sesiones ADD COLUMN observaciones TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
+            END $$;
         `);
         
         await client.query('COMMIT');
