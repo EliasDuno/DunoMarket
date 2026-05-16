@@ -33,16 +33,26 @@ async function createCajaSchema() {
             BEGIN 
                 BEGIN
                     ALTER TABLE caja_sesiones ADD COLUMN detalles_cierre JSONB;
-                EXCEPTION
-                    WHEN duplicate_column THEN NULL;
-                END;
+                EXCEPTION WHEN duplicate_column THEN NULL; END;
+                
                 BEGIN
                     ALTER TABLE caja_sesiones ADD COLUMN observaciones TEXT;
-                EXCEPTION
-                    WHEN duplicate_column THEN NULL;
-                END;
+                EXCEPTION WHEN duplicate_column THEN NULL; END;
+                
+                BEGIN
+                    ALTER TABLE caja_sesiones ADD COLUMN monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0;
+                EXCEPTION WHEN duplicate_column THEN NULL; END;
+
+                BEGIN
+                    ALTER TABLE caja_sesiones ADD COLUMN monto_teorico DECIMAL(12, 2) DEFAULT 0;
+                EXCEPTION WHEN duplicate_column THEN NULL; END;
+
+                BEGIN
+                    ALTER TABLE caja_sesiones ADD COLUMN diferencia DECIMAL(12, 2) DEFAULT 0;
+                EXCEPTION WHEN duplicate_column THEN NULL; END;
             END $$;
         `);
+        
 
         // 2. Add caja_id to Ventas
         // Check if column exists
