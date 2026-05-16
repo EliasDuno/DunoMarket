@@ -1138,7 +1138,7 @@ app.post('/api/inventory/transfer', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Ubicación inválida' });
     }
 
-    const client = await pool.connect();
+    const client = await req.pool.connect();
     console.log('[API TRANSFER] Conectado a la base de datos del cliente.');
     try {
         await client.query('BEGIN');
