@@ -50,6 +50,10 @@ async function migrateAllTenants() {
                         fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 `);
+                
+                // C. Ensure "costo_unitario_usd" exists in "detalle_ventas"
+                console.log(`  - Verifying 'costo_unitario_usd' in 'detalle_ventas'...`);
+                await client.query(`ALTER TABLE detalle_ventas ADD COLUMN IF NOT EXISTS costo_unitario_usd DECIMAL(12, 2) DEFAULT 0.00;`);
 
                 await client.query('COMMIT');
                 console.log(`  ✔ Migration for tenant [${tenant.slug}] completed successfully.`);
