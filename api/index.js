@@ -417,13 +417,26 @@ async function initializeTenantDB(tenantPool) {
         await client.query(`
             CREATE TABLE IF NOT EXISTS compromisos_pago (
                 id SERIAL PRIMARY KEY,
-                proveedor_id INTEGER,
+                proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
                 descripcion TEXT NOT NULL,
                 monto_total_usd DECIMAL(10, 2) NOT NULL,
-                monto_pagado_usd DECIMAL(10, 2) DEFAULT 0,
+                monto_pagado_usd DECIMAL(10, 2) DEFAULT 0.00,
                 fecha_vencimiento DATE NOT NULL,
                 estado VARCHAR(20) DEFAULT 'PENDIENTE',
-                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                fecha_emision DATE,
+                numero_factura VARCHAR(100),
+                last_alert_sent_at TIMESTAMP
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS historial_pagos_compromisos (
+                id SERIAL PRIMARY KEY,
+                compromiso_id INTEGER REFERENCES compromisos_pago(id) ON DELETE CASCADE,
+                monto_usd DECIMAL(10, 2) NOT NULL,
+                referencia VARCHAR(100),
+                fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
@@ -1102,7 +1115,7 @@ app.post('/api/products/receive', async (req, res) => {
         const prodRes = await req.pool.query('SELECT proveedor_id FROM productos WHERE id = $1', [id]);
         if (prodRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Producto no encontrado' });
 
-        const proveedorId = prodRes.rows[0].proveedor_id;
+        const finalProveedorId = proveedor_id || prodRes.rows[0].proveedor_id;
         const targetColumn = (destino === 'principal') ? 'stock_principal' :
             (destino === 'secundaria') ? 'stock_secundaria' : 'stock';
 
@@ -1124,7 +1137,7 @@ app.post('/api/products/receive', async (req, res) => {
         await req.pool.query(
             `INSERT INTO historial_compras (producto_id, proveedor_id, cantidad, costo_unitario_usd) 
              VALUES ($1, $2, $3, $4)`,
-            [id, proveedorId, cantidad, nuevo_costo_usd]
+            [id, finalProveedorId, cantidad, nuevo_costo_usd]
         );
 
         // Audit Log
@@ -2695,9 +2708,45 @@ app.post('/api/config', async (req, res) => {
 
 // --- SUPPLIER COMMITMENTS (CUENTAS POR PAGAR) API ---
 
+async function ensureCommitmentsTables(pool) {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS compromisos_pago (
+                id SERIAL PRIMARY KEY,
+                proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
+                descripcion TEXT NOT NULL,
+                monto_total_usd DECIMAL(10, 2) NOT NULL,
+                monto_pagado_usd DECIMAL(10, 2) DEFAULT 0.00,
+                fecha_vencimiento DATE NOT NULL,
+                estado VARCHAR(20) DEFAULT 'PENDIENTE',
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                fecha_emision DATE,
+                numero_factura VARCHAR(100),
+                last_alert_sent_at TIMESTAMP
+            );
+        `);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS historial_pagos_compromisos (
+                id SERIAL PRIMARY KEY,
+                compromiso_id INTEGER REFERENCES compromisos_pago(id) ON DELETE CASCADE,
+                monto_usd DECIMAL(10, 2) NOT NULL,
+                referencia VARCHAR(100),
+                fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        // Ensure columns exist (for older tables that didn't have them)
+        await pool.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS fecha_emision DATE;`);
+        await pool.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS numero_factura VARCHAR(100);`);
+        await pool.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;`);
+    } catch (e) {
+        console.error('Error ensuring commitments tables:', e);
+    }
+}
+
 // 1. GET Commitments (with alerts logic)
 app.get('/api/commitments', async (req, res) => {
     try {
+        await ensureCommitmentsTables(req.pool);
         const { status, timeframe } = req.query;
         let query = `
             SELECT cp.*, p.nombre as proveedor_nombre,
@@ -2733,6 +2782,7 @@ app.get('/api/commitments', async (req, res) => {
 // DEBUG: Force Alerts Now
 app.post('/api/debug/force-alerts', async (req, res) => {
     try {
+        await ensureCommitmentsTables(req.pool);
         console.log('[Debug] Forzando envío de alertas...');
         // We can pass a flag or just rely on the logic. 
         // If we want to force send even if already sent today, we might need to tweak the module 
@@ -2750,12 +2800,11 @@ app.post('/api/debug/force-alerts', async (req, res) => {
     }
 });
 
-
-
 // 2. Create Commitment
 app.post('/api/commitments', async (req, res) => {
     const { proveedor_id, descripcion, monto_usd, fecha_vencimiento, fecha_emision, numero_factura } = req.body;
     try {
+        await ensureCommitmentsTables(req.pool);
         const result = await req.pool.query(
             `INSERT INTO compromisos_pago (proveedor_id, descripcion, monto_total_usd, monto_pagado_usd, fecha_vencimiento, estado, fecha_emision, numero_factura)
              VALUES ($1, $2, $3, 0, $4, 'PENDIENTE', $5, $6) RETURNING *`,
@@ -2774,6 +2823,7 @@ app.post('/api/commitments/:id/payments', async (req, res) => {
     const { monto, referencia } = req.body; // monto is payment amount
 
     try {
+        await ensureCommitmentsTables(req.pool);
         // A. Insert History
         await req.pool.query(
             `INSERT INTO historial_pagos_compromisos (compromiso_id, monto_usd, referencia)
@@ -2816,6 +2866,7 @@ app.post('/api/commitments/:id/payments', async (req, res) => {
 // 4. Get Payment History for a Commitment
 app.get('/api/commitments/:id/history', async (req, res) => {
     try {
+        await ensureCommitmentsTables(req.pool);
         const result = await req.pool.query(
             `SELECT * FROM historial_pagos_compromisos WHERE compromiso_id = $1 ORDER BY fecha_pago DESC`,
             [req.params.id]

@@ -2999,11 +2999,74 @@ function initCuentas() {
         return date.toLocaleDateString();
     }
 
-    // Payment Modal Stub
-    window.showPayModal = (id, amountPending) => {
-        console.log(`Pagar compromiso ${id}, pendiente: ${amountPending}`);
-        showNotification('Info', 'Funcionalidad de pago pendiente de revisar en HTML.');
+    // Fully implement showPayModal
+    window.showPayModal = async (id, amountPending) => {
+        const modal = document.getElementById('payModal');
+        if (!modal) return;
+
+        document.getElementById('payCommitmentId').value = id;
+
+        try {
+            const res = await fetch('/api/commitments');
+            const commitments = await res.json();
+            const c = commitments.find(item => item.id === id);
+            if (c) {
+                document.getElementById('payTotalAmount').innerText = parseFloat(c.monto_total_usd).toFixed(2);
+                document.getElementById('payPaidAmount').innerText = parseFloat(c.monto_pagado_usd).toFixed(2);
+                const remaining = parseFloat(c.monto_total_usd) - parseFloat(c.monto_pagado_usd);
+                document.getElementById('payRemainingAmount').innerText = remaining.toFixed(2);
+                document.getElementById('payAmountInput').value = remaining.toFixed(2);
+                document.getElementById('payAmountInput').max = remaining;
+            } else {
+                throw new Error('Commitment not found in list');
+            }
+        } catch (e) {
+            console.error('Error fetching commitment details:', e);
+            document.getElementById('payTotalAmount').innerText = '0.00';
+            document.getElementById('payPaidAmount').innerText = '0.00';
+            document.getElementById('payRemainingAmount').innerText = amountPending.toFixed(2);
+            document.getElementById('payAmountInput').value = amountPending.toFixed(2);
+        }
+
+        modal.style.display = 'flex';
     };
+
+    // Form Submit Handler for payments
+    const payForm = document.getElementById('payForm');
+    if (payForm) {
+        payForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('payCommitmentId').value;
+            const amount = parseFloat(document.getElementById('payAmountInput').value);
+            const reference = document.getElementById('payReference').value.trim();
+
+            if (!id || isNaN(amount) || amount <= 0) {
+                showNotification('Error', 'Monto de pago inválido');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/commitments/${id}/payments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monto: amount, referencia: reference })
+                });
+
+                if (res.ok) {
+                    showNotification('Éxito', 'Pago registrado correctamente.');
+                    closePayModal();
+                    loadCommitments();
+                    payForm.reset();
+                } else {
+                    const text = await res.text();
+                    showNotification('Error', 'No se pudo registrar el pago: ' + text);
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('Error', 'Error de conexión.');
+            }
+        });
+    }
 } // END of initCuentas
 
 // =============================================================================
