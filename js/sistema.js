@@ -1575,19 +1575,21 @@ function initPOS() {
 
     window.initPaymentModal = (totalUSD, totalBs, client, cart) => {
         payments = [];
+        
+        // Auto-populate with a single full payment of the default selected method
+        const methodSelect = document.getElementById('paymentMethodSelect');
+        const defaultMethod = methodSelect ? methodSelect.value : 'EFECTIVO_USD';
+        payments.push({ method: defaultMethod, amount: totalUSD });
+
         updatePaymentList(totalUSD);
         
         const payTotalUSD = document.getElementById('payTotalUSD');
         const payTotalBs = document.getElementById('payTotalBs');
         const paymentAmountInput = document.getElementById('paymentAmountInput');
-        const paymentRemaining = document.getElementById('paymentRemaining');
-        const btnFinalizeSale = document.getElementById('btnFinalizeSale');
 
         if (payTotalUSD) payTotalUSD.innerText = `$${totalUSD.toFixed(2)}`;
         if (payTotalBs) payTotalBs.innerText = `${totalBs.toFixed(2)} Bs`;
-        if (paymentAmountInput) paymentAmountInput.value = totalUSD.toFixed(2);
-        if (paymentRemaining) paymentRemaining.innerText = `$${totalUSD.toFixed(2)}`;
-        if (btnFinalizeSale) btnFinalizeSale.disabled = true;
+        if (paymentAmountInput) paymentAmountInput.value = '0.00';
     };
 
     window.addPayment = () => {
@@ -1664,6 +1666,19 @@ function initPOS() {
         }
     }
 
+    // Dynamic dropdown change logic: if single full payment exists, auto-sync it with dropdown
+    const methodSelect = document.getElementById('paymentMethodSelect');
+    if (methodSelect) {
+        methodSelect.onchange = () => {
+            const currentCart = getCart();
+            const totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
+            if (payments.length === 1 && Math.abs(payments[0].amount - totalUSD) < 0.01) {
+                payments[0].method = methodSelect.value;
+                updatePaymentList(totalUSD);
+            }
+        };
+    }
+
     // Toggle email notification
     const btnToggleEmail = document.getElementById('btnToggleEmail');
     if (btnToggleEmail) {
@@ -1683,7 +1698,7 @@ function initPOS() {
     window.processSale = () => {
         let currentCart = getCart();
         if (currentCart.length === 0) {
-            if (typeof showNotification === 'function') showNotification('Atención', 'El carrito está vacío.');
+            if (typeof window.showNotification === 'function') window.showNotification('Atención', 'El carrito está vacío.');
             else alert('El carrito está vacío.');
             return;
         }
@@ -1707,15 +1722,15 @@ function initPOS() {
         try {
             const currentCart = getCart();
             if (currentCart.length === 0) {
-                showNotification('Atención', 'El carrito está vacío.');
+                if (typeof window.showNotification === 'function') window.showNotification('Atención', 'El carrito está vacío.');
                 return;
             }
 
             const totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
             const itemsPayload = currentCart.map(item => ({
                 id: item.id,
-                qty: item.qty,
-                price: item.price
+                qty: parseFloat(item.cantidad),
+                price: parseFloat(item.precio_unitario_usd)
             }));
 
             const clientId = document.getElementById('selectedClientId').value || null;
@@ -1763,7 +1778,7 @@ function initPOS() {
             const data = await res.json();
 
             if (data.success) {
-                showNotification('Éxito', 'Venta registrada correctamente.');
+                if (typeof window.showNotification === 'function') window.showNotification('Éxito', 'Venta registrada correctamente.');
                 document.getElementById('paymentModal').style.display = 'none';
                 clearCart();
                 
@@ -1775,11 +1790,11 @@ function initPOS() {
                     document.getElementById('posClientInfo').style.display = 'none';
                 }
             } else {
-                showNotification('Error', data.message || 'No se pudo guardar la venta.');
+                if (typeof window.showNotification === 'function') window.showNotification('Error', data.message || 'No se pudo guardar la venta.');
             }
         } catch (err) {
             console.error('Error finalizando venta:', err);
-            showNotification('Error', 'Ocurrió un error al procesar la venta.');
+            if (typeof window.showNotification === 'function') window.showNotification('Error', 'Ocurrió un error al procesar la venta.');
         } finally {
             if (btnFinalize) btnFinalize.disabled = false;
         }
