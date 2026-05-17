@@ -1028,6 +1028,7 @@ function initPOS() {
             const layout = document.getElementById('posLayout');
 
             if (data.isOpen) {
+                window.activeCajaSessionId = data.session ? data.session.id : null;
                 if (data.needsClosure) {
                     console.log('POS: Caja de día anterior detectada');
                     if (overlay) {
@@ -1570,6 +1571,115 @@ function initPOS() {
         };
     }
 
+    let payments = [];
+
+    window.initPaymentModal = (totalUSD, totalBs, client, cart) => {
+        payments = [];
+        updatePaymentList(totalUSD);
+        
+        const payTotalUSD = document.getElementById('payTotalUSD');
+        const payTotalBs = document.getElementById('payTotalBs');
+        const paymentAmountInput = document.getElementById('paymentAmountInput');
+        const paymentRemaining = document.getElementById('paymentRemaining');
+        const btnFinalizeSale = document.getElementById('btnFinalizeSale');
+
+        if (payTotalUSD) payTotalUSD.innerText = `$${totalUSD.toFixed(2)}`;
+        if (payTotalBs) payTotalBs.innerText = `${totalBs.toFixed(2)} Bs`;
+        if (paymentAmountInput) paymentAmountInput.value = totalUSD.toFixed(2);
+        if (paymentRemaining) paymentRemaining.innerText = `$${totalUSD.toFixed(2)}`;
+        if (btnFinalizeSale) btnFinalizeSale.disabled = true;
+    };
+
+    window.addPayment = () => {
+        const methodSelect = document.getElementById('paymentMethodSelect');
+        const amountInput = document.getElementById('paymentAmountInput');
+        const errorDiv = document.getElementById('paymentError');
+
+        if (!methodSelect || !amountInput) return;
+
+        const method = methodSelect.value;
+        const amount = parseFloat(amountInput.value) || 0;
+
+        if (amount <= 0) {
+            if (errorDiv) errorDiv.innerText = 'El monto debe ser mayor a cero.';
+            return;
+        }
+
+        const currentCart = getCart();
+        const totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
+        const currentPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+        const remaining = totalUSD - currentPaid;
+
+        if (amount > remaining + 0.01) {
+            if (errorDiv) errorDiv.innerText = `El monto excede el restante de $${remaining.toFixed(2)}.`;
+            return;
+        }
+
+        if (errorDiv) errorDiv.innerText = '';
+
+        payments.push({ method, amount });
+        amountInput.value = '';
+
+        updatePaymentList(totalUSD);
+    };
+
+    window.removePayment = (index) => {
+        payments.splice(index, 1);
+        const currentCart = getCart();
+        const totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
+        updatePaymentList(totalUSD);
+    };
+
+    function updatePaymentList(totalUSD) {
+        const listDiv = document.getElementById('paymentList');
+        const remainingSpan = document.getElementById('paymentRemaining');
+        const btnFinalizeSale = document.getElementById('btnFinalizeSale');
+
+        if (!listDiv) return;
+
+        const currentPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+        const remaining = totalUSD - currentPaid;
+
+        if (payments.length === 0) {
+            listDiv.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">No hay pagos agregados</div>';
+        } else {
+            listDiv.innerHTML = payments.map((p, idx) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.9rem;">
+                    <span>${p.method}</span>
+                    <span>
+                        $${p.amount.toFixed(2)}
+                        <i class="fas fa-trash-alt" style="color: #ef4444; margin-left: 10px; cursor: pointer;" onclick="removePayment(${idx})"></i>
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        if (remainingSpan) remainingSpan.innerText = `$${remaining.toFixed(2)}`;
+        
+        const inputAmount = document.getElementById('paymentAmountInput');
+        if (inputAmount) inputAmount.value = remaining.toFixed(2);
+
+        if (btnFinalizeSale) {
+            btnFinalizeSale.disabled = remaining > 0.01;
+        }
+    }
+
+    // Toggle email notification
+    const btnToggleEmail = document.getElementById('btnToggleEmail');
+    if (btnToggleEmail) {
+        btnToggleEmail.onclick = () => {
+            if (btnToggleEmail.textContent.trim() === 'OFF') {
+                btnToggleEmail.textContent = 'ON';
+                btnToggleEmail.className = 'btn-toggle-on';
+                btnToggleEmail.style.background = '#10b981'; // Green
+            } else {
+                btnToggleEmail.textContent = 'OFF';
+                btnToggleEmail.className = 'btn-toggle-off';
+                btnToggleEmail.style.background = ''; // Default
+            }
+        };
+    }
+
     window.processSale = () => {
         let currentCart = getCart();
         if (currentCart.length === 0) {
@@ -1585,24 +1695,94 @@ function initPOS() {
         document.getElementById('payTotalUSD').innerText = `$${totalUSD.toFixed(2)}`;
         document.getElementById('payTotalBs').innerText = formatCurrency(totalBs);
         
-        // Setup initial splits if you have split payment logic (mocked here or handled in nucleo)
-        if (window.initPaymentModal) {
-             window.initPaymentModal(totalUSD, totalBs, getSelectedClient(), currentCart);
-             document.getElementById('paymentModal').style.display = 'flex';
-        } else {
-             // Basic fallback if initPaymentModal doesn't exist
-             document.getElementById('paymentAmountInput').value = totalUSD.toFixed(2);
-             document.getElementById('paymentRemaining').innerText = `$${totalUSD.toFixed(2)}`;
-             document.getElementById('btnFinalizeSale').disabled = false;
-             document.getElementById('paymentModal').style.display = 'flex';
-        }
+        // Setup initial splits using our split payment logic
+        window.initPaymentModal(totalUSD, totalBs, getSelectedClient(), currentCart);
+        document.getElementById('paymentModal').style.display = 'flex';
     };
     
-    // Add logic for finalizing sale basic fallback if not in nucleo
-    window.finalizeSale = () => {
-        if (typeof showNotification === 'function') showNotification('Éxito', 'Venta finalizada (Simulación).');
-        document.getElementById('paymentModal').style.display = 'none';
-        clearCart();
+    window.finalizeSale = async () => {
+        const btnFinalize = document.getElementById('btnFinalizeSale');
+        if (btnFinalize) btnFinalize.disabled = true;
+
+        try {
+            const currentCart = getCart();
+            if (currentCart.length === 0) {
+                showNotification('Atención', 'El carrito está vacío.');
+                return;
+            }
+
+            const totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
+            const itemsPayload = currentCart.map(item => ({
+                id: item.id,
+                qty: item.qty,
+                price: item.price
+            }));
+
+            const clientId = document.getElementById('selectedClientId').value || null;
+            const observaciones = document.getElementById('payObservations').value || '';
+            const sendEmailBtn = document.getElementById('btnToggleEmail');
+            const sendEmail = sendEmailBtn ? sendEmailBtn.textContent.trim() === 'ON' : false;
+            const cajaId = window.activeCajaSessionId || null;
+
+            // Use split payments or fallback to single payment if none added
+            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+            const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : 'EFECTIVO_USD';
+            const paymentsPayload = payments.length > 0 
+                ? payments.map(p => ({ method: p.method, amount: p.amount }))
+                : [{ method: paymentMethod, amount: totalUSD }];
+
+            const userSession = sessionStorage.getItem('user_session');
+            const user = userSession ? JSON.parse(userSession) : null;
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'x-tenant-slug': sessionStorage.getItem('tenant_slug')
+            };
+            if (user && user.id) {
+                headers['x-user-id'] = user.id;
+            }
+
+            const payload = {
+                items: itemsPayload,
+                paymentMethod: paymentMethod,
+                totalUsd: totalUSD,
+                rate: exchangeRate,
+                cajaId: cajaId,
+                clientId: clientId ? parseInt(clientId) : null,
+                sendEmail: sendEmail,
+                observaciones: observaciones,
+                payments: paymentsPayload
+            };
+
+            const res = await fetch('/api/sales', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                showNotification('Éxito', 'Venta registrada correctamente.');
+                document.getElementById('paymentModal').style.display = 'none';
+                clearCart();
+                
+                // Reset form values
+                document.getElementById('payObservations').value = '';
+                const clientCedulaInput = document.getElementById('posClientCedula');
+                if (clientCedulaInput) {
+                    clientCedulaInput.value = '';
+                    document.getElementById('posClientInfo').style.display = 'none';
+                }
+            } else {
+                showNotification('Error', data.message || 'No se pudo guardar la venta.');
+            }
+        } catch (err) {
+            console.error('Error finalizando venta:', err);
+            showNotification('Error', 'Ocurrió un error al procesar la venta.');
+        } finally {
+            if (btnFinalize) btnFinalize.disabled = false;
+        }
     };
 
     window.closePaymentModal = () => {
