@@ -107,15 +107,6 @@ async function ensureUsuarioSchema(pool) {
             await client.query(`ALTER TABLE usuarios ALTER COLUMN password DROP NOT NULL;`);
             await client.query(`UPDATE usuarios SET password_hash = password WHERE password_hash IS NULL AND password IS NOT NULL;`);
         }
-
-        // Hot Schema Healing: Ensure table "detalle_ventas" has "costo_unitario_usd" column
-        const tableExist = await client.query(`
-            SELECT 1 FROM information_schema.tables 
-            WHERE table_schema = current_schema() AND table_name = 'detalle_ventas'
-        `);
-        if (tableExist.rows.length > 0) {
-            await client.query(`ALTER TABLE detalle_ventas ADD COLUMN IF NOT EXISTS costo_unitario_usd DECIMAL(12, 2) DEFAULT 0.00;`);
-        }
     } finally {
         client.release();
     }
