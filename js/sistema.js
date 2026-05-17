@@ -1616,6 +1616,27 @@ function initPOS() {
 function initReports() {
     console.log('Inicializando Reportes...');
 
+    // Dynamic Dates Setup: First day of current month to today
+    const reportStartDateEl = document.getElementById('reportStartDate');
+    const reportEndDateEl = document.getElementById('reportEndDate');
+    if (reportStartDateEl && reportEndDateEl) {
+        const today = new Date();
+        const formatDateInput = (date) => {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        };
+
+        const firstDayOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        if (!reportStartDateEl.value) {
+            reportStartDateEl.value = formatDateInput(firstDayOfCurrentMonth);
+        }
+        if (!reportEndDateEl.value) {
+            reportEndDateEl.value = formatDateInput(today);
+        }
+    }
+
     // Tab Elements
     const tabs = {
         general: document.getElementById('tabGeneral'),
@@ -1773,7 +1794,8 @@ function initReports() {
             }
         });
 
-        // btnGenerate.click(); // Removed to avoid auto-loading data without dates
+        // Auto-load reports automatically upon initialization
+        btnGenerate.click();
     }
 }
 
