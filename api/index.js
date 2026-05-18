@@ -2895,14 +2895,18 @@ app.get('/api/commitments/:id/history', async (req, res) => {
 // 1. GET Alerts (for Bell Icon)
 app.get('/api/alerts', async (req, res) => {
     try {
+        // Fetch alert days from configuration (defaults to 3 if not set)
+        const configRes = await req.pool.query("SELECT valor FROM configuracion WHERE clave = 'alert_days'");
+        const alertDays = configRes.rows.length > 0 ? parseInt(configRes.rows[0].valor) || 3 : 3;
+
         const result = await req.pool.query(`
             SELECT cp.*, p.nombre as proveedor_nombre,
             (cp.fecha_vencimiento - CURRENT_DATE) as days_remaining
             FROM compromisos_pago cp
             JOIN proveedores p ON cp.proveedor_id = p.id
-            WHERE cp.estado != 'PAGADO' AND (cp.fecha_vencimiento - CURRENT_DATE) <= 1
+            WHERE cp.estado != 'PAGADO' AND (cp.fecha_vencimiento - CURRENT_DATE) <= $1
             ORDER BY cp.fecha_vencimiento ASC
-        `);
+        `, [alertDays]);
 
         res.json({
             count: result.rows.length,
