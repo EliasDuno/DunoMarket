@@ -2125,19 +2125,31 @@ app.post('/api/sales/:id/email', async (req, res) => {
 
 // --- CAJA (CASH REGISTER) ENDPOINTS ---
 
-// GET Status (Is open?)
 app.get('/api/caja/status/:userId', async (req, res) => {
     const { userId } = req.params;
     try {
         const result = await req.pool.query(
-            "SELECT *, (fecha_apertura::date < CURRENT_DATE) as needs_closure FROM caja_sesiones WHERE usuario_id = $1 AND estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1",
+            "SELECT * FROM caja_sesiones WHERE usuario_id = $1 AND estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1",
             [userId]
         );
         if (result.rows.length > 0) {
+            const session = result.rows[0];
+            
+            // Fix timezone bug: adjust UTC dates to Venezuela (UTC-4) calendar days in JS
+            const getLocalDateString = (dateObj) => {
+                const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000);
+                const localTime = new Date(utc + (3600000 * -4)); // UTC-4
+                return localTime.toISOString().split('T')[0];
+            };
+            
+            const openedDate = getLocalDateString(new Date(session.fecha_apertura));
+            const currentDate = getLocalDateString(new Date());
+            const needsClosure = openedDate < currentDate;
+
             res.json({ 
                 isOpen: true, 
-                session: result.rows[0],
-                needsClosure: result.rows[0].needs_closure
+                session: session,
+                needsClosure: needsClosure
             });
         } else {
             res.json({ isOpen: false });
