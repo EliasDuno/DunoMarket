@@ -1801,9 +1801,11 @@ function initPOS() {
                     document.getElementById('posClientInfo').style.display = 'none';
                 }
             } else {
+                document.getElementById('paymentModal').style.display = 'none';
                 if (typeof window.showNotification === 'function') window.showNotification('Error', data.message || 'No se pudo guardar la venta.');
             }
         } catch (err) {
+            document.getElementById('paymentModal').style.display = 'none';
             console.error('Error finalizando venta:', err);
             if (typeof window.showNotification === 'function') window.showNotification('Error', 'Ocurrió un error al procesar la venta.');
         } finally {
