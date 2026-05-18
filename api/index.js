@@ -3261,14 +3261,17 @@ function handleDateFilters(startDate, endDate) {
     const params = [];
     let paramIndex = 1;
 
+    // Convert stored UTC v.fecha to local Venezuela/Chile (UTC-4) timezone for accurate daily reports
+    const localDateExpr = "(v.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas')";
+
     if (startDate && startDate.trim() !== '' && endDate && endDate.trim() !== '') {
-        whereClause = `WHERE v.fecha >= $${paramIndex++} AND v.fecha <= $${paramIndex++}`;
+        whereClause = `WHERE ${localDateExpr} >= $${paramIndex++} AND ${localDateExpr} <= $${paramIndex++}`;
         params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
     } else if (startDate && startDate.trim() !== '') {
-        whereClause = `WHERE v.fecha >= $${paramIndex++}`;
+        whereClause = `WHERE ${localDateExpr} >= $${paramIndex++}`;
         params.push(`${startDate} 00:00:00`);
     } else if (endDate && endDate.trim() !== '') {
-        whereClause = `WHERE v.fecha <= $${paramIndex++}`;
+        whereClause = `WHERE ${localDateExpr} <= $${paramIndex++}`;
         params.push(`${endDate} 23:59:59`);
     }
     return { whereClause, params };
@@ -3385,14 +3388,17 @@ app.post('/api/reports/audit', async (req, res) => {
         const params = [];
         let paramIndex = 1;
 
+        // Convert stored UTC a.fecha to local Venezuela/Chile (UTC-4) timezone for accurate daily reports
+        const localDateExpr = "(a.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas')";
+
         if (startDate && endDate) {
-            whereClause = `WHERE a.fecha >= $${paramIndex++} AND a.fecha <= $${paramIndex++}`;
+            whereClause = `WHERE ${localDateExpr} >= $${paramIndex++} AND ${localDateExpr} <= $${paramIndex++}`;
             params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
         } else if (startDate) {
-            whereClause = `WHERE a.fecha >= $${paramIndex++}`;
+            whereClause = `WHERE ${localDateExpr} >= $${paramIndex++}`;
             params.push(`${startDate} 00:00:00`);
         } else if (endDate) {
-            whereClause = `WHERE a.fecha <= $${paramIndex++}`;
+            whereClause = `WHERE ${localDateExpr} <= $${paramIndex++}`;
             params.push(`${endDate} 23:59:59`);
         }
 
