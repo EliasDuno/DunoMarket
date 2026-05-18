@@ -12,57 +12,57 @@ function isDashboardRoute(path) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
+    const path = window.location.pathname.toLowerCase();
     // alert('DEBUG: Path is ' + path);
 
     // --- DASHBOARD (index.html y resumen.html) ---
-    if (isDashboardRoute(path)) {
+    if (isDashboardRoute(window.location.pathname) || document.getElementById('dashboardView') || document.getElementById('btnUpdateDollar')) {
         initDashboard();
     }
 
     // --- INVENTARIO ---
-    if (path.includes('inventario')) {
+    if (path.includes('inventario') || document.getElementById('inventoryBody')) {
         initInventory();
     }
 
     // --- PUNTO DE VENTA ---
-    if (path.includes('pdv')) {
+    if (path.includes('pdv') || document.getElementById('posLayout') || document.getElementById('posSearch')) {
         initPOS();
     }
 
     // --- REPORTES ---
-    if (path.includes('reportes')) {
+    if (path.includes('reportes') || document.getElementById('reportStartDate') || document.getElementById('btnGenerateReport')) {
         initReports();
     }
 
     // --- USUARIOS ---
-    if (path.includes('usuarios')) {
+    if (path.includes('usuarios') || document.getElementById('usersTableBody')) {
         initUsers();
     }
 
     // --- PROVEEDORES ---
-    if (path.includes('proveedores')) {
+    if (path.includes('proveedores') || document.getElementById('suppliersBody')) {
         initSuppliers();
     }
 
     // --- CATEGORIAS ---
-    if (path.includes('categorias')) {
+    if (path.includes('categorias') || document.getElementById('categoriesBody')) {
         initCategories();
     }
 
     // --- CLIENTES ---
-    if (path.includes('clientes')) {
+    if (path.includes('clientes') || document.getElementById('clientsBody')) {
         initClients();
     }
 
     // --- CONFIGURACION ---
-    if (path.includes('configuracion')) {
+    if (path.includes('configuracion') || document.getElementById('paymentMethodsList')) {
         initSettings();
         if (typeof initBulkOperations === 'function') initBulkOperations();
     }
 
     // --- CUENTAS ---
-    if (path.includes('cuentas')) {
+    if (path.includes('cuentas') || document.getElementById('commitmentsTableBody')) {
         initCuentas();
     }
 });
