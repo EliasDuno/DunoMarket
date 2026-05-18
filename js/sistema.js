@@ -1576,20 +1576,23 @@ function initPOS() {
     window.initPaymentModal = (totalUSD, totalBs, client, cart) => {
         payments = [];
         
-        // Auto-populate with a single full payment of the default selected method
-        const methodSelect = document.getElementById('paymentMethodSelect');
-        const defaultMethod = methodSelect ? methodSelect.value : 'EFECTIVO_USD';
-        payments.push({ method: defaultMethod, amount: totalUSD });
-
-        updatePaymentList(totalUSD);
-        
         const payTotalUSD = document.getElementById('payTotalUSD');
         const payTotalBs = document.getElementById('payTotalBs');
         const paymentAmountInput = document.getElementById('paymentAmountInput');
 
         if (payTotalUSD) payTotalUSD.innerText = `$${totalUSD.toFixed(2)}`;
         if (payTotalBs) payTotalBs.innerText = `${totalBs.toFixed(2)} Bs`;
-        if (paymentAmountInput) paymentAmountInput.value = '0.00';
+        
+        // Auto-populate the amount input with the total USD amount so the user just chooses the method and clicks "+"
+        if (paymentAmountInput) paymentAmountInput.value = totalUSD.toFixed(2);
+
+        // Reset method selection to default placeholder
+        const methodSelect = document.getElementById('paymentMethodSelect');
+        if (methodSelect) {
+            methodSelect.value = "";
+        }
+
+        updatePaymentList(totalUSD);
     };
 
     window.addPayment = () => {
@@ -1601,6 +1604,11 @@ function initPOS() {
 
         const method = methodSelect.value;
         const amount = parseFloat(amountInput.value) || 0;
+
+        if (!method) {
+            if (errorDiv) errorDiv.innerText = 'Por favor seleccione un método de pago.';
+            return;
+        }
 
         if (amount <= 0) {
             if (errorDiv) errorDiv.innerText = 'El monto debe ser mayor a cero.';
@@ -1621,6 +1629,9 @@ function initPOS() {
 
         payments.push({ method, amount });
         amountInput.value = '';
+
+        // Reset method selection to placeholder so they must choose again for split payments
+        methodSelect.value = "";
 
         updatePaymentList(totalUSD);
     };
@@ -1672,7 +1683,7 @@ function initPOS() {
         methodSelect.onchange = () => {
             const currentCart = getCart();
             const totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
-            if (payments.length === 1 && Math.abs(payments[0].amount - totalUSD) < 0.01) {
+            if (payments.length === 1 && methodSelect.value && Math.abs(payments[0].amount - totalUSD) < 0.01) {
                 payments[0].method = methodSelect.value;
                 updatePaymentList(totalUSD);
             }

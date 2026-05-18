@@ -521,7 +521,7 @@ tr:last-child td {
 .modal {
     display: none;
     position: fixed;
-    z-index: 2000;
+    z-index: 1040;
     left: 0;
     top: 0;
     width: 100%;
