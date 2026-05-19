@@ -432,6 +432,28 @@ function loadGlobalProfile() {
             };
         }
     }
+
+    // Configure dashboard cards on resumen.html page
+    const cardUsers = document.getElementById('cardUsers');
+    const cardInventory = document.getElementById('cardInventory');
+    const cardCategories = document.getElementById('cardCategories');
+    const cardSuppliers = document.getElementById('cardSuppliers');
+
+    // Add click listeners to cards so they actually navigate to their pages
+    if (cardUsers) cardUsers.onclick = () => window.location.href = 'usuarios.html';
+    if (cardInventory) cardInventory.onclick = () => window.location.href = 'inventario.html';
+    if (cardCategories) cardCategories.onclick = () => window.location.href = 'categorias.html';
+    if (cardSuppliers) cardSuppliers.onclick = () => window.location.href = 'proveedores.html';
+
+    // Hide cards if the user doesn't have permission (role is 'usuario' or similar)
+    const userRole = (user.rol || 'usuario').toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'administrador';
+    
+    if (!isAdmin) {
+        if (cardUsers) cardUsers.style.display = 'none';
+        if (cardCategories) cardCategories.style.display = 'none';
+        if (cardSuppliers) cardSuppliers.style.display = 'none';
+    }
 }
 
 // Global Logout Function

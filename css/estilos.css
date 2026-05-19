@@ -2003,3 +2003,238 @@ body.embed-mode {
 .mermas-table-container tr:hover {
     background: rgba(255, 255, 255, 0.02);
 }
+
+/* =========================================
+   RESPONSIVE DESIGN IMPROVEMENTS FOR LAPTOPS
+   ========================================= */
+
+/* --- Level 1: Medium Laptops (1200px to 1400px) --- */
+@media (max-width: 1400px) {
+    .sidebar {
+        width: 240px !important;
+        padding: 1.2rem !important;
+    }
+    .main-content {
+        margin-left: 240px !important;
+        width: calc(100% - 240px) !important;
+        padding: 1.5rem !important;
+    }
+    body.embed-mode .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    .page-header {
+        padding: 0.75rem 1.25rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .header-actions {
+        gap: 0.5rem !important;
+    }
+    .header-actions button,
+    .header-actions a {
+        padding: 0.5rem 0.8rem !important;
+        font-size: 0.85rem !important;
+    }
+    /* Compact tables */
+    th, td {
+        padding: 0.8rem 1rem !important;
+        font-size: 0.8rem !important;
+    }
+}
+
+/* --- Level 2: Small Laptops / Scaled screens (1024px to 1200px) --- */
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 210px !important;
+        padding: 1rem !important;
+    }
+    .main-content {
+        margin-left: 210px !important;
+        width: calc(100% - 210px) !important;
+        padding: 1.25rem !important;
+    }
+    body.embed-mode .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    /* Shorten button texts in inventario using font-size: 0 trick */
+    #btnReceiveStock {
+        font-size: 0 !important;
+    }
+    #btnReceiveStock i {
+        font-size: 0.85rem !important;
+        margin-right: 4px !important;
+    }
+    #btnReceiveStock::after {
+        content: " Recibir" !important;
+        font-size: 0.85rem !important;
+    }
+    
+    #btnNewProduct {
+        font-size: 0 !important;
+    }
+    #btnNewProduct i {
+        font-size: 0.85rem !important;
+        margin-right: 4px !important;
+    }
+    #btnNewProduct::after {
+        content: " + Producto" !important;
+        font-size: 0.85rem !important;
+    }
+}
+
+/* --- Level 3: Sidebar Compact Icon-Only (768px to 1024px) --- */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 70px !important;
+        padding: 1rem 0.5rem !important;
+        align-items: center !important;
+    }
+    .sidebar-brand {
+        margin-bottom: 1.5rem !important;
+        padding: 0 !important;
+    }
+    .sidebar-logo {
+        max-width: 45px !important;
+    }
+    .sidebar-label,
+    .user-mini-info,
+    .sidebar-footer .name {
+        display: none !important;
+    }
+    .sidebar-nav {
+        gap: 0.75rem !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+    .nav-item {
+        font-size: 0 !important;
+        justify-content: center !important;
+        width: 45px !important;
+        height: 45px !important;
+        padding: 0 !important;
+        border-radius: 12px !important;
+        margin: 0 !important;
+    }
+    .nav-item i {
+        font-size: 1.25rem !important;
+        margin: 0 !important;
+    }
+    
+    .sidebar-footer {
+        padding: 0 !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+    .user-mini-profile {
+        justify-content: center !important;
+        padding: 0 !important;
+        width: 45px !important;
+        height: 45px !important;
+        border-radius: 12px !important;
+    }
+    .user-mini-avatar {
+        margin: 0 !important;
+    }
+    
+    .main-content {
+        margin-left: 70px !important;
+        width: calc(100% - 70px) !important;
+        padding: 1rem !important;
+    }
+    body.embed-mode .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* POS Responsiveness under 1024px */
+    .pos-layout {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        overflow: visible !important;
+        gap: 1rem !important;
+    }
+    .pos-left, .pos-right {
+        height: auto !important;
+        padding: 1rem !important;
+    }
+    .pos-right {
+        margin-bottom: 2rem !important;
+    }
+}
+
+/* --- Level 4: Mobile & General Tweaks --- */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 1rem !important;
+        padding: 1rem !important;
+    }
+    .header-actions {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: space-between !important;
+    }
+    .search-wrapper {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .search-input {
+        width: 100% !important;
+    }
+    
+    .table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+}
+
+/* --- Form Grids Responsiveness --- */
+@media (max-width: 1100px) {
+    .input-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    .section-content .input-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* --- POS Layout refinements for medium heights --- */
+@media (min-width: 1025px) and (max-height: 800px) {
+    .pos-layout {
+        height: calc(100vh - 90px) !important;
+        gap: 1rem !important;
+    }
+    .pos-left, .pos-right {
+        padding: 1rem !important;
+        border-radius: 1rem !important;
+    }
+    .page-header {
+        margin-bottom: 0.5rem !important;
+        padding: 0.5rem 1rem !important;
+    }
+    .page-header h1 {
+        font-size: 1.25rem !important;
+    }
+    .search-input-large {
+        padding: 0.7rem 2.5rem 0.7rem 1.2rem !important;
+        font-size: 1rem !important;
+    }
+    .transaction-table th, 
+    .transaction-table td {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.8rem !important;
+    }
+    .cart-totals {
+        margin-top: 0.5rem !important;
+    }
+    .transaction-total-display {
+        padding: 0.75rem !important;
+    }
+    .big-total {
+        font-size: 1.5rem !important;
+    }
+}
