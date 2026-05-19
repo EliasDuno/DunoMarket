@@ -480,6 +480,23 @@ window.closeConfirm = function (result) {
 // --- SISTEMA DE ALERTAS ---
 
 async function checkAlerts() {
+    // Verificar rol antes de proceder con las alertas
+    const userSession = sessionStorage.getItem('user_session');
+    if (userSession) {
+        try {
+            const user = JSON.parse(userSession);
+            const userRole = (user.rol || 'usuario').toLowerCase();
+            const isAdmin = userRole === 'admin' || userRole === 'administrador';
+            if (!isAdmin) {
+                const alertsContainer = document.getElementById('alertsIconContainer');
+                if (alertsContainer) alertsContainer.style.display = 'none';
+                return;
+            }
+        } catch (e) {
+            console.error('Error al comprobar rol en alertas:', e);
+        }
+    }
+
     // 1. Create Bell Icon if not exists
     let alertsContainer = document.getElementById('alertsIconContainer');
 
