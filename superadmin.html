@@ -316,7 +316,7 @@
                 </div>
 
                 <div id="adminUserFields">
-                    <h3 style="margin: 1.5rem 0 0.5rem 0; font-size: 1.1rem; color: var(--text-color); border-bottom: 1px solid var(--input-border); padding-bottom: 0.3rem;">Usuario Administrador Inicial</h3>
+                    <h3 id="adminSectionTitle" style="margin: 1.5rem 0 0.5rem 0; font-size: 1.1rem; color: var(--text-color); border-bottom: 1px solid var(--input-border); padding-bottom: 0.3rem;">Usuario Administrador Inicial</h3>
                     
                     <div class="input-group">
                         <label for="tAdminName">Nombre del Administrador</label>
@@ -767,6 +767,7 @@
             const submitBtn = form.querySelector('button[type="submit"]');
             const statusGroup = document.getElementById('statusGroup');
             const adminUserFields = document.getElementById('adminUserFields');
+            const adminSectionTitle = document.getElementById('adminSectionTitle');
 
             if (id) {
                 const tenant = allTenants.find(t => String(t.id) === String(id));
@@ -778,10 +779,17 @@
                     document.getElementById('tStatus').value = tenant.status || 'active';
                     
                     statusGroup.style.display = 'block';
-                    adminUserFields.style.display = 'none';
+                    adminUserFields.style.display = 'block';
+                    adminSectionTitle.innerText = 'Crear / Actualizar Administrador (Opcional)';
+                    
+                    document.getElementById('tAdminName').value = tenant.admin_name || '';
+                    document.getElementById('tAdminEmail').value = tenant.admin_email || '';
+                    document.getElementById('tAdminPassword').value = '';
+                    
                     document.getElementById('tAdminName').required = false;
                     document.getElementById('tAdminEmail').required = false;
                     document.getElementById('tAdminPassword').required = false;
+                    document.getElementById('tAdminPassword').placeholder = 'Dejar vacío para no cambiar';
                     
                     title.innerText = 'Editar Empresa';
                     submitBtn.innerText = 'Actualizar Empresa';
@@ -791,9 +799,12 @@
                 document.getElementById('tenantId').value = '';
                 statusGroup.style.display = 'none';
                 adminUserFields.style.display = 'block';
+                adminSectionTitle.innerText = 'Usuario Administrador Inicial';
+                
                 document.getElementById('tAdminName').required = true;
                 document.getElementById('tAdminEmail').required = true;
                 document.getElementById('tAdminPassword').required = true;
+                document.getElementById('tAdminPassword').placeholder = 'Mínimo 6 caracteres';
                 
                 title.innerText = 'Registrar Nueva Empresa';
                 submitBtn.innerText = 'Guardar Cliente';
@@ -817,10 +828,20 @@
                 status: document.getElementById('tStatus').value
             };
 
+            const adminEmail = document.getElementById('tAdminEmail').value.trim();
+            const adminPassword = document.getElementById('tAdminPassword').value;
+
             if (!id) {
                 data.adminName = document.getElementById('tAdminName').value.trim();
-                data.adminEmail = document.getElementById('tAdminEmail').value.trim().toLowerCase();
-                data.adminPassword = document.getElementById('tAdminPassword').value;
+                data.adminEmail = adminEmail.toLowerCase();
+                data.adminPassword = adminPassword;
+            } else {
+                // If editing and user filled out admin email + password, we send them to update/create
+                if (adminEmail && adminPassword) {
+                    data.adminName = document.getElementById('tAdminName').value.trim();
+                    data.adminEmail = adminEmail.toLowerCase();
+                    data.adminPassword = adminPassword;
+                }
             }
 
             const method = id ? 'PUT' : 'POST';

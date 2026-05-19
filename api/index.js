@@ -304,11 +304,13 @@ app.post('/api/saas/tenants', async (req, res) => {
 
 app.put('/api/saas/tenants/:id', async (req, res) => {
     const { id } = req.params;
-    const { nombre, slug, dbUrl, status } = req.body;
+    const { nombre, slug, dbUrl, status, adminName, adminEmail, adminPassword } = req.body;
     try {
         // Clear cached pool for the tenant if it exists to force reloading the new dbUrl
-        const oldResult = await masterPool.query('SELECT slug FROM tenants WHERE id = $1', [id]);
+        const oldResult = await masterPool.query('SELECT slug, is_provisioned FROM tenants WHERE id = $1', [id]);
+        let isProvisioned = false;
         if (oldResult.rows.length > 0) {
+            isProvisioned = oldResult.rows[0].is_provisioned;
             const oldSlug = oldResult.rows[0].slug;
             if (tenantPools.has(oldSlug)) {
                 const oldPool = tenantPools.get(oldSlug);
@@ -320,8 +322,33 @@ app.put('/api/saas/tenants/:id', async (req, res) => {
 
         await masterPool.query(
             'UPDATE tenants SET nombre = $1, slug = $2, db_url = $3, status = $4 WHERE id = $5',
-            [nombre, slug, dbUrl, status || 'active', id]
+            [nombre, slug.trim().toLowerCase(), dbUrl.trim(), status || 'active', id]
         );
+
+        // If admin details were provided, update master table and tenant's schema
+        if (adminEmail && adminPassword) {
+            const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+            
+            await masterPool.query(
+                `UPDATE tenants 
+                 SET admin_name = $1, admin_email = $2, admin_password_hash = $3 
+                 WHERE id = $4`,
+                [adminName ? adminName.trim() : 'Admin', adminEmail.trim().toLowerCase(), adminPasswordHash, id]
+            );
+
+            if (isProvisioned) {
+                const pool = await getTenantPool(slug.trim().toLowerCase());
+                if (pool) {
+                    await pool.query(`
+                        INSERT INTO usuarios (nombre, email, password_hash, rol, activo)
+                        VALUES ($1, $2, $3, 'administrador', true)
+                        ON CONFLICT (email) 
+                        DO UPDATE SET nombre = $1, password_hash = $3, activo = true;
+                    `, [adminName ? adminName.trim() : 'Admin', adminEmail.trim().toLowerCase(), adminPasswordHash]);
+                }
+            }
+        }
+
         res.json({ success: true, message: 'Empresa actualizada exitosamente' });
     } catch (e) { res.status(400).json({ message: e.message }); }
 });
