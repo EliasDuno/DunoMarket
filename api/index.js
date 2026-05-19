@@ -36,6 +36,16 @@ const masterPool = new Pool(getMasterPoolConfig());
 const tenantPools = new Map();
 const tenantSchemaEnsured = new Set();
 
+async function ensureAdminColumnsExist() {
+    try {
+        await masterPool.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_name VARCHAR(100);`);
+        await masterPool.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_email VARCHAR(100);`);
+        await masterPool.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_password_hash VARCHAR(255);`);
+    } catch (e) {
+        console.error('Error ensuring admin columns exist on master tenants table:', e.message);
+    }
+}
+
 function isBcryptHash(value) {
     return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
 }
@@ -241,6 +251,7 @@ masterPool.connect(async (err, client, release) => {
 
 app.get('/api/saas/tenants', async (req, res) => {
     try {
+        await ensureAdminColumnsExist();
         const result = await masterPool.query('SELECT * FROM tenants ORDER BY created_at DESC');
         const tenants = result.rows;
         
@@ -288,6 +299,7 @@ app.get('/api/saas/tenants', async (req, res) => {
 app.post('/api/saas/tenants', async (req, res) => {
     const { nombre, slug, dbUrl, adminName, adminEmail, adminPassword } = req.body;
     try {
+        await ensureAdminColumnsExist();
         if (!nombre || !slug || !dbUrl || !adminName || !adminEmail || !adminPassword) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios, incluyendo los del administrador inicial.' });
         }
@@ -306,6 +318,7 @@ app.put('/api/saas/tenants/:id', async (req, res) => {
     const { id } = req.params;
     const { nombre, slug, dbUrl, status, adminName, adminEmail, adminPassword } = req.body;
     try {
+        await ensureAdminColumnsExist();
         // Clear cached pool for the tenant if it exists to force reloading the new dbUrl
         const oldResult = await masterPool.query('SELECT slug, is_provisioned FROM tenants WHERE id = $1', [id]);
         let isProvisioned = false;
@@ -690,6 +703,7 @@ app.post('/api/saas/provision', async (req, res) => {
     if (!pool) return res.status(404).json({ message: 'Tenant not found' });
 
     try {
+        await ensureAdminColumnsExist();
         // Query the admin credentials from master database
         const tenantRes = await masterPool.query('SELECT admin_name, admin_email, admin_password_hash FROM tenants WHERE slug = $1', [slug]);
         let adminName = null;
