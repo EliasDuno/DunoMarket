@@ -158,6 +158,9 @@
                 <a href="#" class="nav-item" id="btnTabBilling" onclick="switchTab('billing')">
                     <i class="fas fa-receipt"></i> Facturación & Consumo
                 </a>
+                <a href="#" class="nav-item" id="btnTabUsers" onclick="switchTab('users')">
+                    <i class="fas fa-users-cog"></i> Usuarios de Soporte
+                </a>
 
                 <div class="sidebar-label">Volver</div>
                 <a href="/" class="nav-item">
@@ -185,6 +188,7 @@
 
                     <div class="header-actions">
                         <button id="btnNewTenant" class="btn-login" onclick="openTenantModal()"><i class="fas fa-plus"></i> Registrar Empresa</button>
+                        <button id="btnNewUser" class="btn-login" style="display: none;" onclick="openUserModal()"><i class="fas fa-user-plus"></i> Nuevo Usuario</button>
                     </div>
                 </header>
 
@@ -235,6 +239,27 @@
                                 <tr><td colspan="9" style="text-align: center;">Cargando reporte de consumo...</td></tr>
                             </tbody>
                         </table>
+                </div>
+
+                <!-- TAB: USUARIOS DE SOPORTE -->
+                <div id="panelUsers" style="display: none;">
+                    <div class="table-container">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Estatus</th>
+                                    <th>Creado en</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="7" style="text-align: center;">Cargando usuarios de soporte...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -276,6 +301,74 @@
                 <div class="button-group" style="margin-top: 1.5rem;">
                     <button type="button" class="btn-cancel" onclick="closeTenantModal()">Cancelar</button>
                     <button type="submit" class="btn-login">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit User -->
+    <div id="userModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Usuario</h2>
+                <span class="close" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+
+                <div class="input-group">
+                    <label for="nombre">Nombre</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="nombre" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="itemEmail">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="itemEmail" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="itemPassword">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="itemPassword" placeholder="Dejar en blanco para no cambiar">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="rol">Rol</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user-tag"></i>
+                        <select id="rol" required
+                            style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color); font-size: 1rem;">
+                            <option value="superadmin">Soporte SaaS (Superadmin)</option>
+                            <option value="soporte">Soporte Técnico (Soporte)</option>
+                            <option value="admin">Administrador (Local)</option>
+                            <option value="usuario">Usuario (Vendedor)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="estatus">Estatus</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-toggle-on"></i>
+                        <select id="estatus" required
+                            style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color); font-size: 1rem;">
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 1.5rem;">
+                    <button type="button" class="btn-cancel" onclick="closeUserModal()">Cancelar</button>
+                    <button type="submit" class="btn-login">Guardar Usuario</button>
                 </div>
             </form>
         </div>
@@ -354,28 +447,134 @@
         function switchTab(tab) {
             const tabTenants = document.getElementById('btnTabTenants');
             const tabBilling = document.getElementById('btnTabBilling');
+            const tabUsers = document.getElementById('btnTabUsers');
             const panelTenants = document.getElementById('panelTenants');
             const panelBilling = document.getElementById('panelBilling');
+            const panelUsers = document.getElementById('panelUsers');
             const pageTitle = document.getElementById('pageTitle');
             const btnNewTenant = document.getElementById('btnNewTenant');
+            const btnNewUser = document.getElementById('btnNewUser');
+
+            // Reset active tabs and panels
+            tabTenants.classList.remove('active');
+            tabBilling.classList.remove('active');
+            tabUsers.classList.remove('active');
+            panelTenants.style.display = 'none';
+            panelBilling.style.display = 'none';
+            panelUsers.style.display = 'none';
+            btnNewTenant.style.display = 'none';
+            btnNewUser.style.display = 'none';
 
             if (tab === 'tenants') {
                 tabTenants.classList.add('active');
-                tabBilling.classList.remove('active');
                 panelTenants.style.display = 'block';
-                panelBilling.style.display = 'none';
                 pageTitle.innerText = 'Gestión de Empresas SaaS';
                 btnNewTenant.style.display = 'block';
             } else if (tab === 'billing') {
-                tabTenants.classList.remove('active');
                 tabBilling.classList.add('active');
-                panelTenants.style.display = 'none';
                 panelBilling.style.display = 'block';
                 pageTitle.innerText = 'Consumo y Facturación por Empresa';
-                btnNewTenant.style.display = 'none';
                 loadBillingReport();
+            } else if (tab === 'users') {
+                tabUsers.classList.add('active');
+                panelUsers.style.display = 'block';
+                pageTitle.innerText = 'Usuarios de Soporte y Plataforma';
+                btnNewUser.style.display = 'block';
+                loadUsers();
             }
         }
+
+        let allUsers = [];
+
+        async function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando usuarios...</td></tr>';
+            try {
+                const res = await fetch('/api/users');
+                allUsers = await res.json();
+                tbody.innerHTML = allUsers.map(u => {
+                    const statusBadge = `<span class="badge badge-${u.activo ? 'success' : 'secondary'}">${u.activo ? 'ACTIVO' : 'INACTIVO'}</span>`;
+                    return `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td><strong>${u.nombre || 'Sin Nombre'}</strong></td>
+                            <td>${u.email}</td>
+                            <td><span class="badge badge-primary">${u.rol.toUpperCase()}</span></td>
+                            <td>${statusBadge}</td>
+                            <td>${new Date(u.creado_en).toLocaleDateString()}</td>
+                            <td>
+                                <button class="btn-icon" title="Editar Usuario" onclick='openUserModal(${JSON.stringify(u)})'>
+                                    <i class="fas fa-edit" style="color: var(--primary-color);"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="7" style="text-align: center;">No hay usuarios registrados.</td></tr>';
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #ef4444;">Error al cargar usuarios de soporte.</td></tr>';
+            }
+        }
+
+        function openUserModal(u = null) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('modalTitle');
+            if (modal) {
+                modal.style.display = 'flex';
+                title.innerText = u ? 'Editar Usuario' : 'Nuevo Usuario de Soporte';
+                document.getElementById('userId').value = u ? u.id : '';
+                document.getElementById('nombre').value = u ? u.nombre : '';
+                document.getElementById('itemEmail').value = u ? u.email : '';
+                document.getElementById('itemPassword').value = '';
+                if (u) {
+                    document.getElementById('rol').value = u.rol;
+                    document.getElementById('estatus').value = u.activo ? 'true' : 'false';
+                } else {
+                    document.getElementById('rol').value = 'superadmin';
+                    document.getElementById('estatus').value = 'true';
+                }
+            }
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+            document.getElementById('userForm').reset();
+        }
+
+        document.getElementById('userForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('nombre').value);
+            formData.append('email', document.getElementById('itemEmail').value);
+            
+            const password = document.getElementById('itemPassword').value;
+            if (password) formData.append('password', password);
+            
+            formData.append('rol', document.getElementById('rol').value);
+            formData.append('activo', document.getElementById('estatus').value === 'true');
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/users/${id}` : '/api/users';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success || data.id) {
+                    showNotification('Éxito', 'Usuario guardado correctamente.');
+                    closeUserModal();
+                    loadUsers();
+                } else {
+                    showNotification('Error', data.message || 'Error al guardar usuario.');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('Error', 'Error de conexión con el servidor.');
+            }
+        };
 
         async function loadBillingReport() {
             const tbody = document.getElementById('billingTableBody');
