@@ -348,6 +348,31 @@ function loadGlobalProfile() {
     // Apply role-based navigation visibility always on load
     filterSidebarByRole(user.rol);
 
+    // Si es superadmin o soporte, y está cargando la página principal, redirigir el iframe por defecto a superadmin.html
+    const isSuperAdmin = user.rol === 'superadmin' || user.rol === 'soporte';
+    if (isSuperAdmin) {
+        const path = window.location.pathname.toLowerCase();
+        const page = path.split('/').pop().split('?')[0];
+        if (page === '' || page === 'index.html') {
+            const iframe = document.querySelector('iframe[name="content-main"]');
+            if (iframe && (iframe.src.endsWith('resumen.html') || iframe.getAttribute('src') === 'resumen.html')) {
+                iframe.src = 'superadmin.html';
+                
+                // Cambiar el item activo de la barra lateral al Portal SaaS
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) {
+                    sidebar.querySelectorAll('.nav-item').forEach(link => {
+                        link.classList.remove('active');
+                        const href = link.getAttribute('href');
+                        if (href && href.includes('superadmin.html')) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            }
+        }
+    }
+
     // Sidebar & Header Profile Logic
     const profileHeader = document.getElementById('userProfileHeader');
     const profileName = document.getElementById('profileName');
