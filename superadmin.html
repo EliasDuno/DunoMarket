@@ -192,6 +192,22 @@
                     </div>
                 </header>
 
+                <!-- Navigation Tabs for Embed Mode -->
+                <div class="embed-nav-tabs" style="display: none; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                    <button class="btn-tab" id="btnEmbedTenants" onclick="switchTab('tenants')" 
+                        style="background: transparent; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-city"></i> Empresas
+                    </button>
+                    <button class="btn-tab" id="btnEmbedBilling" onclick="switchTab('billing')" 
+                        style="background: transparent; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-receipt"></i> Facturación & Consumo
+                    </button>
+                    <button class="btn-tab" id="btnEmbedUsers" onclick="switchTab('users')" 
+                        style="background: transparent; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-users-cog"></i> Usuarios de Soporte
+                    </button>
+                </div>
+
                 <!-- TAB: EMPRESAS -->
                 <div id="panelTenants">
                     <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
@@ -392,6 +408,12 @@
         let allTenants = [];
 
         document.addEventListener('DOMContentLoaded', () => {
+            if (window.self !== window.top) {
+                // Show embed mode horizontal tabs
+                const embedTabs = document.querySelector('.embed-nav-tabs');
+                if (embedTabs) embedTabs.style.display = 'flex';
+                switchTab('tenants');
+            }
             loadTenants();
         });
 
@@ -471,21 +493,52 @@
             btnNewTenant.style.display = 'none';
             btnNewUser.style.display = 'none';
 
+            // Reset embed tab buttons styling
+            const btnEmbedTenants = document.getElementById('btnEmbedTenants');
+            const btnEmbedBilling = document.getElementById('btnEmbedBilling');
+            const btnEmbedUsers = document.getElementById('btnEmbedUsers');
+            if (btnEmbedTenants && btnEmbedBilling && btnEmbedUsers) {
+                btnEmbedTenants.classList.remove('active');
+                btnEmbedBilling.classList.remove('active');
+                btnEmbedUsers.classList.remove('active');
+                btnEmbedTenants.style.color = 'var(--text-muted)';
+                btnEmbedTenants.style.background = 'transparent';
+                btnEmbedBilling.style.color = 'var(--text-muted)';
+                btnEmbedBilling.style.background = 'transparent';
+                btnEmbedUsers.style.color = 'var(--text-muted)';
+                btnEmbedUsers.style.background = 'transparent';
+            }
+
             if (tab === 'tenants') {
                 tabTenants.classList.add('active');
                 panelTenants.style.display = 'block';
                 pageTitle.innerText = 'Gestión de Empresas SaaS';
                 btnNewTenant.style.display = 'block';
+                if (btnEmbedTenants) {
+                    btnEmbedTenants.classList.add('active');
+                    btnEmbedTenants.style.color = '#fff';
+                    btnEmbedTenants.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2))';
+                }
             } else if (tab === 'billing') {
                 tabBilling.classList.add('active');
                 panelBilling.style.display = 'block';
                 pageTitle.innerText = 'Consumo y Facturación por Empresa';
+                if (btnEmbedBilling) {
+                    btnEmbedBilling.classList.add('active');
+                    btnEmbedBilling.style.color = '#fff';
+                    btnEmbedBilling.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2))';
+                }
                 loadBillingReport();
             } else if (tab === 'users') {
                 tabUsers.classList.add('active');
                 panelUsers.style.display = 'block';
                 pageTitle.innerText = 'Usuarios de Soporte y Plataforma';
                 btnNewUser.style.display = 'block';
+                if (btnEmbedUsers) {
+                    btnEmbedUsers.classList.add('active');
+                    btnEmbedUsers.style.color = '#fff';
+                    btnEmbedUsers.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2))';
+                }
                 loadUsers();
             }
         }
