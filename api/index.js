@@ -119,9 +119,29 @@ async function getTenantPool(slug) {
         const result = await masterPool.query('SELECT db_url FROM tenants WHERE slug = $1 AND status = $2', [slug, 'active']);
         if (result.rows.length === 0) return null;
 
-        const tenantPool = new Pool(getTenantPoolConfig(result.rows[0].db_url));
+        const dbUrl = result.rows[0].db_url;
+
+        // 1. Ensure schema exists first
+        const tempPool = new Pool(getTenantPoolConfig(dbUrl));
+        try {
+            await tempPool.query(`CREATE SCHEMA IF NOT EXISTS "${slug}"`);
+        } catch (schemaErr) {
+            console.error(`Error creating schema for tenant ${slug}:`, schemaErr.message);
+        } finally {
+            await tempPool.end();
+        }
+
+        // 2. Instantiate persistent tenant pool
+        const tenantPool = new Pool(getTenantPoolConfig(dbUrl));
         tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
 
+        // 3. Force pool connection sessions to target this schema space
+        tenantPool.on('connect', (client) => {
+            client.query(`SET search_path TO "${slug}", public`)
+                .catch(err => console.error(`Error setting search_path for tenant ${slug}:`, err));
+        });
+
+        // 4. Validate or update base table schema
         try {
             await ensureUsuarioSchema(tenantPool);
             tenantSchemaEnsured.add(slug);
@@ -226,7 +246,7 @@ app.get('/api/saas/tenants', async (req, res) => {
                         const testRes = await pool.query(`
                             SELECT EXISTS (
                                 SELECT FROM information_schema.tables 
-                                WHERE table_schema = 'public' 
+                                WHERE table_schema = current_schema() 
                                   AND table_name = 'ventas'
                             );
                         `);
