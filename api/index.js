@@ -226,7 +226,10 @@ masterPool.connect(async (err, client, release) => {
             );
         `);
         await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_provisioned BOOLEAN DEFAULT false;`);
-        console.log('Tabla tenants verificada.');
+        await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_name VARCHAR(100);`);
+        await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_email VARCHAR(100);`);
+        await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_password_hash VARCHAR(255);`);
+        console.log('Tabla tenants verificada y columnas de administrador aseguradas.');
     } catch (e) {
         console.error('Error init master tables', e);
     } finally {
@@ -242,9 +245,10 @@ app.get('/api/saas/tenants', async (req, res) => {
         const tenants = result.rows;
         
         for (const tenant of tenants) {
-            if (!tenant.is_provisioned) {
-                const pool = await getTenantPool(tenant.slug);
-                if (pool) {
+            tenant.admins = [];
+            const pool = await getTenantPool(tenant.slug);
+            if (pool) {
+                if (!tenant.is_provisioned) {
                     try {
                         const testRes = await pool.query(`
                             SELECT EXISTS (
@@ -261,6 +265,20 @@ app.get('/api/saas/tenants', async (req, res) => {
                         console.error(`Error checking DB for tenant ${tenant.slug}:`, err.message);
                     }
                 }
+
+                if (tenant.is_provisioned) {
+                    try {
+                        const adminRes = await pool.query(`
+                            SELECT nombre, email 
+                            FROM usuarios 
+                            WHERE rol = 'administrador' AND activo = true
+                            ORDER BY id ASC
+                        `);
+                        tenant.admins = adminRes.rows;
+                    } catch (err) {
+                        console.error(`Error loading admins for tenant ${tenant.slug}:`, err.message);
+                    }
+                }
             }
         }
         res.json(tenants);
@@ -268,11 +286,17 @@ app.get('/api/saas/tenants', async (req, res) => {
 });
 
 app.post('/api/saas/tenants', async (req, res) => {
-    const { nombre, slug, dbUrl } = req.body;
+    const { nombre, slug, dbUrl, adminName, adminEmail, adminPassword } = req.body;
     try {
+        if (!nombre || !slug || !dbUrl || !adminName || !adminEmail || !adminPassword) {
+            return res.status(400).json({ message: 'Todos los campos son obligatorios, incluyendo los del administrador inicial.' });
+        }
+        
+        const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+
         await masterPool.query(
-            'INSERT INTO tenants (nombre, slug, db_url) VALUES ($1, $2, $3)',
-            [nombre, slug, dbUrl]
+            'INSERT INTO tenants (nombre, slug, db_url, admin_name, admin_email, admin_password_hash) VALUES ($1, $2, $3, $4, $5, $6)',
+            [nombre, slug.trim().toLowerCase(), dbUrl.trim(), adminName.trim(), adminEmail.trim().toLowerCase(), adminPasswordHash]
         );
         res.status(201).json({ success: true });
     } catch (e) { res.status(400).json({ message: e.message }); }
@@ -363,7 +387,7 @@ app.get('/api/saas/usage', async (req, res) => {
 });
 
 // Shared DB Initialization Script (Used for provisioning)
-async function initializeTenantDB(tenantPool) {
+async function initializeTenantDB(tenantPool, adminName, adminEmail, adminPasswordHash) {
     const client = await tenantPool.connect();
     try {
         await client.query('BEGIN');
@@ -612,6 +636,15 @@ async function initializeTenantDB(tenantPool) {
                 BEGIN ALTER TABLE caja_sesiones ADD COLUMN observaciones TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
             END $$;
         `);
+
+        // Insert initial administrator user if provided
+        if (adminEmail && adminPasswordHash) {
+            await client.query(`
+                INSERT INTO usuarios (nombre, email, password_hash, rol, activo)
+                VALUES ($1, $2, $3, 'administrador', true)
+                ON CONFLICT (email) DO NOTHING;
+            `, [adminName || 'Admin Inicial', adminEmail, adminPasswordHash]);
+        }
         
         await client.query('COMMIT');
         return true;
@@ -630,7 +663,19 @@ app.post('/api/saas/provision', async (req, res) => {
     if (!pool) return res.status(404).json({ message: 'Tenant not found' });
 
     try {
-        await initializeTenantDB(pool);
+        // Query the admin credentials from master database
+        const tenantRes = await masterPool.query('SELECT admin_name, admin_email, admin_password_hash FROM tenants WHERE slug = $1', [slug]);
+        let adminName = null;
+        let adminEmail = null;
+        let adminPasswordHash = null;
+        
+        if (tenantRes.rows.length > 0) {
+            adminName = tenantRes.rows[0].admin_name;
+            adminEmail = tenantRes.rows[0].admin_email;
+            adminPasswordHash = tenantRes.rows[0].admin_password_hash;
+        }
+
+        await initializeTenantDB(pool, adminName, adminEmail, adminPasswordHash);
         await masterPool.query('UPDATE tenants SET is_provisioned = true WHERE slug = $1', [slug]);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ message: e.message }); }

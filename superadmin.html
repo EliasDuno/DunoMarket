@@ -315,6 +315,34 @@
                     </div>
                 </div>
 
+                <div id="adminUserFields">
+                    <h3 style="margin: 1.5rem 0 0.5rem 0; font-size: 1.1rem; color: var(--text-color); border-bottom: 1px solid var(--input-border); padding-bottom: 0.3rem;">Usuario Administrador Inicial</h3>
+                    
+                    <div class="input-group">
+                        <label for="tAdminName">Nombre del Administrador</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="tAdminName" placeholder="Ej: Elias Duno" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="tAdminEmail">Email del Administrador</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="tAdminEmail" placeholder="ejemplo@correo.com" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="tAdminPassword">Contraseña del Administrador</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-key"></i>
+                            <input type="password" id="tAdminPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="input-group" id="statusGroup" style="display: none;">
                     <label for="tStatus">Estado</label>
                     <div class="input-wrapper">
@@ -462,6 +490,24 @@
                         <div class="tenant-card-body">
                             <p><span class="label">Base de Datos:</span> <span style="font-family: monospace; font-size: 0.8rem; word-break: break-all;">${dbShort}</span></p>
                             <p><span class="label">Registrado el:</span> <span>${new Date(t.created_at).toLocaleDateString()}</span></p>
+                            
+                            <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px dashed var(--input-border);">
+                                <span class="label" style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.85rem;">Administradores Activos:</span>
+                                ${t.admins && t.admins.length > 0 ? 
+                                    t.admins.map(adm => `
+                                        <div style="font-size: 0.85rem; color: var(--text-color); margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.3rem;">
+                                            <i class="fas fa-user-shield" style="color: var(--primary-color); font-size: 0.8rem;"></i>
+                                            <strong>${adm.nombre}</strong> <span style="color: #71717a; font-size: 0.8rem;">(${adm.email})</span>
+                                        </div>
+                                    `).join('') 
+                                    : `
+                                        <div style="font-size: 0.85rem; color: #a1a1aa; display: flex; align-items: center; gap: 0.3rem;">
+                                            <i class="fas fa-exclamation-triangle" style="font-size: 0.8rem;"></i>
+                                            <span>Sin administradores activos</span>
+                                        </div>
+                                    `
+                                }
+                            </div>
                         </div>
                         <div class="tenant-card-actions" style="justify-content: space-between; align-items: center;">
                             <div>
@@ -720,6 +766,7 @@
             const title = modal.querySelector('h2');
             const submitBtn = form.querySelector('button[type="submit"]');
             const statusGroup = document.getElementById('statusGroup');
+            const adminUserFields = document.getElementById('adminUserFields');
 
             if (id) {
                 const tenant = allTenants.find(t => String(t.id) === String(id));
@@ -731,6 +778,11 @@
                     document.getElementById('tStatus').value = tenant.status || 'active';
                     
                     statusGroup.style.display = 'block';
+                    adminUserFields.style.display = 'none';
+                    document.getElementById('tAdminName').required = false;
+                    document.getElementById('tAdminEmail').required = false;
+                    document.getElementById('tAdminPassword').required = false;
+                    
                     title.innerText = 'Editar Empresa';
                     submitBtn.innerText = 'Actualizar Empresa';
                 }
@@ -738,6 +790,11 @@
                 form.reset();
                 document.getElementById('tenantId').value = '';
                 statusGroup.style.display = 'none';
+                adminUserFields.style.display = 'block';
+                document.getElementById('tAdminName').required = true;
+                document.getElementById('tAdminEmail').required = true;
+                document.getElementById('tAdminPassword').required = true;
+                
                 title.innerText = 'Registrar Nueva Empresa';
                 submitBtn.innerText = 'Guardar Cliente';
             }
@@ -759,6 +816,12 @@
                 dbUrl: document.getElementById('tDbUrl').value.trim(),
                 status: document.getElementById('tStatus').value
             };
+
+            if (!id) {
+                data.adminName = document.getElementById('tAdminName').value.trim();
+                data.adminEmail = document.getElementById('tAdminEmail').value.trim().toLowerCase();
+                data.adminPassword = document.getElementById('tAdminPassword').value;
+            }
 
             const method = id ? 'PUT' : 'POST';
             const url = id ? `/api/saas/tenants/${id}` : '/api/saas/tenants';
