@@ -320,6 +320,9 @@ function loadGlobalProfile() {
 
     const user = JSON.parse(userSession);
 
+    // Apply role-based navigation visibility always on load
+    filterSidebarByRole(user.rol);
+
     // Sidebar & Header Profile Logic
     const profileHeader = document.getElementById('userProfileHeader');
     const profileName = document.getElementById('profileName');
@@ -327,11 +330,9 @@ function loadGlobalProfile() {
     const avatarContainer = document.getElementById('profileAvatarContainer');
 
     if (profileHeader && profileName) {
-    profileHeader.style.display = 'flex';
-    profileName.innerText = user.nombre || user.email;
-    if (profileRole) profileRole.innerText = user.rol;
-    // Apply role-based navigation visibility
-    filterSidebarByRole(user.rol);
+        profileHeader.style.display = 'flex';
+        profileName.innerText = user.nombre || user.email;
+        if (profileRole) profileRole.innerText = user.rol;
 
         // Load Avatar
         if (avatarContainer) {
