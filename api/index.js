@@ -230,6 +230,57 @@ app.post('/api/saas/tenants', async (req, res) => {
     } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
+app.get('/api/saas/usage', async (req, res) => {
+    try {
+        const tenantsResult = await masterPool.query("SELECT * FROM tenants ORDER BY created_at DESC");
+        const usageData = [];
+
+        for (const tenant of tenantsResult.rows) {
+            const pool = await getTenantPool(tenant.slug);
+            if (!pool) {
+                usageData.push({
+                    id: tenant.id,
+                    nombre: tenant.nombre,
+                    slug: tenant.slug,
+                    status: tenant.status,
+                    error: 'Error al conectar con la base de datos'
+                });
+                continue;
+            }
+
+            try {
+                // Consultar métricas de consumo del inquilino
+                const salesRes = await pool.query('SELECT COUNT(*) as transacciones, COALESCE(SUM(total_usd), 0) as total_usd FROM ventas');
+                const productsRes = await pool.query('SELECT COUNT(*) as productos FROM productos');
+                const usersRes = await pool.query('SELECT COUNT(*) as usuarios FROM usuarios');
+
+                usageData.push({
+                    id: tenant.id,
+                    nombre: tenant.nombre,
+                    slug: tenant.slug,
+                    status: tenant.status,
+                    transacciones: parseInt(salesRes.rows[0].transacciones || 0),
+                    total_usd: parseFloat(salesRes.rows[0].total_usd || 0),
+                    productos: parseInt(productsRes.rows[0].productos || 0),
+                    usuarios: parseInt(usersRes.rows[0].usuarios || 0)
+                });
+            } catch (tenantErr) {
+                usageData.push({
+                    id: tenant.id,
+                    nombre: tenant.nombre,
+                    slug: tenant.slug,
+                    status: tenant.status,
+                    error: `Error al consultar datos: ${tenantErr.message}`
+                });
+            }
+        }
+
+        res.json(usageData);
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+});
+
 // Shared DB Initialization Script (Used for provisioning)
 async function initializeTenantDB(tenantPool) {
     const client = await tenantPool.connect();

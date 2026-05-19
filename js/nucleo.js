@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Verificación Global de Auth (Omitir para acceso.html)
     if (!isAccessPage()) {
         checkGlobalAuth();
+        checkPagePermission();
         loadGlobalProfile();
         checkAlerts(); // From alerts.js
         initInactivityTimer(); // Auto-Logout
@@ -39,14 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
     window.fetch = async (...args) => {
         let [resource, config] = args;
         const tenantSlug = sessionStorage.getItem('tenant_slug');
+        const userSession = sessionStorage.getItem('user_session');
         
-if (tenantSlug && resource.toString().includes('/api') && !resource.toString().includes('/api/saas')) {
+        if (tenantSlug && resource.toString().includes('/api') && !resource.toString().includes('/api/saas')) {
             if (!config) config = {};
             if (!config.headers) config.headers = {};
             
             // Only add if not already present
             if (!config.headers['x-tenant-slug']) {
                 config.headers['x-tenant-slug'] = tenantSlug;
+            }
+
+            // Add user context if present in session
+            if (userSession) {
+                try {
+                    const user = JSON.parse(userSession);
+                    if (user && user.rol && !config.headers['x-user-role']) {
+                        config.headers['x-user-role'] = user.rol;
+                    }
+                    if (user && user.id && !config.headers['x-user-id']) {
+                        config.headers['x-user-id'] = user.id.toString();
+                    }
+                } catch (e) {
+                    console.error('Error parsing user session in fetch interceptor:', e);
+                }
             }
         }
         return originalFetch(resource, config);
@@ -213,6 +230,90 @@ function checkGlobalAuth() {
     }
 }
 
+function checkPagePermission() {
+    const userSession = sessionStorage.getItem('user_session');
+    if (!userSession) return;
+    
+    try {
+        const user = JSON.parse(userSession);
+        const userRole = (user.rol || 'usuario').toLowerCase();
+        const isAdmin = userRole === 'admin' || userRole === 'administrador';
+        
+        const path = window.location.pathname.toLowerCase();
+        const page = path.split('/').pop().split('?')[0];
+        
+        // Pages that require admin privileges
+        const adminOnlyPages = [
+            'usuarios.html',
+            'configuracion.html',
+            'reportes.html',
+            'categorias.html',
+            'proveedores.html',
+            'cuentas.html'
+        ];
+        
+        if (!isAdmin && adminOnlyPages.includes(page)) {
+            console.warn(`Acceso denegado a la página: ${page} para rol ${userRole}.`);
+            if (window.self !== window.top) {
+                window.location.replace('resumen.html');
+            } else {
+                window.location.replace('/');
+            }
+        }
+    } catch (e) {
+        console.error('Error checking page permissions:', e);
+    }
+}
+
+function filterSidebarByRole(role) {
+    const userRole = (role || 'usuario').toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'administrador';
+    
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+
+    // Define allowed pages for standard user
+    const allowedForUser = ['resumen.html', 'pdv.html', 'inventario.html', 'clientes.html'];
+    
+    const navLinks = sidebar.querySelectorAll('.nav-item');
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+        
+        const page = href.split('/').pop().split('?')[0];
+        
+        if (!isAdmin) {
+            // Check if page is allowed. Note: "/" or empty href is allowed.
+            if (!allowedForUser.includes(page) && page !== '' && page !== 'index.html') {
+                link.style.display = 'none';
+            } else {
+                link.style.display = 'flex'; // Restore if hidden previously
+            }
+        } else {
+            link.style.display = 'flex'; // Admin sees everything
+        }
+    });
+
+    // Hide sidebar labels if they have no visible siblings
+    const labels = sidebar.querySelectorAll('.sidebar-label');
+    labels.forEach(label => {
+        let sibling = label.nextElementSibling;
+        let hasVisibleSibling = false;
+        while (sibling && !sibling.classList.contains('sidebar-label') && !sibling.classList.contains('sidebar-footer')) {
+            if (sibling.classList.contains('nav-item') && sibling.style.display !== 'none') {
+                hasVisibleSibling = true;
+                break;
+            }
+            sibling = sibling.nextElementSibling;
+        }
+        if (!isAdmin && !hasVisibleSibling) {
+            label.style.display = 'none';
+        } else {
+            label.style.display = 'block'; // Admin sees all labels
+        }
+    });
+}
+
 function loadGlobalProfile() {
     const userSession = sessionStorage.getItem('user_session'); // Changed to sessionStorage
     if (!userSession) return;
@@ -226,9 +327,11 @@ function loadGlobalProfile() {
     const avatarContainer = document.getElementById('profileAvatarContainer');
 
     if (profileHeader && profileName) {
-        profileHeader.style.display = 'flex';
-        profileName.innerText = user.nombre || user.email;
-        if (profileRole) profileRole.innerText = user.rol;
+    profileHeader.style.display = 'flex';
+    profileName.innerText = user.nombre || user.email;
+    if (profileRole) profileRole.innerText = user.rol;
+    // Apply role-based navigation visibility
+    filterSidebarByRole(user.rol);
 
         // Load Avatar
         if (avatarContainer) {

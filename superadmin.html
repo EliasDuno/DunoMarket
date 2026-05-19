@@ -1,111 +1,449 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin - PiduNet SaaS</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .super-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
-        .tenant-card { background: #1e293b; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
-        .status-active { color: #4ade80; }
-        .status-suspended { color: #f87171; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); }
-        .form-group input { width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: white; }
+        .metric-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-color);
+        }
+
+        .metric-icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .metric-icon-wrapper.green {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .metric-icon-wrapper.blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .metric-icon-wrapper.orange {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        .metric-details h3 {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin: 0 0 0.25rem 0;
+            font-weight: 500;
+        }
+
+        .metric-details p {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .tenant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .tenant-card-premium {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tenant-card-premium:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .tenant-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .tenant-card-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .tenant-card-header small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.2rem;
+        }
+
+        .tenant-card-body {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .tenant-card-body p {
+            margin: 0.4rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tenant-card-body span.label {
+            color: var(--text-muted);
+        }
+
+        .tenant-card-actions {
+            display: flex;
+            gap: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 1rem;
+            justify-content: flex-end;
+        }
     </style>
 </head>
-<body class="dark-mode">
-    <div class="sidebar">
-        <div class="sidebar-brand">
-            <i class="fas fa-network-wired"></i>
-            <span>PiduNet SaaS</span>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="#" class="active"><i class="fas fa-users"></i> Clientes (Tenants)</a>
-            <a href="/"><i class="fas fa-arrow-left"></i> Volver al App</a>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-network-wired" style="color: var(--primary-color); font-size: 1.5rem; margin-right: 0.5rem;"></i>
+                <span style="font-weight: 700;">PiduNet SaaS</span>
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Soporte Técnico</div>
+                <a href="#" class="nav-item active" id="btnTabTenants" onclick="switchTab('tenants')">
+                    <i class="fas fa-city"></i> Empresas (Tenants)
+                </a>
+                <a href="#" class="nav-item" id="btnTabBilling" onclick="switchTab('billing')">
+                    <i class="fas fa-receipt"></i> Facturación & Consumo
+                </a>
+
+                <div class="sidebar-label">Volver</div>
+                <a href="/" class="nav-item">
+                    <i class="fas fa-arrow-left"></i> Volver al App
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
         </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="main-container" style="max-width: 100%;">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1 id="pageTitle">Gestión de Empresas SaaS</h1>
+                    </div>
+
+                    <div class="header-actions">
+                        <button id="btnNewTenant" class="btn-login" onclick="openTenantModal()"><i class="fas fa-plus"></i> Registrar Empresa</button>
+                    </div>
+                </header>
+
+                <!-- TAB: EMPRESAS -->
+                <div id="panelTenants">
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="metric-card">
+                            <div class="metric-icon-wrapper"><i class="fas fa-building"></i></div>
+                            <div class="metric-details">
+                                <h3>Total Empresas</h3>
+                                <p id="statTotalTenants">0</p>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon-wrapper green"><i class="fas fa-check-circle"></i></div>
+                            <div class="metric-details">
+                                <h3>Servicio Activo</h3>
+                                <p id="statActiveTenants">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tenant-grid" id="tenantsList">
+                        <!-- JS renders card layout here -->
+                        <p>Cargando empresas...</p>
+                    </div>
+                </div>
+
+                <!-- TAB: FACTURACIÓN Y CONSUMO -->
+                <div id="panelBilling" style="display: none;">
+                    <div class="table-container">
+                        <table id="billingTable">
+                            <thead>
+                                <tr>
+                                    <th>Empresa</th>
+                                    <th>Código (Slug)</th>
+                                    <th>Estado</th>
+                                    <th>Transacciones</th>
+                                    <th>Volumen Ventas</th>
+                                    <th>Catálogo (Prods)</th>
+                                    <th>Usuarios</th>
+                                    <th>Monto Estimado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billingTableBody">
+                                <!-- JS renders rows here -->
+                                <tr><td colspan="9" style="text-align: center;">Cargando reporte de consumo...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <main class="main-content">
-        <header class="header">
-            <h1>Gestión de Clientes SaaS</h1>
-            <button class="btn-login" onclick="openNewTenantModal()"><i class="fas fa-plus"></i> Nuevo Cliente</button>
-        </header>
-
-        <div class="super-container">
-            <div id="tenantsList">
-                <!-- Tablets loaded via JS -->
-                <p>Cargando clientes...</p>
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal Nuevo Cliente -->
+    <!-- Modal Registrar Empresa -->
     <div id="tenantModal" class="modal">
-        <div class="modal-content login-container" style="max-width: 500px;">
-            <h2>Registrar Nuevo Cliente</h2>
+        <div class="modal-content login-container" style="margin: 0; max-width: 500px;">
+            <div class="modal-header">
+                <h2>Registrar Nueva Empresa</h2>
+                <span class="close" onclick="closeTenantModal()">&times;</span>
+            </div>
             <form id="tenantForm">
-                <div class="form-group">
-                    <label>Nombre Comercial</label>
-                    <input type="text" id="tNombre" placeholder="Ej: Abasto El Sol" required>
+                <div class="input-group">
+                    <label for="tNombre">Nombre Comercial</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-signature"></i>
+                        <input type="text" id="tNombre" placeholder="Ej: Abasto El Sol" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Código de Inquilino (Slug)</label>
-                    <input type="text" id="tSlug" placeholder="ej: abastoelsol" required>
+
+                <div class="input-group">
+                    <label for="tSlug">Código de Empresa (Slug único)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-code"></i>
+                        <input type="text" id="tSlug" placeholder="ej: abastoelsol" required pattern="[a-z0-9]+" title="Solo letras minúsculas y números">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>URL de Conexión Supabase (PostgreSQL URL)</label>
-                    <input type="password" id="tDbUrl" placeholder="postgresql://postgres:[pass]@db.[id].supabase.co:5432/postgres" required>
+
+                <div class="input-group">
+                    <label for="tDbUrl">URL de Base de Datos PostgreSQL (Supabase)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-database"></i>
+                        <input type="password" id="tDbUrl" placeholder="postgresql://postgres:[pass]@db.[id].supabase.co:5432/postgres" required>
+                    </div>
                 </div>
-                <div class="button-group">
+
+                <div class="button-group" style="margin-top: 1.5rem;">
                     <button type="button" class="btn-cancel" onclick="closeTenantModal()">Cancelar</button>
-                    <button type="submit" class="btn-login">Crear Cliente</button>
+                    <button type="submit" class="btn-login">Guardar Cliente</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 id="notificationTitle">Aviso</h2>
+            </div>
+            <p id="notificationMessage" style="margin-bottom: 1.5rem; color: var(--text-color);"></p>
+            <div class="button-group" style="justify-content: center;">
+                <button class="btn-login" onclick="closeNotification()">Entendido</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/nucleo.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', loadTenants);
+        let allTenants = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTenants();
+        });
 
         async function loadTenants() {
             try {
                 const res = await fetch('/api/saas/tenants');
-                const tenants = await res.json();
-                const container = document.getElementById('tenantsList');
-                container.innerHTML = tenants.map(t => `
-                    <div class="tenant-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <h3 style="margin:0">${t.nombre} <small style="color:var(--text-muted)">(${t.slug})</small></h3>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0;">DB: ${t.db_url.substring(0, 30)}...</p>
-                            </div>
-                            <div>
-                                <span class="status-${t.status}">${t.status.toUpperCase()}</span>
-                                <button class="btn-action" title="Aprovisionar DB" onclick="provisionTenant('${t.slug}')"><i class="fas fa-database"></i></button>
-                                <button class="btn-action" title="Suspender" onclick="toggleTenantStatus('${t.id}')"><i class="fas fa-ban"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('') || '<p>No hay clientes registrados.</p>';
+                allTenants = await res.json();
+                renderTenants();
+                updateStats();
             } catch (e) {
                 console.error(e);
-                document.getElementById('tenantsList').innerHTML = '<p>Error al cargar clientes.</p>';
+                document.getElementById('tenantsList').innerHTML = '<p style="color: #ef4444;">Error al cargar empresas.</p>';
             }
         }
 
-        function openNewTenantModal() { document.getElementById('tenantModal').style.display = 'flex'; }
-        function closeTenantModal() { document.getElementById('tenantModal').style.display = 'none'; }
+        function renderTenants() {
+            const container = document.getElementById('tenantsList');
+            if (!container) return;
+
+            container.innerHTML = allTenants.map(t => {
+                const isSuspended = t.status === 'suspended';
+                const statusBadge = `<span class="badge badge-${isSuspended ? 'secondary' : 'success'}">${t.status.toUpperCase()}</span>`;
+                const dbShort = t.db_url ? t.db_url.substring(0, 35) + '...' : 'No configurada';
+
+                return `
+                    <div class="tenant-card-premium">
+                        <div class="tenant-card-header">
+                            <div>
+                                <h3>${t.nombre}</h3>
+                                <small>Código: <strong>${t.slug}</strong></small>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        <div class="tenant-card-body">
+                            <p><span class="label">Base de Datos:</span> <span style="font-family: monospace; font-size: 0.8rem; word-break: break-all;">${dbShort}</span></p>
+                            <p><span class="label">Registrado el:</span> <span>${new Date(t.created_at).toLocaleDateString()}</span></p>
+                        </div>
+                        <div class="tenant-card-actions">
+                            <button class="btn-icon" title="Aprovisionar Base de Datos" onclick="provisionTenant('${t.slug}')">
+                                <i class="fas fa-database" style="color: var(--primary-color);"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<p>No hay empresas registradas.</p>';
+        }
+
+        function updateStats() {
+            document.getElementById('statTotalTenants').innerText = allTenants.length;
+            document.getElementById('statActiveTenants').innerText = allTenants.filter(t => t.status === 'active').length;
+        }
+
+        function switchTab(tab) {
+            const tabTenants = document.getElementById('btnTabTenants');
+            const tabBilling = document.getElementById('btnTabBilling');
+            const panelTenants = document.getElementById('panelTenants');
+            const panelBilling = document.getElementById('panelBilling');
+            const pageTitle = document.getElementById('pageTitle');
+            const btnNewTenant = document.getElementById('btnNewTenant');
+
+            if (tab === 'tenants') {
+                tabTenants.classList.add('active');
+                tabBilling.classList.remove('active');
+                panelTenants.style.display = 'block';
+                panelBilling.style.display = 'none';
+                pageTitle.innerText = 'Gestión de Empresas SaaS';
+                btnNewTenant.style.display = 'block';
+            } else if (tab === 'billing') {
+                tabTenants.classList.remove('active');
+                tabBilling.classList.add('active');
+                panelTenants.style.display = 'none';
+                panelBilling.style.display = 'block';
+                pageTitle.innerText = 'Consumo y Facturación por Empresa';
+                btnNewTenant.style.display = 'none';
+                loadBillingReport();
+            }
+        }
+
+        async function loadBillingReport() {
+            const tbody = document.getElementById('billingTableBody');
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Generando reporte de consumo en tiempo real... (esto puede tardar unos segundos)</td></tr>';
+
+            try {
+                const res = await fetch('/api/saas/usage');
+                const usage = await res.json();
+
+                tbody.innerHTML = usage.map(u => {
+                    const statusBadge = `<span class="badge badge-${u.status === 'active' ? 'success' : 'secondary'}">${u.status.toUpperCase()}</span>`;
+                    
+                    if (u.error) {
+                        return `
+                            <tr>
+                                <td><strong>${u.nombre}</strong></td>
+                                <td>${u.slug}</td>
+                                <td>${statusBadge}</td>
+                                <td colspan="5" style="color: #ef4444; font-style: italic;">${u.error}</td>
+                                <td>-</td>
+                            </tr>
+                        `;
+                    }
+
+                    // Estimado base: $10 de cargo base + $0.05 por transacción (venta)
+                    const baseFee = 10.00;
+                    const txFee = 0.05;
+                    const estimatedCost = baseFee + (u.transacciones * txFee);
+
+                    return `
+                        <tr>
+                            <td><strong>${u.nombre}</strong></td>
+                            <td><code>${u.slug}</code></td>
+                            <td>${statusBadge}</td>
+                            <td>${u.transacciones}</td>
+                            <td>${formatCurrency(u.total_usd, '$')}</td>
+                            <td>${u.productos}</td>
+                            <td>${u.usuarios}</td>
+                            <td style="color: #10b981; font-weight: 700;">${formatCurrency(estimatedCost, '$')}</td>
+                            <td>
+                                <button class="btn-icon" title="Aprovisionar DB" onclick="provisionTenant('${u.slug}')">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #ef4444;">Error al consultar el consumo de las empresas.</td></tr>';
+            }
+        }
+
+        function openTenantModal() {
+            document.getElementById('tenantModal').style.display = 'flex';
+        }
+
+        function closeTenantModal() {
+            document.getElementById('tenantModal').style.display = 'none';
+            document.getElementById('tenantForm').reset();
+        }
 
         document.getElementById('tenantForm').onsubmit = async (e) => {
             e.preventDefault();
             const data = {
                 nombre: document.getElementById('tNombre').value,
-                slug: document.getElementById('tSlug').value,
-                dbUrl: document.getElementById('tDbUrl').value
+                slug: document.getElementById('tSlug').value.trim().toLowerCase(),
+                dbUrl: document.getElementById('tDbUrl').value.trim()
             };
 
             try {
@@ -115,14 +453,16 @@
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    showNotification('Éxito', 'Cliente registrado correctamente');
+                    showNotification('Éxito', 'Cliente registrado correctamente.');
                     closeTenantModal();
                     loadTenants();
                 } else {
                     const err = await res.json();
-                    showNotification('Error', err.message);
+                    showNotification('Error', err.message || 'Error al guardar cliente.');
                 }
-            } catch (e) { showNotification('Error', 'No se pudo conectar con el servidor.'); }
+            } catch (e) {
+                showNotification('Error', 'No se pudo conectar con el servidor.');
+            }
         };
 
         async function provisionTenant(slug) {
@@ -136,10 +476,14 @@
                 if (res.ok) {
                     showNotification('Éxito', 'Base de datos aprovisionada correctamente.');
                 } else {
-                    showNotification('Error', 'Falló el aprovisionamiento.');
+                    const err = await res.json();
+                    showNotification('Error', err.message || 'Falló el aprovisionamiento.');
                 }
-            } catch (e) { showNotification('Error', 'Error de red.'); }
+            } catch (e) {
+                showNotification('Error', 'Error de red al intentar aprovisionar.');
+            }
         }
     </script>
 </body>
+
 </html>
