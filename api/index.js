@@ -216,7 +216,31 @@ masterPool.connect(async (err, client, release) => {
 app.get('/api/saas/tenants', async (req, res) => {
     try {
         const result = await masterPool.query('SELECT * FROM tenants ORDER BY created_at DESC');
-        res.json(result.rows);
+        const tenants = result.rows;
+        
+        for (const tenant of tenants) {
+            if (!tenant.is_provisioned) {
+                const pool = await getTenantPool(tenant.slug);
+                if (pool) {
+                    try {
+                        const testRes = await pool.query(`
+                            SELECT EXISTS (
+                                SELECT FROM information_schema.tables 
+                                WHERE table_schema = 'public' 
+                                  AND table_name = 'ventas'
+                            );
+                        `);
+                        if (testRes.rows[0].exists) {
+                            await masterPool.query('UPDATE tenants SET is_provisioned = true WHERE id = $1', [tenant.id]);
+                            tenant.is_provisioned = true;
+                        }
+                    } catch (err) {
+                        console.error(`Error checking DB for tenant ${tenant.slug}:`, err.message);
+                    }
+                }
+            }
+        }
+        res.json(tenants);
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
