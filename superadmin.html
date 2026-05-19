@@ -430,9 +430,15 @@
                             <p><span class="label">Registrado el:</span> <span>${new Date(t.created_at).toLocaleDateString()}</span></p>
                         </div>
                         <div class="tenant-card-actions">
-                            <button class="btn-icon" title="Aprovisionar Base de Datos" onclick="provisionTenant('${t.slug}')">
-                                <i class="fas fa-database" style="color: var(--primary-color);"></i>
-                            </button>
+                            ${t.is_provisioned ? `
+                                <span style="color: #10b981; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                                    <i class="fas fa-check-circle"></i> Base de datos lista
+                                </span>
+                            ` : `
+                                <button class="btn-icon" title="Aprovisionar Base de Datos" onclick="provisionTenant('${t.slug}')">
+                                    <i class="fas fa-database" style="color: var(--primary-color);"></i> Aprovisionar
+                                </button>
+                            `}
                         </div>
                     </div>
                 `;
@@ -594,7 +600,13 @@
                                 <td>${u.slug}</td>
                                 <td>${statusBadge}</td>
                                 <td colspan="5" style="color: #ef4444; font-style: italic;">${u.error}</td>
-                                <td>-</td>
+                                <td>
+                                    ${u.is_provisioned ? '-' : `
+                                        <button class="btn-icon" title="Aprovisionar DB" onclick="provisionTenant('${u.slug}')">
+                                            <i class="fas fa-database" style="color: var(--primary-color);"></i>
+                                        </button>
+                                    `}
+                                </td>
                             </tr>
                         `;
                     }
@@ -615,9 +627,13 @@
                             <td>${u.usuarios}</td>
                             <td style="color: #10b981; font-weight: 700;">${formatCurrency(estimatedCost, '$')}</td>
                             <td>
-                                <button class="btn-icon" title="Aprovisionar DB" onclick="provisionTenant('${u.slug}')">
-                                    <i class="fas fa-sync"></i>
-                                </button>
+                                ${u.is_provisioned ? `
+                                    <span style="color: #10b981;" title="Base de datos lista"><i class="fas fa-check-circle"></i></span>
+                                ` : `
+                                    <button class="btn-icon" title="Aprovisionar DB" onclick="provisionTenant('${u.slug}')">
+                                        <i class="fas fa-database" style="color: var(--primary-color);"></i>
+                                    </button>
+                                `}
                             </td>
                         </tr>
                     `;
@@ -674,6 +690,8 @@
                 });
                 if (res.ok) {
                     showNotification('Éxito', 'Base de datos aprovisionada correctamente.');
+                    loadTenants();
+                    loadBillingReport();
                 } else {
                     const err = await res.json();
                     showNotification('Error', err.message || 'Falló el aprovisionamiento.');

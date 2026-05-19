@@ -202,6 +202,7 @@ masterPool.connect(async (err, client, release) => {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+        await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_provisioned BOOLEAN DEFAULT false;`);
         console.log('Tabla tenants verificada.');
     } catch (e) {
         console.error('Error init master tables', e);
@@ -243,6 +244,7 @@ app.get('/api/saas/usage', async (req, res) => {
                     nombre: tenant.nombre,
                     slug: tenant.slug,
                     status: tenant.status,
+                    is_provisioned: tenant.is_provisioned || false,
                     error: 'Error al conectar con la base de datos'
                 });
                 continue;
@@ -254,11 +256,18 @@ app.get('/api/saas/usage', async (req, res) => {
                 const productsRes = await pool.query('SELECT COUNT(*) as productos FROM productos');
                 const usersRes = await pool.query('SELECT COUNT(*) as usuarios FROM usuarios');
 
+                // Auto-marcar como aprovisionado si las tablas ya existen y responden
+                if (!tenant.is_provisioned) {
+                    await masterPool.query('UPDATE tenants SET is_provisioned = true WHERE id = $1', [tenant.id]);
+                    tenant.is_provisioned = true;
+                }
+
                 usageData.push({
                     id: tenant.id,
                     nombre: tenant.nombre,
                     slug: tenant.slug,
                     status: tenant.status,
+                    is_provisioned: true,
                     transacciones: parseInt(salesRes.rows[0].transacciones || 0),
                     total_usd: parseFloat(salesRes.rows[0].total_usd || 0),
                     productos: parseInt(productsRes.rows[0].productos || 0),
@@ -270,6 +279,7 @@ app.get('/api/saas/usage', async (req, res) => {
                     nombre: tenant.nombre,
                     slug: tenant.slug,
                     status: tenant.status,
+                    is_provisioned: tenant.is_provisioned || false,
                     error: `Error al consultar datos: ${tenantErr.message}`
                 });
             }
@@ -550,6 +560,7 @@ app.post('/api/saas/provision', async (req, res) => {
 
     try {
         await initializeTenantDB(pool);
+        await masterPool.query('UPDATE tenants SET is_provisioned = true WHERE slug = $1', [slug]);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
