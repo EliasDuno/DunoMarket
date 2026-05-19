@@ -238,7 +238,7 @@ function checkPagePermission() {
         const user = JSON.parse(userSession);
         const userRole = (user.rol || 'usuario').toLowerCase();
         const isSuperAdmin = userRole === 'superadmin' || userRole === 'soporte';
-        const isAdmin = userRole === 'admin' || userRole === 'administrador' || isSuperAdmin;
+        const isAdmin = userRole === 'admin' || userRole === 'administrador';
         
         const path = window.location.pathname.toLowerCase();
         const page = path.split('/').pop().split('?')[0];
@@ -265,8 +265,19 @@ function checkPagePermission() {
             'proveedores.html',
             'cuentas.html'
         ];
+
+        // Bloquear superadmin de las páginas administrativas del negocio local
+        if (isSuperAdmin && adminOnlyPages.includes(page)) {
+            console.warn(`Acceso denegado a página local: ${page} para superadmin.`);
+            if (window.self !== window.top) {
+                window.location.replace('superadmin.html');
+            } else {
+                window.location.replace('/');
+            }
+            return;
+        }
         
-        if (!isAdmin && adminOnlyPages.includes(page)) {
+        if (!isAdmin && !isSuperAdmin && adminOnlyPages.includes(page)) {
             console.warn(`Acceso denegado a la página: ${page} para rol ${userRole}.`);
             if (window.self !== window.top) {
                 window.location.replace('resumen.html');
@@ -282,13 +293,20 @@ function checkPagePermission() {
 function filterSidebarByRole(role) {
     const userRole = (role || 'usuario').toLowerCase();
     const isSuperAdmin = userRole === 'superadmin' || userRole === 'soporte';
-    const isAdmin = userRole === 'admin' || userRole === 'administrador' || isSuperAdmin;
+    const isAdmin = userRole === 'admin' || userRole === 'administrador';
     
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return;
 
-    // Define allowed pages for standard user
-    const allowedForUser = ['resumen.html', 'pdv.html', 'inventario.html', 'clientes.html'];
+    // Páginas permitidas por rol
+    let allowedPages = [];
+    if (isSuperAdmin) {
+        allowedPages = ['superadmin.html'];
+    } else if (isAdmin) {
+        allowedPages = []; // Bypass check
+    } else {
+        allowedPages = ['resumen.html', 'pdv.html', 'inventario.html', 'clientes.html'];
+    }
     
     const navLinks = sidebar.querySelectorAll('.nav-item');
     navLinks.forEach(link => {
@@ -306,16 +324,24 @@ function filterSidebarByRole(role) {
             }
             return;
         }
-        
-        if (!isAdmin) {
-            // Check if page is allowed. Note: "/" or empty href is allowed.
-            if (!allowedForUser.includes(page) && page !== '' && page !== 'index.html') {
+
+        if (isSuperAdmin) {
+            // Superadmin solo ve el portal SaaS (superadmin.html) y la raíz interna
+            if (!allowedPages.includes(page) && page !== '' && page !== 'index.html' && page !== 'resumen.html') {
                 link.style.display = 'none';
             } else {
-                link.style.display = 'flex'; // Restore if hidden previously
+                link.style.display = 'flex';
+            }
+        } else if (!isAdmin) {
+            // Usuario común
+            if (!allowedPages.includes(page) && page !== '' && page !== 'index.html') {
+                link.style.display = 'none';
+            } else {
+                link.style.display = 'flex';
             }
         } else {
-            link.style.display = 'flex'; // Admin sees everything
+            // Administrador local de negocio
+            link.style.display = 'flex';
         }
     });
 
@@ -331,10 +357,17 @@ function filterSidebarByRole(role) {
             }
             sibling = sibling.nextElementSibling;
         }
-        if (!isAdmin && !hasVisibleSibling) {
+
+        if (isSuperAdmin) {
+            if (!hasVisibleSibling) {
+                label.style.display = 'none';
+            } else {
+                label.style.display = 'block';
+            }
+        } else if (!isAdmin && !hasVisibleSibling) {
             label.style.display = 'none';
         } else {
-            label.style.display = 'block'; // Admin sees all labels
+            label.style.display = 'block'; // Admin ve todos los labels
         }
     });
 }
