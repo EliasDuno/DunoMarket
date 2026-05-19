@@ -282,6 +282,18 @@ app.put('/api/saas/tenants/:id', async (req, res) => {
     const { id } = req.params;
     const { nombre, slug, dbUrl, status } = req.body;
     try {
+        // Clear cached pool for the tenant if it exists to force reloading the new dbUrl
+        const oldResult = await masterPool.query('SELECT slug FROM tenants WHERE id = $1', [id]);
+        if (oldResult.rows.length > 0) {
+            const oldSlug = oldResult.rows[0].slug;
+            if (tenantPools.has(oldSlug)) {
+                const oldPool = tenantPools.get(oldSlug);
+                tenantPools.delete(oldSlug);
+                tenantSchemaEnsured.delete(oldSlug);
+                oldPool.end().catch(err => console.error(`Error closing connection pool for updated tenant ${oldSlug}:`, err));
+            }
+        }
+
         await masterPool.query(
             'UPDATE tenants SET nombre = $1, slug = $2, db_url = $3, status = $4 WHERE id = $5',
             [nombre, slug, dbUrl, status || 'active', id]
