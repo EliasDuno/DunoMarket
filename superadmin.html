@@ -290,6 +290,7 @@
                 <span class="close" onclick="closeTenantModal()">&times;</span>
             </div>
             <form id="tenantForm">
+                <input type="hidden" id="tenantId">
                 <div class="input-group">
                     <label for="tNombre">Nombre Comercial</label>
                     <div class="input-wrapper">
@@ -311,6 +312,17 @@
                     <div class="input-wrapper">
                         <i class="fas fa-database"></i>
                         <input type="password" id="tDbUrl" placeholder="postgresql://postgres:[pass]@db.[id].supabase.co:5432/postgres" required>
+                    </div>
+                </div>
+
+                <div class="input-group" id="statusGroup" style="display: none;">
+                    <label for="tStatus">Estado</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-toggle-on"></i>
+                        <select id="tStatus" style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color); font-size: 1rem;">
+                            <option value="active">Activa</option>
+                            <option value="suspended">Suspendida</option>
+                        </select>
                     </div>
                 </div>
 
@@ -451,16 +463,21 @@
                             <p><span class="label">Base de Datos:</span> <span style="font-family: monospace; font-size: 0.8rem; word-break: break-all;">${dbShort}</span></p>
                             <p><span class="label">Registrado el:</span> <span>${new Date(t.created_at).toLocaleDateString()}</span></p>
                         </div>
-                        <div class="tenant-card-actions">
-                            ${t.is_provisioned ? `
-                                <span style="color: #10b981; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
-                                    <i class="fas fa-check-circle"></i> Base de datos lista
-                                </span>
-                            ` : `
-                                <button class="btn-icon" title="Aprovisionar Base de Datos" onclick="provisionTenant('${t.slug}')">
-                                    <i class="fas fa-database" style="color: var(--primary-color);"></i> Aprovisionar
-                                </button>
-                            `}
+                        <div class="tenant-card-actions" style="justify-content: space-between; align-items: center;">
+                            <div>
+                                ${t.is_provisioned ? `
+                                    <span style="color: #10b981; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                                        <i class="fas fa-check-circle"></i> Base de datos lista
+                                    </span>
+                                ` : `
+                                    <button class="btn-icon" title="Aprovisionar Base de Datos" onclick="provisionTenant('${t.slug}')">
+                                        <i class="fas fa-database" style="color: var(--primary-color);"></i> Aprovisionar
+                                    </button>
+                                `}
+                            </div>
+                            <button class="btn-icon" title="Editar Empresa" onclick="openTenantModal('${t.id}')">
+                                <i class="fas fa-edit" style="color: var(--text-color);"></i> Editar
+                            </button>
                         </div>
                     </div>
                 `;
@@ -697,31 +714,63 @@
             }
         }
 
-        function openTenantModal() {
-            document.getElementById('tenantModal').style.display = 'flex';
+        function openTenantModal(id = '') {
+            const modal = document.getElementById('tenantModal');
+            const form = document.getElementById('tenantForm');
+            const title = modal.querySelector('h2');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const statusGroup = document.getElementById('statusGroup');
+
+            if (id) {
+                const tenant = allTenants.find(t => String(t.id) === String(id));
+                if (tenant) {
+                    document.getElementById('tenantId').value = tenant.id;
+                    document.getElementById('tNombre').value = tenant.nombre;
+                    document.getElementById('tSlug').value = tenant.slug;
+                    document.getElementById('tDbUrl').value = tenant.db_url || '';
+                    document.getElementById('tStatus').value = tenant.status || 'active';
+                    
+                    statusGroup.style.display = 'block';
+                    title.innerText = 'Editar Empresa';
+                    submitBtn.innerText = 'Actualizar Empresa';
+                }
+            } else {
+                form.reset();
+                document.getElementById('tenantId').value = '';
+                statusGroup.style.display = 'none';
+                title.innerText = 'Registrar Nueva Empresa';
+                submitBtn.innerText = 'Guardar Cliente';
+            }
+            modal.style.display = 'flex';
         }
 
         function closeTenantModal() {
             document.getElementById('tenantModal').style.display = 'none';
             document.getElementById('tenantForm').reset();
+            document.getElementById('tenantId').value = '';
         }
 
         document.getElementById('tenantForm').onsubmit = async (e) => {
             e.preventDefault();
+            const id = document.getElementById('tenantId').value;
             const data = {
                 nombre: document.getElementById('tNombre').value,
                 slug: document.getElementById('tSlug').value.trim().toLowerCase(),
-                dbUrl: document.getElementById('tDbUrl').value.trim()
+                dbUrl: document.getElementById('tDbUrl').value.trim(),
+                status: document.getElementById('tStatus').value
             };
 
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/saas/tenants/${id}` : '/api/saas/tenants';
+
             try {
-                const res = await fetch('/api/saas/tenants', {
-                    method: 'POST',
+                const res = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    showNotification('Éxito', 'Cliente registrado correctamente.');
+                    showNotification('Éxito', id ? 'Empresa actualizada correctamente.' : 'Cliente registrado correctamente.');
                     closeTenantModal();
                     loadTenants();
                 } else {

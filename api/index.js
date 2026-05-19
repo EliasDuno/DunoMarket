@@ -255,6 +255,18 @@ app.post('/api/saas/tenants', async (req, res) => {
     } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
+app.put('/api/saas/tenants/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nombre, slug, dbUrl, status } = req.body;
+    try {
+        await masterPool.query(
+            'UPDATE tenants SET nombre = $1, slug = $2, db_url = $3, status = $4 WHERE id = $5',
+            [nombre, slug, dbUrl, status || 'active', id]
+        );
+        res.json({ success: true, message: 'Empresa actualizada exitosamente' });
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
 app.get('/api/saas/usage', async (req, res) => {
     try {
         const tenantsResult = await masterPool.query("SELECT * FROM tenants ORDER BY created_at DESC");

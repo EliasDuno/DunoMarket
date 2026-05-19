@@ -127,6 +127,7 @@ const res = await fetch('/api/login', {
 const data = await readApiResponse(res);
 
                 if (res.ok) {
+                    sessionStorage.clear();
                     sessionStorage.setItem('tenant_slug', tenant);
                     sessionStorage.setItem('user_session', JSON.stringify(data.user));
                     window.location.href = '/';
@@ -458,8 +459,7 @@ function loadGlobalProfile() {
 
 // Global Logout Function
 window.logout = function () {
-    sessionStorage.removeItem('user_session');
-    sessionStorage.removeItem('tenant_slug');
+    sessionStorage.clear();
     localStorage.removeItem('user_session'); // Clean up old sessions just in case
     window.location.replace('/acceso');
 };
