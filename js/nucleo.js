@@ -237,10 +237,24 @@ function checkPagePermission() {
     try {
         const user = JSON.parse(userSession);
         const userRole = (user.rol || 'usuario').toLowerCase();
-        const isAdmin = userRole === 'admin' || userRole === 'administrador';
+        const isSuperAdmin = userRole === 'superadmin' || userRole === 'soporte';
+        const isAdmin = userRole === 'admin' || userRole === 'administrador' || isSuperAdmin;
         
         const path = window.location.pathname.toLowerCase();
         const page = path.split('/').pop().split('?')[0];
+
+        // Restringir superadmin.html a superadmin y soporte únicamente
+        if (page === 'superadmin.html') {
+            if (!isSuperAdmin) {
+                console.warn(`Acceso denegado a superadmin.html para el rol ${userRole}.`);
+                if (window.self !== window.top) {
+                    window.location.replace('resumen.html');
+                } else {
+                    window.location.replace('/');
+                }
+                return;
+            }
+        }
         
         // Pages that require admin privileges
         const adminOnlyPages = [
@@ -267,7 +281,8 @@ function checkPagePermission() {
 
 function filterSidebarByRole(role) {
     const userRole = (role || 'usuario').toLowerCase();
-    const isAdmin = userRole === 'admin' || userRole === 'administrador';
+    const isSuperAdmin = userRole === 'superadmin' || userRole === 'soporte';
+    const isAdmin = userRole === 'admin' || userRole === 'administrador' || isSuperAdmin;
     
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return;
@@ -281,6 +296,16 @@ function filterSidebarByRole(role) {
         if (!href) return;
         
         const page = href.split('/').pop().split('?')[0];
+
+        // Regla específica para el enlace del Portal SaaS
+        if (page === 'superadmin.html') {
+            if (isSuperAdmin) {
+                link.style.display = 'flex';
+            } else {
+                link.style.display = 'none';
+            }
+            return;
+        }
         
         if (!isAdmin) {
             // Check if page is allowed. Note: "/" or empty href is allowed.
