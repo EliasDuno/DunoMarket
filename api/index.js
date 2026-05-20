@@ -272,6 +272,31 @@ app.get('/api/saas/debug', async (req, res) => {
     }
 });
 
+app.get('/api/saas/test-login', async (req, res) => {
+    const { email, tenant } = req.query;
+    if (!email || !tenant) {
+        return res.status(400).json({ error: 'Missing email or tenant query parameters' });
+    }
+    const slug = normalizeTenantSlug(tenant);
+    const pool = await getTenantPool(slug);
+    if (!pool) {
+        return res.status(404).json({ error: `Tenant pool not found for slug: ${slug}` });
+    }
+    try {
+        const sysRes = await pool.query("SELECT current_schema(), current_setting('search_path')");
+        const userRes = await pool.query("SELECT id, nombre, email, password_hash IS NOT NULL as has_password, rol, activo FROM usuarios WHERE LOWER(email) = $1", [email.trim().toLowerCase()]);
+        res.json({
+            slug,
+            system: sysRes.rows[0],
+            userFound: userRes.rows.length > 0,
+            userCount: userRes.rows.length,
+            users: userRes.rows
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/saas/tenants', async (req, res) => {
     try {
         await ensureAdminColumnsExist();
