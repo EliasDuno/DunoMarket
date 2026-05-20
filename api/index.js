@@ -672,6 +672,37 @@ async function initializeTenantDB(tenantPool, adminName, adminEmail, adminPasswo
             END $$;
         `);
 
+        // Ensure medios_pago and presentaciones tables exist
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS medios_pago (
+                id SERIAL PRIMARY KEY,
+                nombre VARCHAR(100) UNIQUE NOT NULL,
+                activo BOOLEAN DEFAULT TRUE,
+                creado_en TIMESTAMP DEFAULT NOW()
+            );
+        `);
+        const defaultPayments = ['Efectivo (USD)', 'Efectivo (Bs)', 'Pago Móvil', 'Zelle', 'Punto de Venta'];
+        for (const p of defaultPayments) {
+            await client.query(`INSERT INTO medios_pago (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`, [p]);
+        }
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS presentaciones (
+                id SERIAL PRIMARY KEY,
+                nombre VARCHAR(100) UNIQUE NOT NULL,
+                activo BOOLEAN DEFAULT TRUE
+            );
+        `);
+        const defaultPresentations = ['Unidad', 'Caja', 'Bulto', 'Paquete', 'Sobre', 'Litro', 'Kilo'];
+        for (const p of defaultPresentations) {
+            await client.query(`INSERT INTO presentaciones (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`, [p]);
+        }
+
+        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS aplica_iva BOOLEAN DEFAULT TRUE;`);
+        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS marca VARCHAR(100);`);
+        await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total_base_usd DECIMAL(10, 2) DEFAULT 0.00;`);
+        await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total_iva_usd DECIMAL(10, 2) DEFAULT 0.00;`);
+
         // Insert initial administrator user if provided
         if (adminEmail && adminPasswordHash) {
             await client.query(`
@@ -1445,66 +1476,90 @@ app.post('/api/inventory/transfer', async (req, res) => {
 
 // BULK CREATE Products
 app.post('/api/products/bulk-create', async (req, res) => {
-    const { products } = req.body; // Array of {codigo, nombre, categoria, costo, margen, minimo, proveedor}
-    if (!products || !Array.isArray(products)) return res.status(400).json({ success: false, message: 'Formato inválido' });
+    const productsList = req.body.products || req.body.items;
+    if (!productsList || !Array.isArray(productsList)) {
+        return res.status(400).json({ success: false, message: 'Formato inválido. Se esperaba un arreglo en "products" o "items".' });
+    }
 
     const results = { success: 0, failed: 0, errors: [] };
     const client = await req.pool.connect();
 
+    function parseBoolean(val, defaultVal = true) {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        const str = val.toString().trim().toLowerCase();
+        if (str === 'si' || str === 'sí' || str === 'yes' || str === 'true' || str === '1') return true;
+        if (str === 'no' || str === 'false' || str === '0') return false;
+        return defaultVal;
+    }
+
     try {
         await client.query('BEGIN');
 
-        for (const p of products) {
+        for (const p of productsList) {
             try {
+                // Map fields case-insensitively
+                const rawCodigo = p.codigo || p.CODIGO || p.Codigo || p.code || p.Code || p.id || p.ID;
+                const codigo = rawCodigo ? rawCodigo.toString().trim() : '';
+                const rawNombre = p.nombre || p.NOMBRE || p.Nombre || p.name || p.Name;
+                const nombre = rawNombre ? rawNombre.toString().trim() : '';
+
+                if (!codigo || !nombre) {
+                    results.failed++;
+                    results.errors.push(`Fila ignorada: Faltan campos obligatorios (Código o Nombre) en ${JSON.stringify(p)}`);
+                    continue;
+                }
+
+                const descripcion = (p.descripcion || p.DESCRIPCION || p.Descripcion || p.description || p.Description || 'Importado masivamente').toString().trim();
+                const costo = parseFloat(p.costo || p.COSTO || p.Costo || p.cost || p.Cost || p.costo_usd || p.COSTO_USD || p.costoUsd || 0) || 0;
+                const margen = parseFloat(p.margen || p.MARGEN || p.Margen || p.margen_ganancia || p.MARGEN_GANANCIA || p.margenGanancia || 30) || 30;
+                const minimo = parseInt(p.minimo || p.MINIMO || p.Minimo || p.stock_minimo || p.STOCK_MINIMO || p.stockMinimo || 5) || 5;
+                const marca = (p.marca || p.MARCA || p.Marca || p.brand || p.Brand || '').toString().trim() || null;
+                
+                const rawAplicaIva = p.aplica_iva !== undefined ? p.aplica_iva : (p.APLICA_IVA !== undefined ? p.APLICA_IVA : (p.aplicaIva !== undefined ? p.aplicaIva : (p.aplica_tax !== undefined ? p.aplica_tax : true)));
+                const aplicaIva = parseBoolean(rawAplicaIva, true);
+
                 // 1. Resolve Category
                 let catId = null;
-                const catName = p.categoria && p.categoria.trim() ? p.categoria.trim() : 'General';
+                const rawCat = p.categoria || p.CATEGORIA || p.Categoria || p.category || p.Category || 'General';
+                const catName = rawCat.toString().trim();
 
                 const resCat = await client.query('SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1)', [catName]);
                 if (resCat.rows.length > 0) {
                     catId = resCat.rows[0].id;
                 } else {
-                    // Create Category if not exists (including General)
+                    // Create Category if not exists
                     const newCat = await client.query('INSERT INTO categorias (nombre, descripcion) VALUES ($1, $2) RETURNING id', [catName, 'Categoría automática']);
                     catId = newCat.rows[0].id;
                 }
 
                 // 2. Resolve Provider (Optional)
                 let provId = null;
-                const provName = p.proveedor && p.proveedor.trim() ? p.proveedor.trim() : 'General';
+                const rawProv = p.proveedor || p.PROVEEDOR || p.Proveedor || p.supplier || p.Supplier || p.provider || p.Provider || 'General';
+                const provName = rawProv.toString().trim();
 
                 const resProv = await client.query('SELECT id FROM proveedores WHERE LOWER(nombre) = LOWER($1)', [provName]);
                 if (resProv.rows.length > 0) {
                     provId = resProv.rows[0].id;
                 } else {
-                    // Create Provider if not exists (including General)
+                    // Create Provider if not exists
                     const newProv = await client.query('INSERT INTO proveedores (nombre, contacto) VALUES ($1, $2) RETURNING id', [provName, 'Proveedor automático']);
                     provId = newProv.rows[0].id;
                 }
 
-                // 3. Insert Product (Stock always 0 per rule)
+                // 3. Insert Product
                 // Check duplicate code first
-                const check = await client.query('SELECT id FROM productos WHERE codigo = $1', [p.codigo]);
+                const check = await client.query('SELECT id FROM productos WHERE LOWER(codigo) = LOWER($1)', [codigo]);
                 if (check.rows.length > 0) {
                     results.failed++;
-                    results.errors.push(`Código duplicado: ${p.codigo}`);
-                    continue; // Skip
+                    results.errors.push(`Código duplicado: ${codigo}`);
+                    continue;
                 }
 
                 await client.query(
-                    `INSERT INTO productos (codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id, proveedor_id, activo, marca)
-                     VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, true, $9)`,
-                    [
-                        p.codigo,
-                        p.nombre,
-                        'Importado masivamente',
-                        parseFloat(p.costo) || 0,
-                        parseFloat(p.margen) || 30,
-                        parseInt(p.minimo) || 5,
-                        catId,
-                        provId,
-                        p.marca || null
-                    ]
+                    `INSERT INTO productos (codigo, nombre, descripcion, costo_usd, margen_ganancia, stock, stock_minimo, categoria_id, proveedor_id, activo, marca, aplica_iva)
+                     VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, true, $9, $10)`,
+                    [codigo, nombre, descripcion, costo, margen, minimo, catId, provId, marca, aplicaIva]
                 );
                 results.success++;
 
@@ -1520,7 +1575,7 @@ app.post('/api/products/bulk-create', async (req, res) => {
     } catch (err) {
         await client.query('ROLLBACK');
         console.error(err);
-        res.status(500).json({ success: false, message: 'Error general en carga masiva' });
+        res.status(500).json({ success: false, message: 'Error general en carga masiva de productos: ' + err.message });
     } finally {
         client.release();
     }
@@ -3201,18 +3256,32 @@ app.delete('/api/products/:id', global.checkFiscal, async (req, res) => {
 // =============================================================================
 
 // Helper: Process Bulk Insertion
-async function processBulkInsert(table, fields, items, conflictKey = null) {
+async function processBulkInsert(pool, table, fields, items, conflictKey = null, caseInsensitiveCheckField = null) {
     const results = { success: 0, failed: 0, errors: [] };
-    const client = await req.pool.connect();
+    const client = await pool.connect();
     try {
         await client.query('BEGIN');
         for (const item of items) {
             try {
+                // If a caseInsensitiveCheckField is specified, do a SELECT check first
+                if (caseInsensitiveCheckField && item[caseInsensitiveCheckField]) {
+                    const checkVal = item[caseInsensitiveCheckField].toString().trim();
+                    const checkRes = await client.query(
+                        `SELECT id FROM ${table} WHERE LOWER(${caseInsensitiveCheckField}) = LOWER($1)`,
+                        [checkVal]
+                    );
+                    if (checkRes.rows.length > 0) {
+                        results.failed++;
+                        results.errors.push(`Ya existe: ${checkVal}`);
+                        continue;
+                    }
+                }
+
                 // Construct Query
                 const keys = Object.keys(item).filter(k => fields.includes(k));
                 if (keys.length === 0) continue;
 
-                const values = keys.map(k => item[k]);
+                const values = keys.map(k => typeof item[k] === 'string' ? item[k].trim() : item[k]);
                 const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
                 const columns = keys.join(', ');
 
@@ -3225,8 +3294,8 @@ async function processBulkInsert(table, fields, items, conflictKey = null) {
                 if (res.rowCount > 0) {
                     results.success++;
                 } else {
-                    results.failed++; // Duplicate or ignored
-                    results.errors.push(`Duplicado o ignorado: ${item[conflictKey] || JSON.stringify(item)}`);
+                    results.failed++;
+                    results.errors.push(`Duplicado o ignorado por base de datos: ${item[conflictKey] || JSON.stringify(item)}`);
                 }
             } catch (err) {
                 results.failed++;
@@ -3247,18 +3316,18 @@ async function processBulkInsert(table, fields, items, conflictKey = null) {
 // 1. Bulk Categories
 app.post('/api/categories/bulk-create', async (req, res) => {
     try {
-        const { items } = req.body; // Expects array of objects
-        // Normalize items: { nombre: ... }
+        const { items } = req.body;
         const normalized = items.map(i => ({
-            nombre: i.nombre || i.NOMBRE || i.Name,
-            activo: true
+            nombre: (i.nombre || i.NOMBRE || i.Nombre || i.name || i.Name || '').toString().trim(),
+            descripcion: (i.descripcion || i.DESCRIPCION || i.Descripcion || i.description || i.Description || '').toString().trim(),
+            activo: i.activo !== undefined ? i.activo : true
         })).filter(i => i.nombre);
 
-        const result = await processBulkInsert('categorias', ['nombre', 'activo'], normalized, 'nombre');
+        const result = await processBulkInsert(req.pool, 'categorias', ['nombre', 'descripcion', 'activo'], normalized, 'nombre', 'nombre');
         res.json({ success: true, results: result });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: 'Error en carga masiva' });
+        res.status(500).json({ success: false, message: 'Error en carga masiva de categorías: ' + err.message });
     }
 });
 
@@ -3266,23 +3335,25 @@ app.post('/api/categories/bulk-create', async (req, res) => {
 app.post('/api/suppliers/bulk-create', async (req, res) => {
     try {
         const { items } = req.body;
-        const normalized = items.map(i => ({
-            rif: i.rif || i.RIF || i.id || `TEMP-${Date.now()}-${Math.random()}`, // Fallback if no RIF
-            nombre: i.nombre || i.NOMBRE || i.provider || i.Proveedor,
-            telefono: i.telefono || i.TELEFONO || null,
-            dias_credito: parseInt(i.dias_credito || i.DIAS || 0),
-            activo: true
-        })).filter(i => i.nombre);
+        const normalized = items.map(i => {
+            const rif = (i.rif || i.RIF || i.Rif || i.id || '').toString().trim();
+            const nombre = (i.nombre || i.NOMBRE || i.Nombre || i.provider || i.Proveedor || '').toString().trim();
+            const telefono = (i.telefono || i.TELEFONO || i.Telefono || i.phone || i.Phone || '').toString().trim();
+            const dias_credito = parseInt(i.dias_credito || i.DIAS_CREDITO || i.DiasCredito || i.dias || i.DIAS || 0) || 0;
+            return {
+                rif: rif || `TEMP-${Date.now()}-${Math.random()}`,
+                nombre: nombre,
+                telefono: telefono || null,
+                dias_credito: dias_credito,
+                activo: i.activo !== undefined ? i.activo : true
+            };
+        }).filter(i => i.nombre);
 
-        // Try to identify conflict key. RIF is usually unique but sometimes missing in simple lists.
-        // If checking only by name is safer for simple lists:
-        // Use RIF as conflict if present, otherwise just Insert?
-        // Let's assume RIF is unique constraint.
-        const result = await processBulkInsert('proveedores', ['rif', 'nombre', 'telefono', 'dias_credito', 'activo'], normalized, 'rif');
+        const result = await processBulkInsert(req.pool, 'proveedores', ['rif', 'nombre', 'telefono', 'dias_credito', 'activo'], normalized, 'rif', 'rif');
         res.json({ success: true, results: result });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: 'Error en carga masiva' });
+        res.status(500).json({ success: false, message: 'Error en carga masiva de proveedores: ' + err.message });
     }
 });
 
@@ -3290,18 +3361,24 @@ app.post('/api/suppliers/bulk-create', async (req, res) => {
 app.post('/api/clients/bulk-create', async (req, res) => {
     try {
         const { items } = req.body;
-        const normalized = items.map(i => ({
-            cedula: i.cedula || i.CEDULA || i.dni || i.id,
-            nombre: i.nombre || i.NOMBRE || i.client,
-            email: i.email || i.EMAIL || null,
-            telefono: i.telefono || i.TELEFONO || null
-        })).filter(i => i.cedula && i.nombre);
+        const normalized = items.map(i => {
+            const cedula = (i.cedula || i.CEDULA || i.Cedula || i.rif || i.RIF || i.Rif || i.id || i.dni || i.DNI || '').toString().trim();
+            const nombre = (i.nombre || i.NOMBRE || i.Nombre || i.client || i.Client || i.Cliente || '').toString().trim();
+            const email = (i.email || i.EMAIL || i.Email || i.correo || i.Correo || '').toString().trim();
+            const telefono = (i.telefono || i.TELEFONO || i.Telefono || i.phone || i.Phone || '').toString().trim();
+            return {
+                cedula: cedula,
+                nombre: nombre,
+                email: email || null,
+                telefono: telefono || null
+            };
+        }).filter(i => i.cedula && i.nombre);
 
-        const result = await processBulkInsert('clientes', ['cedula', 'nombre', 'email', 'telefono'], normalized, 'cedula');
+        const result = await processBulkInsert(req.pool, 'clientes', ['cedula', 'nombre', 'email', 'telefono'], normalized, 'cedula', 'cedula');
         res.json({ success: true, results: result });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: 'Error en carga masiva' });
+        res.status(500).json({ success: false, message: 'Error en carga masiva de clientes: ' + err.message });
     }
 });
 
@@ -3310,76 +3387,45 @@ app.post('/api/users/bulk-create', async (req, res) => {
     try {
         const { items } = req.body;
         const normalized = [];
+        const bcrypt = require('bcrypt');
         for (const i of items) {
-            const email = (i.email || i.EMAIL || '').toLowerCase();
-            if (!email || !i.password) continue;
+            const nombre = (i.nombre || i.NOMBRE || i.Nombre || i.user || i.User || i.Usuario || '').toString().trim();
+            const email = (i.email || i.EMAIL || i.Email || i.correo || i.Correo || '').toString().toLowerCase().trim();
+            const password = (i.password || i.PASSWORD || i.Password || i.contraseña || i.Contraseña || '').toString().trim();
+            const rol = (i.rol || i.ROL || i.Rol || 'vendedor').toString().toLowerCase().trim();
+            const activo = i.activo !== undefined ? i.activo : true;
 
-            const passwordHash = await bcrypt.hash(i.password, 10);
+            if (!email || !nombre) continue;
+
+            let passwordHash = '';
+            if (password) {
+                passwordHash = await bcrypt.hash(password, 10);
+            } else {
+                passwordHash = await bcrypt.hash('123456', 10);
+            }
+
             normalized.push({
-                nombre: i.nombre || i.NOMBRE || 'Usuario',
+                nombre: nombre,
                 email: email,
                 password_hash: passwordHash,
-                rol: (i.rol || i.ROL || 'vendedor').toLowerCase(),
-                activo: true,
-                creado_en: new Date() // handled by DB default usually but helpful
+                rol: rol,
+                activo: activo
             });
         }
 
-        // Custom insert for Users because of password hash and conflict
-        // Using helper might trigger conflict on email
-        const result = await processBulkInsert('usuarios', ['nombre', 'email', 'password_hash', 'rol', 'activo'], normalized, 'email');
+        const result = await processBulkInsert(req.pool, 'usuarios', ['nombre', 'email', 'password_hash', 'rol', 'activo'], normalized, 'email', 'email');
         res.json({ success: true, results: result });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: 'Error en carga masiva' });
+        res.status(500).json({ success: false, message: 'Error en carga masiva de usuarios: ' + err.message });
     }
 });
 
-// 5. Bulk Payment Methods
-app.post('/api/config/payment-methods/bulk-create', async (req, res) => {
-    try {
-        const { items } = req.body;
-        // Simple list of names usually. item might be { nombre: 'Zelle' }
-        const normalized = items.map(i => ({
-            clave: 'payment_methods', // This is tricky. Config table is key-value. 
-            // Wait, previous implementation of payment methods was likely a JSON array in config table OR a separate table?
-            // "loadPaymentMethods" fetches /api/config/payment-methods.
-            // Let's check how payment methods are stored.
-            // If they are in a separate table, great. If in config json...
-            // Looking at initSettings in modulos.js: fetch(`${API_URL}/payment-methods`) which is `http://localhost:3000/api/config/payment-methods`.
-            // But I don't see that endpoint in servidor.js view! 
-            // I only see `app.get('/api/config')`.
-            // Ah, I need to check if there are other routes or if I missed them.
-            // If they don't exist, I need to create the TABLE or the Logic.
-            // Based on `modulos.js` lines 638, it expects an array from `/api/config/payment-methods`.
-
-            // Let's assume we need a TABLE `medios_pago` and `presentaciones` or store in `configuracion` as JSON.
-            // Storing as JSON in `configuracion` table: key='payment_methods', value='[{"id":1,"nombre":"Zelle"}]'
-            // This is harder for bulk insert.
-
-            // BETTER: Create tables `medios_pago` and `presentaciones`.
-            nombre: i.nombre || i.NOMBRE
-        })).filter(i => i.nombre);
-
-        // For now, let's assume we create tables if they don't exist, or use a specific structure.
-        // Given I'm "fixing regressions", I should probably use what was there.
-        // But I don't see the endpoints in `servidor.js` for payments either!
-        // So I will create the TABLES and endpoints now.
-
-        // I'll create the tables inside the POST if they don't exist (or better in init).
-        // Since I'm appending code, I'll add the table creation check here or just assume.
-        // Let's create the tables via query first.
-    } catch (e) { }
-});
-
 // --- REAL IMPLEMENTATION FOR PAYMENTS & PRESENTATIONS ---
-// First, create tables if not exists (Lazy init or separate script? separate script prevents server restart bloat)
-// I'll put the init logic in the endpoint for simplicity of this task, or rely on `pool.query` safety.
 
 app.post('/api/config/payment-methods', async (req, res) => {
     const { nombre } = req.body;
     try {
-        // Ensure table exists
         await req.pool.query(`CREATE TABLE IF NOT EXISTS medios_pago (id SERIAL PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`);
         await req.pool.query('INSERT INTO medios_pago (nombre) VALUES ($1) ON CONFLICT DO NOTHING', [nombre]);
         res.json({ success: true });
@@ -3401,16 +3447,18 @@ app.delete('/api/config/payment-methods/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/payment-methods/bulk-create', async (req, res) => {
+const bulkPaymentMethodsHandler = async (req, res) => {
     try {
         await req.pool.query(`CREATE TABLE IF NOT EXISTS medios_pago (id SERIAL PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`);
         const { items } = req.body;
-        const normalized = items.map(i => ({ nombre: i.nombre || i.NOMBRE })).filter(i => i.nombre);
-        const result = await processBulkInsert('medios_pago', ['nombre'], normalized, 'nombre');
+        const normalized = items.map(i => ({ nombre: (i.nombre || i.NOMBRE || i.Nombre || '').trim() })).filter(i => i.nombre);
+        const result = await processBulkInsert(req.pool, 'medios_pago', ['nombre'], normalized, 'nombre', 'nombre');
         res.json({ success: true, results: result });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
+};
 
+app.post('/api/config/payment-methods/bulk-create', bulkPaymentMethodsHandler);
+app.post('/api/payment-methods/bulk-create', bulkPaymentMethodsHandler);
 
 // Presentations
 app.post('/api/config/presentations', async (req, res) => {
@@ -3441,8 +3489,8 @@ app.post('/api/config/presentations/bulk-create', async (req, res) => {
     try {
         await req.pool.query(`CREATE TABLE IF NOT EXISTS presentaciones (id SERIAL PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`);
         const { items } = req.body;
-        const normalized = items.map(i => ({ nombre: i.nombre || i.NOMBRE })).filter(i => i.nombre);
-        const result = await processBulkInsert('presentaciones', ['nombre'], normalized, 'nombre');
+        const normalized = items.map(i => ({ nombre: (i.nombre || i.NOMBRE || i.Nombre || '').trim() })).filter(i => i.nombre);
+        const result = await processBulkInsert(req.pool, 'presentaciones', ['nombre'], normalized, 'nombre', 'nombre');
         res.json({ success: true, results: result });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
