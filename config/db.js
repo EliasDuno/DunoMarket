@@ -12,10 +12,19 @@ function getSslConfig(defaultValue = false) {
     return { rejectUnauthorized: false };
 }
 
+function normalizeDbUrl(url) {
+    if (!url) return url;
+    // Replace PgBouncer transaction pooler port 6543 with direct session port 5432
+    let normalized = url.replace(/:6543\//, ':5432/');
+    // Remove pgbouncer=true query parameter to ensure direct session pooling
+    normalized = normalized.replace(/[?&]pgbouncer=true/, '');
+    return normalized;
+}
+
 function getMasterPoolConfig() {
     if (process.env.DATABASE_URL) {
         return {
-            connectionString: process.env.DATABASE_URL,
+            connectionString: normalizeDbUrl(process.env.DATABASE_URL),
             ssl: getSslConfig(true)
         };
     }
@@ -32,12 +41,13 @@ function getMasterPoolConfig() {
 
 function getTenantPoolConfig(connectionString) {
     return {
-        connectionString,
+        connectionString: normalizeDbUrl(connectionString),
         ssl: getSslConfig(true)
     };
 }
 
 module.exports = {
     getMasterPoolConfig,
-    getTenantPoolConfig
+    getTenantPoolConfig,
+    normalizeDbUrl
 };
