@@ -280,39 +280,11 @@ app.get('/api/saas/tenants', async (req, res) => {
         
         for (const tenant of tenants) {
             tenant.admins = [];
-            const pool = await getTenantPool(tenant.slug);
-            if (pool) {
-                if (!tenant.is_provisioned) {
-                    try {
-                        const testRes = await pool.query(`
-                            SELECT EXISTS (
-                                SELECT FROM information_schema.tables 
-                                WHERE table_schema = current_schema() 
-                                  AND table_name = 'ventas'
-                            );
-                        `);
-                        if (testRes.rows[0].exists) {
-                            await masterPool.query('UPDATE tenants SET is_provisioned = true WHERE id = $1', [tenant.id]);
-                            tenant.is_provisioned = true;
-                        }
-                    } catch (err) {
-                        console.error(`Error checking DB for tenant ${tenant.slug}:`, err.message);
-                    }
-                }
-
-                if (tenant.is_provisioned) {
-                    try {
-                        const adminRes = await pool.query(`
-                            SELECT nombre, email 
-                            FROM usuarios 
-                            WHERE rol = 'administrador' AND activo = true
-                            ORDER BY id ASC
-                        `);
-                        tenant.admins = adminRes.rows;
-                    } catch (err) {
-                        console.error(`Error loading admins for tenant ${tenant.slug}:`, err.message);
-                    }
-                }
+            if (tenant.admin_email) {
+                tenant.admins.push({
+                    nombre: tenant.admin_name || 'Administrador',
+                    email: tenant.admin_email
+                });
             }
         }
         res.json(tenants);
