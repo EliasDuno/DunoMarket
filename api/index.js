@@ -249,6 +249,29 @@ masterPool.connect(async (err, client, release) => {
 
 // --- SAAS API ENDPOINTS ---
 
+app.get('/api/saas/debug', async (req, res) => {
+    try {
+        const dbUrlStr = process.env.DATABASE_URL || 'not set';
+        const dbUrlMasked = dbUrlStr.replace(/:([^:@]+)@/, ':****@');
+        
+        const tenantsRes = await masterPool.query('SELECT * FROM tenants');
+        const schemasRes = await masterPool.query(`
+            SELECT schema_name 
+            FROM information_schema.schemata 
+            WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
+        `);
+        
+        res.json({
+            databaseUrl: dbUrlMasked,
+            tenantsCount: tenantsRes.rows.length,
+            tenants: tenantsRes.rows,
+            schemas: schemasRes.rows.map(r => r.schema_name)
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/saas/tenants', async (req, res) => {
     try {
         await ensureAdminColumnsExist();
