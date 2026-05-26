@@ -2527,8 +2527,8 @@ function initSettings() {
                         body: JSON.stringify({ clave: key, valor: val })
                     });
                 }
-                alert('Datos del comercio guardados.');
-            } catch (e) { console.error(e); alert('Error al guardar.'); }
+                showNotification('Éxito', 'Datos del comercio guardados.');
+            } catch (e) { console.error(e); showNotification('Error', 'Error al guardar.'); }
         };
     }
 
@@ -2549,8 +2549,8 @@ function initSettings() {
                         body: JSON.stringify({ clave: key, valor: val })
                     });
                 }
-                alert('Credenciales de correo guardadas.');
-            } catch (e) { console.error(e); alert('Error al guardar.'); }
+                showNotification('Éxito', 'Credenciales de correo guardadas.');
+            } catch (e) { console.error(e); showNotification('Error', 'Error al guardar.'); }
         };
     }
 
@@ -2671,7 +2671,7 @@ function initSettings() {
                     input.value = '';
                     loadPresentations();
                 } else {
-                    alert('Error: ' + (data.message || data.error));
+                    showNotification('Error', data.message || data.error);
                 }
             } catch (e) { console.error(e); }
         };
@@ -2811,7 +2811,7 @@ function initSettings() {
                     try {
                         const items = await readExcel(file);
                         if (items.length === 0) {
-                            alert('El archivo está vacío.');
+                            showNotification('Atención', 'El archivo está vacío.');
                             return;
                         }
 
@@ -2826,13 +2826,13 @@ function initSettings() {
                         if (result.success) {
                             if (apiEndpoint.includes('payment-methods')) loadPaymentMethods();
                             if (apiEndpoint.includes('presentations')) loadPresentations();
-                            alert('Proceso finalizado. Ver log.');
+                            showNotification('Éxito', 'Proceso finalizado. Ver log.');
                         } else {
-                            alert('Error: ' + result.message);
+                            showNotification('Error', result.message);
                         }
                     } catch (err) {
                         console.error(err);
-                        alert('Error: ' + err.message);
+                        showNotification('Error', err.message);
                     }
                     input.value = ''; // Clear for next use
                 },
@@ -2875,7 +2875,7 @@ function initSettings() {
                         });
                         const result = await res.json();
                         logBulkResult('Alta de Productos', result);
-                    } catch (e) { console.error(e); alert('Error'); }
+                    } catch (e) { console.error(e); showNotification('Error', 'Ocurrió un error al cargar.'); }
                     createInput.value = '';
                 },
                 () => {
@@ -2908,7 +2908,7 @@ function initSettings() {
                         });
                         const result = await res.json();
                         logBulkResult('Recepción de Stock', result);
-                    } catch (e) { console.error(e); alert('Error'); }
+                    } catch (e) { console.error(e); showNotification('Error', 'Ocurrió un error al procesar la recepción.'); }
                     receiveInput.value = '';
                 },
                 () => {
@@ -3005,7 +3005,7 @@ window.reportMermaFromEdit = async (warehouse) => {
     const qtyInput = document.getElementById(warehouse === 'principal' ? 'mermaQtyPrincipal' : 'mermaQtySecundaria');
     const qty = parseFloat(qtyInput.value) || 0;
 
-    if (!id || qty <= 0) return alert('Ingrese cantidad válida.');
+    if (!id || qty <= 0) return showNotification('Atención', 'Ingrese cantidad válida.');
     if (!confirm(`¿Reportar merma de ${qty} unidades de Bodega ${warehouse === 'principal' ? 'Principal' : 'Secundaria'}?`)) return;
 
     try {
@@ -3016,19 +3016,19 @@ window.reportMermaFromEdit = async (warehouse) => {
         });
         const resJson = await res.json();
         if (resJson.success) {
-            alert('Merma reportada.');
+            showNotification('Éxito', 'Merma reportada.');
             qtyInput.value = '';
             loadProducts(); // Refresh
         } else {
-            alert('Error: ' + resJson.message);
+            showNotification('Error', resJson.message);
         }
-    } catch (e) { console.error(e); alert('Error de conexión'); }
+    } catch (e) { console.error(e); showNotification('Error', 'Error de conexión.'); }
 };
 
 // Helper: Download Template
 window.downloadTemplate = (type) => {
     if (typeof XLSX === 'undefined') {
-        alert('Error: Librería XLSX no cargada. No se puede generar la plantilla.');
+        showNotification('Error', 'Librería XLSX no cargada. No se puede generar la plantilla.');
         return;
     }
 
@@ -3074,7 +3074,7 @@ window.downloadTemplate = (type) => {
         XLSX.writeFile(wb, filename);
     } catch (err) {
         console.error('Error generando plantilla:', err);
-        alert('Error al generar el archivo Excel.');
+        showNotification('Error', 'Error al generar el archivo Excel.');
     }
 };
 
