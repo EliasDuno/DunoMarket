@@ -57,6 +57,14 @@ async function updateSchema() {
         }
         console.log('Seeded: presentaciones defaults');
 
+        // 4. Seed 'margen_proteccion' config if missing
+        await pool.query(`
+            INSERT INTO configuracion (clave, valor)
+            VALUES ('margen_proteccion', '0.00')
+            ON CONFLICT (clave) DO NOTHING;
+        `);
+        console.log('Seeded: margen_proteccion in configuracion');
+
         console.log('--- SCHEMA UPDATE COMPLETE ---');
 
     } catch (err) {

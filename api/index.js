@@ -467,6 +467,12 @@ async function initializeTenantDB(tenantPool, adminName, adminEmail, adminPasswo
         `);
 
         await client.query(`
+            INSERT INTO configuracion (clave, valor)
+            VALUES ('margen_proteccion', '0.00')
+            ON CONFLICT (clave) DO NOTHING;
+        `);
+
+        await client.query(`
             CREATE TABLE IF NOT EXISTS categorias (
                 id SERIAL PRIMARY KEY,
                 nombre VARCHAR(100) UNIQUE NOT NULL,

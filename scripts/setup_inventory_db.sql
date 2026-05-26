@@ -10,6 +10,11 @@ INSERT INTO configuracion (clave, valor)
 VALUES ('precio_dolar', '45.00')
 ON CONFLICT (clave) DO NOTHING;
 
+-- Initialize Inflation Protection Margin (Example: 0.00%)
+INSERT INTO configuracion (clave, valor) 
+VALUES ('margen_proteccion', '0.00')
+ON CONFLICT (clave) DO NOTHING;
+
 -- Create Products table
 CREATE TABLE IF NOT EXISTS productos (
     id SERIAL PRIMARY KEY,

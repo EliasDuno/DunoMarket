@@ -83,6 +83,7 @@ function initInventory() {
     const API_URL_PRODUCTS = '/api/products';
     const API_URL_CONFIG = '/api/config';
     let dollarRate = 1.0;
+    let protectionMargin = 0.0;
     let allProducts = [];
 
     // --- Modals & Elements ---
@@ -140,7 +141,8 @@ function initInventory() {
     function updatePriceFromMargin() {
         const cost = parseFloat(pCosto.value) || 0;
         const margin = parseFloat(pMargen.value) || 0;
-        const priceUsd = cost * (1 + (margin / 100));
+        const basePriceUsd = cost * (1 + (margin / 100));
+        const priceUsd = basePriceUsd * (1 + (protectionMargin / 100));
         
         const isBs = Array.from(pPriceTypeRadios).find(r => r.checked)?.value === 'bs';
         if (isBs) {
@@ -161,8 +163,10 @@ function initInventory() {
             priceUsd = priceUsd / dollarRate;
         }
 
+        const basePriceUsd = priceUsd / (1 + (protectionMargin / 100));
+
         if (cost > 0) {
-            const margin = ((priceUsd / cost) - 1) * 100;
+            const margin = ((basePriceUsd / cost) - 1) * 100;
             pMargen.value = margin.toFixed(1);
         }
     }
@@ -342,6 +346,7 @@ function initInventory() {
             const res = await fetch(API_URL_CONFIG);
             const config = await res.json();
             dollarRate = parseFloat(config.precio_dolar) || 1.0;
+            protectionMargin = parseFloat(config.margen_proteccion) || 0.0;
             const rateEl = document.getElementById('currentDollarRate');
             if (rateEl) rateEl.innerText = dollarRate.toFixed(2);
             if (allProducts.length > 0) renderProductTableForInventory(allProducts);
@@ -453,7 +458,8 @@ function initInventory() {
 
             const costo = parseFloat(p.costo_usd);
             const margen = parseFloat(p.margen_ganancia);
-            const precioUSD = costo * (1 + (margen / 100));
+            const precioUSDBase = costo * (1 + (margen / 100));
+            const precioUSD = precioUSDBase * (1 + (protectionMargin / 100));
             const precioBS = precioUSD * dollarRate;
             let badgeClass = 'badge-user';
 
@@ -737,7 +743,8 @@ function initInventory() {
             
             if (costUsd <= 0) return;
             
-            let saleVal = costUsd * (1 + (margin / 100));
+            const basePriceUsd = costUsd * (1 + (margin / 100));
+            let saleVal = basePriceUsd * (1 + (protectionMargin / 100));
             if (saleType === 'bs') saleVal *= dollarRate;
             
             saleInput.value = saleVal.toFixed(2);
@@ -751,7 +758,8 @@ function initInventory() {
             if (costUsd <= 0 || saleVal <= 0) return;
             
             const saleUsd = saleType === 'bs' ? (saleVal / dollarRate) : saleVal;
-            const margin = ((saleUsd / costUsd) - 1) * 100;
+            const basePriceUsd = saleUsd / (1 + (protectionMargin / 100));
+            const margin = ((basePriceUsd / costUsd) - 1) * 100;
             
             marginHidden.value = margin.toFixed(2);
             if (marginDisplay) {
@@ -1002,6 +1010,7 @@ function initPOS() {
 
     let allProducts = [];
     let exchangeRate = 0;
+    let protectionMargin = 0.0;
 
     // Cart States for Tabs
     let currentTab = 1;
@@ -1011,9 +1020,10 @@ function initPOS() {
     let clientId2 = null;
 
     // Start Logic
-    loadConfig();
+    loadConfig().then(() => {
+        loadProducts();
+    });
     checkCajaStatus();
-    loadProducts();
 
     async function checkCajaStatus() {
         const userSession = sessionStorage.getItem('user_session');
@@ -1221,6 +1231,7 @@ function initPOS() {
             const res = await fetch(API_URL_CONFIG);
             const config = await res.json();
             exchangeRate = parseFloat(config.precio_dolar) || 0;
+            protectionMargin = parseFloat(config.margen_proteccion) || 0;
             const el = document.getElementById('currentDollarRate');
             if (el) el.textContent = formatCurrency(exchangeRate);
         } catch (e) { }
@@ -1230,6 +1241,15 @@ function initPOS() {
         try {
             const res = await fetch(API_URL_PRODUCTS);
             allProducts = await res.json();
+            
+            // Calculate final precio_venta_usd applying both commercial and protection margins
+            allProducts.forEach(p => {
+                const cost = parseFloat(p.costo_usd) || 0;
+                const commMargin = parseFloat(p.margen_ganancia) || 0;
+                const basePrice = cost * (1 + (commMargin / 100));
+                p.precio_venta_usd = basePrice * (1 + (protectionMargin / 100));
+            });
+
             setupSearch();
         } catch (e) { }
     }
@@ -2469,6 +2489,7 @@ function initSettings() {
                 'commerce_name': 'commerceName',
                 'commerce_rif': 'commerceRif',
                 'iva_percentage': 'ivaPercentage',
+                'margen_proteccion': 'protectionMargin',
                 'commerce_address': 'commerceAddress',
                 'admin_phone': 'adminPhone',
                 'whatsapp_phone': 'whatsappPhone',
@@ -2478,7 +2499,7 @@ function initSettings() {
 
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
-                if (el && config[key]) el.value = config[key];
+                if (el && config[key] !== undefined && config[key] !== null) el.value = config[key];
             }
         } catch (e) { console.error('Error loading config:', e); }
     }
@@ -2492,6 +2513,7 @@ function initSettings() {
                 'commerce_name': document.getElementById('commerceName')?.value,
                 'commerce_rif': document.getElementById('commerceRif')?.value,
                 'iva_percentage': document.getElementById('ivaPercentage')?.value,
+                'margen_proteccion': document.getElementById('protectionMargin')?.value,
                 'commerce_address': document.getElementById('commerceAddress')?.value,
                 'admin_phone': document.getElementById('adminPhone')?.value,
                 'whatsapp_phone': document.getElementById('whatsappPhone')?.value
