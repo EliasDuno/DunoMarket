@@ -551,7 +551,7 @@ async function getTenantPool(slug) {
 
         // 1. Ensure schema exists first (except for the master tenant 'pidunet' which uses 'public')
         if (slug !== 'pidunet') {
-            const tempPool = new Pool(getTenantPoolConfig(dbUrl));
+            const tempPool = new Pool(getTenantPoolConfig(dbUrl, slug));
             try {
                 await tempPool.query(`CREATE SCHEMA IF NOT EXISTS "${slug}"`);
             } catch (schemaErr) {
@@ -561,16 +561,11 @@ async function getTenantPool(slug) {
             }
         }
 
-        // 2. Instantiate persistent tenant pool
-        const tenantPool = new Pool(getTenantPoolConfig(dbUrl));
+        // 2. Instantiate persistent tenant pool con search_path embebido en la config
+        // El search_path se aplica a nivel de conexión de PostgreSQL (opción --search_path),
+        // garantizando que esté activo desde el primer query sin condiciones de carrera.
+        const tenantPool = new Pool(getTenantPoolConfig(dbUrl, slug));
         tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
-
-        // 3. Force pool connection sessions to target this schema space
-        tenantPool.on('connect', (client) => {
-            const searchPath = slug === 'pidunet' ? 'public' : `"${slug}", public`;
-            client.query(`SET search_path TO ${searchPath}`)
-                .catch(err => console.error(`Error setting search_path for tenant ${slug}:`, err));
-        });
 
         // 4. Validate or update base table schema
         try {

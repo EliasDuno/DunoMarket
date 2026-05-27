@@ -39,11 +39,18 @@ function getMasterPoolConfig() {
     };
 }
 
-function getTenantPoolConfig(connectionString) {
-    return {
+function getTenantPoolConfig(connectionString, slug) {
+    const config = {
         connectionString: normalizeDbUrl(connectionString),
         ssl: getSslConfig(true)
     };
+    // Inyectar search_path como opción de sesión de PostgreSQL.
+    // Esto garantiza que CADA conexión del pool tenga el schema correcto
+    // desde el primer query, sin depender de eventos asíncronos.
+    if (slug && slug !== 'pidunet') {
+        config.options = `--search_path="${slug}",public`;
+    }
+    return config;
 }
 
 module.exports = {
