@@ -494,6 +494,19 @@ const TENANT_MIGRATIONS = [
             `);
         }
     },
+    {
+        version: '026_alter_configuracion_valor_text',
+        up: async (client) => {
+            await client.query(`
+                DO $$
+                BEGIN
+                    ALTER TABLE configuracion ALTER COLUMN valor TYPE TEXT;
+                EXCEPTION WHEN others THEN
+                    NULL;
+                END $$;
+            `);
+        }
+    }
 ];
 
 // ============================================================
@@ -597,7 +610,7 @@ app.use(async (req, res, next) => {
         return next();
     }
 
-    const slug = normalizeTenantSlug(req.headers['x-tenant-slug']);
+    const slug = normalizeTenantSlug(req.headers['x-tenant-slug'] || req.query.tenant);
     if (!slug) {
         if (req.path === '/api/login') {
             return res.status(400).json({ success: false, message: 'Código de empresa requerido' });
@@ -869,7 +882,7 @@ async function initializeTenantDB(tenantPool, adminName, adminEmail, adminPasswo
         await client.query(`
             CREATE TABLE IF NOT EXISTS configuracion (
                 clave VARCHAR(50) PRIMARY KEY,
-                valor VARCHAR(255) NOT NULL,
+                valor TEXT NOT NULL,
                 actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
@@ -3145,23 +3158,46 @@ app.get('/api/caja/totals/:sessionId', async (req, res) => {
 });
 
 // UPLOAD LOGIN LOGO
-app.post('/api/config/login-logo', upload.single('logo'), (req, res) => {
-    if (req.file) {
-        const tempPath = req.file.path || (req.file.buffer ? 'buffer' : null);
-        const targetPath = path.join(__dirname, 'images', 'login_logo.png');
-
-        if (req.file.buffer) {
-            fs.writeFile(targetPath, req.file.buffer, (err) => {
-                if (err) return res.status(500).json({ success: false, message: 'Error saving login logo' });
-                res.json({ success: true, message: 'Logo de login actualizado' });
-            });
-        } else {
-            // Fallback if not memory storage
-            res.status(500).json({ success: false, message: 'Storage config error' });
+app.post('/api/config/login-logo', upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ success: false, message: 'No file uploaded or storage error' });
         }
-    } else {
-        res.status(400).json({ success: false, message: 'No file uploaded' });
+        const base64Image = 'data:' + req.file.mimetype + ';base64,' + req.file.buffer.toString('base64');
+        
+        await req.pool.query(
+            "INSERT INTO configuracion (clave, valor) VALUES ('logo_login', $1) ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor",
+            [base64Image]
+        );
+        res.json({ success: true, message: 'Logo de login actualizado' });
+    } catch (err) {
+        console.error('Error saving login logo to DB:', err);
+        res.status(500).json({ success: false, message: 'Error saving login logo' });
     }
+});
+
+// GET LOGIN LOGO (Fallback a local si no hay en BD)
+app.get('/api/config/login-logo', async (req, res) => {
+    try {
+        const result = await req.pool.query("SELECT valor FROM configuracion WHERE clave = 'logo_login'");
+        if (result.rows.length > 0 && result.rows[0].valor) {
+            const base64Str = result.rows[0].valor;
+            const parts = base64Str.split(';');
+            const mimeType = parts[0].split(':')[1];
+            const imageData = parts[1].split(',')[1];
+            const buffer = Buffer.from(imageData, 'base64');
+            res.writeHead(200, {
+                'Content-Type': mimeType,
+                'Content-Length': buffer.length,
+                'Cache-Control': 'public, max-age=86400'
+            });
+            return res.end(buffer);
+        }
+    } catch (err) {
+        console.error('Error serving login logo from DB:', err);
+    }
+    // Fallback
+    res.sendFile(path.join(__dirname, 'images', 'login_logo.png'));
 });
 
 // DELETE Product
@@ -3176,18 +3212,47 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
-app.post('/api/config/logo', upload.single('logo'), (req, res) => {
+// UPLOAD MAIN LOGO
+app.post('/api/config/logo', upload.single('logo'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ success: false, message: 'No file uploaded or storage error' });
         }
-        const filePath = path.join(__dirname, 'images', 'logo.png');
-        fs.writeFileSync(filePath, req.file.buffer);
-        res.json({ success: true, message: 'Logo actualizado' });
+        const base64Image = 'data:' + req.file.mimetype + ';base64,' + req.file.buffer.toString('base64');
+        
+        await req.pool.query(
+            "INSERT INTO configuracion (clave, valor) VALUES ('logo_principal', $1) ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor",
+            [base64Image]
+        );
+        res.json({ success: true, message: 'Logo actualizado exitosamente' });
     } catch (err) {
-        console.error(err);
+        console.error('Error saving main logo to DB:', err);
         res.status(500).json({ success: false, message: 'Error al subir el logo' });
     }
+});
+
+// GET MAIN LOGO (Fallback a local si no hay en BD)
+app.get('/api/config/logo', async (req, res) => {
+    try {
+        const result = await req.pool.query("SELECT valor FROM configuracion WHERE clave = 'logo_principal'");
+        if (result.rows.length > 0 && result.rows[0].valor) {
+            const base64Str = result.rows[0].valor;
+            const parts = base64Str.split(';');
+            const mimeType = parts[0].split(':')[1];
+            const imageData = parts[1].split(',')[1];
+            const buffer = Buffer.from(imageData, 'base64');
+            res.writeHead(200, {
+                'Content-Type': mimeType,
+                'Content-Length': buffer.length,
+                'Cache-Control': 'public, max-age=86400'
+            });
+            return res.end(buffer);
+        }
+    } catch (err) {
+        console.error('Error serving main logo from DB:', err);
+    }
+    // Fallback
+    res.sendFile(path.join(__dirname, 'images', 'logo.png'));
 });
 
 // EMAIL CONFIGURATION REMOVED - NOW DYNAMIC IN ENDPOINT

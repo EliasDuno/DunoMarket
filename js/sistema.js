@@ -2502,6 +2502,16 @@ function initSettings() {
                 const el = document.getElementById(id);
                 if (el && config[key] !== undefined && config[key] !== null) el.value = config[key];
             }
+
+            // Load logo previews if they exist in DB
+            if (config['logo_principal']) {
+                const preview = document.getElementById('logoPreview');
+                if (preview) preview.src = config['logo_principal'];
+            }
+            if (config['logo_login']) {
+                const loginPreview = document.getElementById('loginLogoPreview');
+                if (loginPreview) loginPreview.src = config['logo_login'];
+            }
         } catch (e) { console.error('Error loading config:', e); }
     }
 
@@ -2532,6 +2542,70 @@ function initSettings() {
             } catch (e) { console.error(e); showNotification('Error', 'Error al guardar.'); }
         };
     }
+
+    // --- LOGO UPLOADS ---
+    const setupLogoUpload = (inputId, previewId, btnId, uploadUrl) => {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        const btn = document.getElementById(btnId);
+
+        if (!input || !preview || !btn) return;
+
+        input.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    btn.disabled = false;
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        btn.addEventListener('click', async function () {
+            if (!input.files || !input.files[0]) return;
+            
+            const formData = new FormData();
+            formData.append('logo', input.files[0]);
+            
+            this.disabled = true;
+            this.textContent = 'Guardando...';
+
+            try {
+                const res = await fetch(uploadUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showNotification('Éxito', data.message);
+                    
+                    // Si es el logo principal, actualizar sidebar
+                    if (inputId === 'logoInput') {
+                        const tenantSlug = sessionStorage.getItem('tenant_slug');
+                        if (tenantSlug) {
+                            const t = new Date().getTime();
+                            document.querySelectorAll('.sidebar-logo').forEach(img => {
+                                img.src = `/api/config/logo?tenant=${tenantSlug}&t=${t}`;
+                            });
+                        }
+                    }
+                } else {
+                    showNotification('Error', data.message || 'Error al guardar logo');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('Error', 'Error de red al guardar logo');
+            } finally {
+                this.textContent = inputId === 'logoInput' ? 'Guardar Logo' : 'Guardar Logo Login';
+                this.disabled = false;
+            }
+        });
+    };
+
+    setupLogoUpload('logoInput', 'logoPreview', 'btnSaveLogo', '/api/config/logo');
+    setupLogoUpload('loginLogoInput', 'loginLogoPreview', 'btnSaveLoginLogo', '/api/config/login-logo');
 
     // Save Email Data
     const btnSaveEmail = document.getElementById('btnSaveEmail');

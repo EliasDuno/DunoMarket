@@ -33,6 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
         loadGlobalProfile();
         checkAlerts(); // From alerts.js
         initInactivityTimer(); // Auto-Logout
+        
+        // Dynamically load tenant logo
+        const tenantSlug = sessionStorage.getItem('tenant_slug');
+        if (tenantSlug) {
+            document.querySelectorAll('.sidebar-logo').forEach(img => {
+                // Agregar un query param de tiempo para evitar caché al actualizar
+                const timestamp = new Date().getTime();
+                img.src = `/api/config/logo?tenant=${tenantSlug}&t=${timestamp}`;
+            });
+        }
     }
 
     // --- FETCH INTERCEPTOR FOR MULTI-TENANCY ---
