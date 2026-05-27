@@ -310,7 +310,8 @@ function initInventory() {
                         renderProductTableForInventory(allProducts, activeTab);
                     }
                 } else {
-                    showNotification('Error', 'No se pudo actualizar la tasa.');
+                    const data = await res.json().catch(() => ({}));
+                    showNotification('Error', data.message || 'No se pudo actualizar la tasa.');
                 }
             } catch (err) {
                 console.error(err);

@@ -438,12 +438,13 @@ async function getTenantPool(slug) {
         try {
             await ensureTenantSchema(tenantPool);
             tenantSchemaEnsured.add(slug);
+            tenantPools.set(slug, tenantPool);
+            return tenantPool;
         } catch (schemaErr) {
             console.error(`No se pudo verificar el esquema del tenant ${slug}:`, schemaErr);
+            await tenantPool.end().catch(() => {});
+            return null;
         }
-
-        tenantPools.set(slug, tenantPool);
-        return tenantPool;
     } catch (err) {
         console.error(`Error connecting to tenant DB (${slug}):`, err);
         return null;
@@ -1365,7 +1366,7 @@ app.post('/api/config', async (req, res) => {
         res.json({ success: true, message: 'Configuración actualizada' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: 'Error al guardar configuración' });
+        res.status(500).json({ success: false, message: 'Error al guardar configuración: ' + err.message });
     }
 });
 
@@ -3244,34 +3245,6 @@ app.delete('/api/clients/:id', async (req, res) => {
     }
 });
 
-// --- CONFIGURATION ENDPOINTS ---
-app.get('/api/config', async (req, res) => {
-    try {
-        const result = await req.pool.query('SELECT * FROM configuracion');
-        const config = {};
-        result.rows.forEach(row => {
-            config[row.clave] = row.valor;
-        });
-        res.json(config);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error retrieving config' });
-    }
-});
-
-app.post('/api/config', async (req, res) => {
-    const { clave, valor } = req.body;
-    try {
-        await req.pool.query(
-            'INSERT INTO configuracion (clave, valor) VALUES ($1, $2) ON CONFLICT (clave) DO UPDATE SET valor = $2',
-            [clave, valor]
-        );
-        res.json({ success: true, message: 'Configuración guardada' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error saving config' });
-    }
-});
 
 // --- SUPPLIER COMMITMENTS (CUENTAS POR PAGAR) API ---
 
