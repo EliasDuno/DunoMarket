@@ -2508,10 +2508,6 @@ function initSettings() {
                 const preview = document.getElementById('logoPreview');
                 if (preview) preview.src = config['logo_principal'];
             }
-            if (config['logo_login']) {
-                const loginPreview = document.getElementById('loginLogoPreview');
-                if (loginPreview) loginPreview.src = config['logo_login'];
-            }
         } catch (e) { console.error('Error loading config:', e); }
     }
 
@@ -2605,7 +2601,6 @@ function initSettings() {
     };
 
     setupLogoUpload('logoInput', 'logoPreview', 'btnSaveLogo', '/api/config/logo');
-    setupLogoUpload('loginLogoInput', 'loginLogoPreview', 'btnSaveLoginLogo', '/api/config/login-logo');
 
     // Save Email Data
     const btnSaveEmail = document.getElementById('btnSaveEmail');
