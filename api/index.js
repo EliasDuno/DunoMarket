@@ -81,324 +81,462 @@ async function getUsuarioColumnNames(pool) {
     return new Set(result.rows.map(row => row.column_name));
 }
 
+// ============================================================
+// TENANT MIGRATIONS — Sistema de migraciones versionadas
+// Cada migración corre en su propia transacción independiente.
+// Una vez aplicada, queda registrada en schema_migrations y
+// NUNCA vuelve a ejecutarse, ni al reiniciar el servidor.
+// Para agregar cambios futuros: añade un objeto al final del array.
+// ============================================================
+const TENANT_MIGRATIONS = [
+    {
+        version: '001_create_clientes',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS clientes (
+                    id SERIAL PRIMARY KEY,
+                    cedula VARCHAR(20) UNIQUE NOT NULL,
+                    nombre VARCHAR(100) NOT NULL,
+                    email VARCHAR(100),
+                    telefono VARCHAR(20),
+                    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '002_create_usuarios',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id SERIAL PRIMARY KEY,
+                    nombre VARCHAR(100) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255),
+                    rol VARCHAR(20) DEFAULT 'vendedor',
+                    activo BOOLEAN DEFAULT true,
+                    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    avatar_data BYTEA,
+                    avatar_mime VARCHAR(50)
+                );
+            `);
+        }
+    },
+    {
+        version: '003_create_configuracion',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS configuracion (
+                    clave VARCHAR(50) PRIMARY KEY,
+                    valor VARCHAR(255) NOT NULL,
+                    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+            await client.query(`INSERT INTO configuracion (clave, valor) VALUES ('precio_dolar', '45.00') ON CONFLICT (clave) DO NOTHING;`);
+            await client.query(`INSERT INTO configuracion (clave, valor) VALUES ('margen_proteccion', '0.00') ON CONFLICT (clave) DO NOTHING;`);
+        }
+    },
+    {
+        version: '004_create_categorias',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS categorias (
+                    id SERIAL PRIMARY KEY,
+                    nombre VARCHAR(100) UNIQUE NOT NULL,
+                    descripcion TEXT,
+                    activo BOOLEAN DEFAULT true,
+                    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '005_create_proveedores',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS proveedores (
+                    id SERIAL PRIMARY KEY,
+                    rif VARCHAR(50) UNIQUE,
+                    nombre VARCHAR(255) NOT NULL,
+                    telefono VARCHAR(50),
+                    email VARCHAR(100),
+                    direccion TEXT,
+                    activo BOOLEAN DEFAULT true,
+                    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    dias_credito INTEGER DEFAULT 0
+                );
+            `);
+        }
+    },
+    {
+        version: '006_create_productos',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS productos (
+                    id SERIAL PRIMARY KEY,
+                    codigo VARCHAR(50) UNIQUE NOT NULL,
+                    nombre VARCHAR(255) NOT NULL,
+                    descripcion TEXT,
+                    costo_usd DECIMAL(12, 2) DEFAULT 0.00,
+                    margen_ganancia DECIMAL(12, 2) DEFAULT 0.00,
+                    stock INTEGER DEFAULT 0,
+                    stock_minimo INTEGER DEFAULT 5,
+                    stock_principal INTEGER DEFAULT 0,
+                    stock_secundaria INTEGER DEFAULT 0,
+                    stock_merma INTEGER DEFAULT 0,
+                    stock_merma_venta INTEGER DEFAULT 0,
+                    stock_merma_principal INTEGER DEFAULT 0,
+                    stock_merma_secundaria INTEGER DEFAULT 0,
+                    categoria VARCHAR(100),
+                    categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
+                    proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
+                    fecha_vencimiento DATE,
+                    presentacion VARCHAR(100),
+                    aplica_iva BOOLEAN DEFAULT TRUE,
+                    marca VARCHAR(100),
+                    activo BOOLEAN DEFAULT true,
+                    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '007_create_caja_sesiones',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS caja_sesiones (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL,
+                    fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    fecha_cierre TIMESTAMP,
+                    monto_apertura DECIMAL(12, 2) DEFAULT 0.00,
+                    monto_cierre_declarado DECIMAL(12, 2),
+                    monto_teorico DECIMAL(12, 2) DEFAULT 0,
+                    monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0,
+                    diferencia DECIMAL(12, 2) DEFAULT 0,
+                    detalles_cierre JSONB,
+                    observaciones TEXT,
+                    estado VARCHAR(20) DEFAULT 'abierta'
+                );
+            `);
+        }
+    },
+    {
+        version: '008_create_ventas',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ventas (
+                    id SERIAL PRIMARY KEY,
+                    fecha TIMESTAMP DEFAULT NOW(),
+                    metodo_pago VARCHAR(50) NOT NULL,
+                    total_usd NUMERIC(10, 2) NOT NULL,
+                    tasa_bcv NUMERIC(10, 2),
+                    total_bs NUMERIC(12, 2),
+                    caja_id INTEGER REFERENCES caja_sesiones(id),
+                    cliente_id INTEGER REFERENCES clientes(id),
+                    observaciones TEXT,
+                    total_base_usd DECIMAL(10, 2) DEFAULT 0.00,
+                    total_iva_usd DECIMAL(10, 2) DEFAULT 0.00
+                );
+            `);
+        }
+    },
+    {
+        version: '009_create_detalle_ventas',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS detalle_ventas (
+                    id SERIAL PRIMARY KEY,
+                    venta_id INTEGER REFERENCES ventas(id) ON DELETE CASCADE,
+                    producto_id INTEGER,
+                    cantidad DECIMAL(12, 2),
+                    precio_unitario_usd DECIMAL(12, 2),
+                    costo_unitario_usd DECIMAL(12, 2),
+                    subtotal_usd DECIMAL(12, 2)
+                );
+            `);
+        }
+    },
+    {
+        version: '010_create_compromisos_pago',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS compromisos_pago (
+                    id SERIAL PRIMARY KEY,
+                    proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
+                    descripcion TEXT NOT NULL,
+                    monto_total_usd DECIMAL(10, 2) NOT NULL,
+                    monto_pagado_usd DECIMAL(10, 2) DEFAULT 0.00,
+                    fecha_vencimiento DATE NOT NULL,
+                    estado VARCHAR(20) DEFAULT 'PENDIENTE',
+                    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    fecha_emision DATE,
+                    numero_factura VARCHAR(100),
+                    last_alert_sent_at TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '011_create_historial_compras',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS historial_compras (
+                    id SERIAL PRIMARY KEY,
+                    producto_id INTEGER REFERENCES productos(id),
+                    proveedor_id INTEGER REFERENCES proveedores(id),
+                    cantidad INTEGER NOT NULL,
+                    costo_unitario_usd DECIMAL(12,2) NOT NULL,
+                    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '012_create_pagos_ventas',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS pagos_ventas (
+                    id SERIAL PRIMARY KEY,
+                    venta_id INTEGER,
+                    metodo VARCHAR(50) NOT NULL,
+                    monto_usd DECIMAL(10, 2) NOT NULL,
+                    monto_bs DECIMAL(10, 2) NOT NULL,
+                    tasa DECIMAL(10, 2) NOT NULL
+                );
+            `);
+        }
+    },
+    {
+        version: '013_create_historial_pagos_compromisos',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS historial_pagos_compromisos (
+                    id SERIAL PRIMARY KEY,
+                    compromiso_id INTEGER REFERENCES compromisos_pago(id) ON DELETE CASCADE,
+                    monto_usd DECIMAL(10, 2) NOT NULL,
+                    referencia VARCHAR(100),
+                    fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '014_create_auditoria',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS auditoria (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER,
+                    accion VARCHAR(100),
+                    tabla VARCHAR(100),
+                    registro_id INTEGER,
+                    detalle TEXT,
+                    ip VARCHAR(45),
+                    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        }
+    },
+    {
+        version: '015_create_historial_movimientos',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS historial_movimientos (
+                    id SERIAL PRIMARY KEY,
+                    producto_id INTEGER REFERENCES productos(id),
+                    cantidad DECIMAL(12, 2) NOT NULL,
+                    origen VARCHAR(50),
+                    destino VARCHAR(50),
+                    es_merma BOOLEAN DEFAULT false,
+                    observacion TEXT,
+                    costo_unitario_snap DECIMAL(12, 2),
+                    usuario_id INTEGER REFERENCES usuarios(id),
+                    fecha TIMESTAMP DEFAULT NOW()
+                );
+            `);
+        }
+    },
+    {
+        version: '016_create_medios_pago',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS medios_pago (
+                    id SERIAL PRIMARY KEY,
+                    nombre VARCHAR(100) UNIQUE NOT NULL,
+                    activo BOOLEAN DEFAULT TRUE,
+                    creado_en TIMESTAMP DEFAULT NOW()
+                );
+            `);
+            const defaultPayments = ['Efectivo (USD)', 'Efectivo (Bs)', 'Pago Móvil', 'Zelle', 'Punto de Venta'];
+            for (const p of defaultPayments) {
+                await client.query(`INSERT INTO medios_pago (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`, [p]);
+            }
+        }
+    },
+    {
+        version: '017_create_presentaciones',
+        async up(client) {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS presentaciones (
+                    id SERIAL PRIMARY KEY,
+                    nombre VARCHAR(100) UNIQUE NOT NULL,
+                    activo BOOLEAN DEFAULT TRUE
+                );
+            `);
+            const defaultPresentations = ['Unidad', 'Caja', 'Bulto', 'Paquete', 'Sobre', 'Litro', 'Kilo'];
+            for (const p of defaultPresentations) {
+                await client.query(`INSERT INTO presentaciones (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`, [p]);
+            }
+        }
+    },
+    // --- Migraciones de columnas para tenants existentes ---
+    {
+        version: '018_migrate_usuarios_columns',
+        async up(client) {
+            await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);`);
+            await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) DEFAULT 'vendedor';`);
+            await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true;`);
+            await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+            await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_data BYTEA;`);
+            await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_mime VARCHAR(50);`);
+        }
+    },
+    {
+        version: '019_migrate_usuarios_legacy_password',
+        async up(client) {
+            const legacy = await client.query(`
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'usuarios' AND column_name = 'password'
+            `);
+            if (legacy.rows.length > 0) {
+                await client.query(`ALTER TABLE usuarios ALTER COLUMN password DROP NOT NULL;`);
+                await client.query(`UPDATE usuarios SET password_hash = password WHERE password_hash IS NULL AND password IS NOT NULL;`);
+            }
+        }
+    },
+    {
+        version: '020_migrate_productos_columns',
+        async up(client) {
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_principal INTEGER DEFAULT 0;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_secundaria INTEGER DEFAULT 0;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma INTEGER DEFAULT 0;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma_venta INTEGER DEFAULT 0;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma_principal INTEGER DEFAULT 0;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma_secundaria INTEGER DEFAULT 0;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS presentacion VARCHAR(100);`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS aplica_iva BOOLEAN DEFAULT TRUE;`);
+            await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS marca VARCHAR(100);`);
+        }
+    },
+    {
+        version: '021_migrate_compromisos_pago_columns',
+        async up(client) {
+            await client.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS fecha_emision DATE;`);
+            await client.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS numero_factura VARCHAR(100);`);
+            await client.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;`);
+        }
+    },
+    {
+        version: '022_migrate_proveedores_columns',
+        async up(client) {
+            await client.query(`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS dias_credito INTEGER DEFAULT 0;`);
+        }
+    },
+    {
+        // Agrega columnas de ventas SIN FK inline para evitar conflictos con constraints existentes
+        version: '023_migrate_ventas_columns',
+        async up(client) {
+            await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id INTEGER;`);
+            await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS observaciones TEXT;`);
+            await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total_base_usd DECIMAL(10, 2) DEFAULT 0.00;`);
+            await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total_iva_usd DECIMAL(10, 2) DEFAULT 0.00;`);
+        }
+    },
+    {
+        // Agrega FK de ventas.cliente_id → clientes(id) solo si aún no existe
+        version: '024_migrate_ventas_cliente_fk',
+        async up(client) {
+            await client.query(`
+                DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.table_constraints tc
+                        JOIN information_schema.key_column_usage kcu
+                            ON tc.constraint_name = kcu.constraint_name
+                            AND tc.table_schema = kcu.table_schema
+                        WHERE tc.constraint_type = 'FOREIGN KEY'
+                          AND tc.table_schema = current_schema()
+                          AND tc.table_name = 'ventas'
+                          AND kcu.column_name = 'cliente_id'
+                    ) THEN
+                        ALTER TABLE ventas ADD CONSTRAINT fk_ventas_cliente
+                            FOREIGN KEY (cliente_id) REFERENCES clientes(id);
+                    END IF;
+                END $$;
+            `);
+        }
+    },
+    {
+        version: '025_migrate_caja_sesiones_columns',
+        async up(client) {
+            await client.query(`
+                DO $$
+                BEGIN
+                    BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_cierre_declarado DECIMAL(12, 2); EXCEPTION WHEN duplicate_column THEN NULL; END;
+                    BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_teorico DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                    BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                    BEGIN ALTER TABLE caja_sesiones ADD COLUMN diferencia DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                    BEGIN ALTER TABLE caja_sesiones ADD COLUMN detalles_cierre JSONB; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                    BEGIN ALTER TABLE caja_sesiones ADD COLUMN observaciones TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
+                END $$;
+            `);
+        }
+    },
+];
+
+// ============================================================
+// MOTOR DE MIGRACIONES
+// ============================================================
 async function ensureTenantSchema(pool) {
-    const client = await pool.connect();
+    // Paso 1: Crear tabla de control de migraciones si no existe
+    const setupClient = await pool.connect();
+    let appliedVersions;
     try {
-        await client.query('BEGIN');
-
-        // 1. Clientes
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS clientes (
-                id SERIAL PRIMARY KEY,
-                cedula VARCHAR(20) UNIQUE NOT NULL,
-                nombre VARCHAR(100) NOT NULL,
-                email VARCHAR(100),
-                telefono VARCHAR(20),
-                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        await setupClient.query(`
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version VARCHAR(100) PRIMARY KEY,
+                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
-
-        // 2. Usuarios
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                nombre VARCHAR(100) NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                password_hash VARCHAR(255),
-                rol VARCHAR(20) DEFAULT 'vendedor',
-                activo BOOLEAN DEFAULT true,
-                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                avatar_data BYTEA,
-                avatar_mime VARCHAR(50)
-            );
-        `);
-
-        // 3. Configuracion
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS configuracion (
-                clave VARCHAR(50) PRIMARY KEY,
-                valor VARCHAR(255) NOT NULL,
-                actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // Seed default config keys
-        await client.query(`
-            INSERT INTO configuracion (clave, valor)
-            VALUES ('precio_dolar', '45.00')
-            ON CONFLICT (clave) DO NOTHING;
-        `);
-        await client.query(`
-            INSERT INTO configuracion (clave, valor)
-            VALUES ('margen_proteccion', '0.00')
-            ON CONFLICT (clave) DO NOTHING;
-        `);
-
-        // 4. Categorias
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS categorias (
-                id SERIAL PRIMARY KEY,
-                nombre VARCHAR(100) UNIQUE NOT NULL,
-                descripcion TEXT,
-                activo BOOLEAN DEFAULT true,
-                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // 5. Proveedores
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS proveedores (
-                id SERIAL PRIMARY KEY,
-                rif VARCHAR(50) UNIQUE,
-                nombre VARCHAR(255) NOT NULL,
-                telefono VARCHAR(50),
-                email VARCHAR(100),
-                direccion TEXT,
-                activo BOOLEAN DEFAULT true,
-                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // 6. Productos
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS productos (
-                id SERIAL PRIMARY KEY,
-                codigo VARCHAR(50) UNIQUE NOT NULL,
-                nombre VARCHAR(255) NOT NULL,
-                descripcion TEXT,
-                costo_usd DECIMAL(12, 2) DEFAULT 0.00,
-                margen_ganancia DECIMAL(12, 2) DEFAULT 0.00,
-                stock INTEGER DEFAULT 0,
-                stock_minimo INTEGER DEFAULT 5,
-                categoria VARCHAR(100),
-                categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
-                proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
-                activo BOOLEAN DEFAULT true,
-                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // 7. Caja Sesiones
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS caja_sesiones (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER NOT NULL,
-                fecha_apertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                fecha_cierre TIMESTAMP,
-                monto_apertura DECIMAL(12, 2) DEFAULT 0.00,
-                monto_cierre_declarado DECIMAL(12, 2),
-                monto_teorico DECIMAL(12, 2) DEFAULT 0,
-                monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0,
-                diferencia DECIMAL(12, 2) DEFAULT 0,
-                detalles_cierre JSONB,
-                observaciones TEXT,
-                estado VARCHAR(20) DEFAULT 'abierta'
-            );
-        `);
-
-        // 8. Ventas
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS ventas (
-                id SERIAL PRIMARY KEY,
-                fecha TIMESTAMP DEFAULT NOW(),
-                metodo_pago VARCHAR(50) NOT NULL,
-                total_usd NUMERIC(10, 2) NOT NULL,
-                tasa_bcv NUMERIC(10, 2),
-                total_bs NUMERIC(12, 2),
-                caja_id INTEGER REFERENCES caja_sesiones(id),
-                cliente_id INTEGER REFERENCES clientes(id),
-                observaciones TEXT
-            );
-        `);
-
-        // 9. Detalle Ventas
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS detalle_ventas (
-                id SERIAL PRIMARY KEY,
-                venta_id INTEGER REFERENCES ventas(id) ON DELETE CASCADE,
-                producto_id INTEGER,
-                cantidad DECIMAL(12, 2),
-                precio_unitario_usd DECIMAL(12, 2),
-                costo_unitario_usd DECIMAL(12, 2),
-                subtotal_usd DECIMAL(12, 2)
-            );
-        `);
-
-        // 10. Compromisos Pago
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS compromisos_pago (
-                id SERIAL PRIMARY KEY,
-                proveedor_id INTEGER REFERENCES proveedores(id) ON DELETE SET NULL,
-                descripcion TEXT NOT NULL,
-                monto_total_usd DECIMAL(10, 2) NOT NULL,
-                monto_pagado_usd DECIMAL(10, 2) DEFAULT 0.00,
-                fecha_vencimiento DATE NOT NULL,
-                estado VARCHAR(20) DEFAULT 'PENDIENTE',
-                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                fecha_emision DATE,
-                numero_factura VARCHAR(100),
-                last_alert_sent_at TIMESTAMP
-            );
-        `);
-
-        // 11. Historial Compras
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS historial_compras (
-                id SERIAL PRIMARY KEY,
-                producto_id INTEGER REFERENCES productos(id),
-                proveedor_id INTEGER REFERENCES proveedores(id),
-                cantidad INTEGER NOT NULL,
-                costo_unitario_usd DECIMAL(12,2) NOT NULL,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // 12. Pagos Ventas
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS pagos_ventas (
-                id SERIAL PRIMARY KEY,
-                venta_id INTEGER,
-                metodo VARCHAR(50) NOT NULL,
-                monto_usd DECIMAL(10, 2) NOT NULL,
-                monto_bs DECIMAL(10, 2) NOT NULL,
-                tasa DECIMAL(10, 2) NOT NULL
-            );
-        `);
-
-        // 13. Historial Pagos Compromisos
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS historial_pagos_compromisos (
-                id SERIAL PRIMARY KEY,
-                compromiso_id INTEGER REFERENCES compromisos_pago(id) ON DELETE CASCADE,
-                monto_usd DECIMAL(10, 2) NOT NULL,
-                referencia VARCHAR(100),
-                fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // 14. Auditoria
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS auditoria (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER,
-                accion VARCHAR(100),
-                tabla VARCHAR(100),
-                registro_id INTEGER,
-                detalle TEXT,
-                ip VARCHAR(45),
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // 15. Historial Movimientos
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS historial_movimientos (
-                id SERIAL PRIMARY KEY,
-                producto_id INTEGER REFERENCES productos(id),
-                cantidad DECIMAL(12, 2) NOT NULL,
-                origen VARCHAR(50),
-                destino VARCHAR(50),
-                es_merma BOOLEAN DEFAULT false,
-                observacion TEXT,
-                costo_unitario_snap DECIMAL(12, 2),
-                usuario_id INTEGER REFERENCES usuarios(id),
-                fecha TIMESTAMP DEFAULT NOW()
-            );
-        `);
-
-        // 16. Medios Pago
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS medios_pago (
-                id SERIAL PRIMARY KEY,
-                nombre VARCHAR(100) UNIQUE NOT NULL,
-                activo BOOLEAN DEFAULT TRUE,
-                creado_en TIMESTAMP DEFAULT NOW()
-            );
-        `);
-        const defaultPayments = ['Efectivo (USD)', 'Efectivo (Bs)', 'Pago Móvil', 'Zelle', 'Punto de Venta'];
-        for (const p of defaultPayments) {
-            await client.query(`INSERT INTO medios_pago (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`, [p]);
-        }
-
-        // 17. Presentaciones
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS presentaciones (
-                id SERIAL PRIMARY KEY,
-                nombre VARCHAR(100) UNIQUE NOT NULL,
-                activo BOOLEAN DEFAULT TRUE
-            );
-        `);
-        const defaultPresentations = ['Unidad', 'Caja', 'Bulto', 'Paquete', 'Sobre', 'Litro', 'Kilo'];
-        for (const p of defaultPresentations) {
-            await client.query(`INSERT INTO presentaciones (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`, [p]);
-        }
-
-        // --- Migrations & Column Safety ---
-        // Usuarios
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);`);
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) DEFAULT 'vendedor';`);
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true;`);
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_data BYTEA;`);
-        await client.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS avatar_mime VARCHAR(50);`);
-
-        // Convert legacy password in usuarios if any
-        const legacyPassword = await client.query(`
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_schema = current_schema() AND table_name = 'usuarios' AND column_name = 'password'
-        `);
-        if (legacyPassword.rows.length > 0) {
-            await client.query(`ALTER TABLE usuarios ALTER COLUMN password DROP NOT NULL;`);
-            await client.query(`UPDATE usuarios SET password_hash = password WHERE password_hash IS NULL AND password IS NOT NULL;`);
-        }
-
-        // Productos
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_principal INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_secundaria INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma_venta INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma_principal INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_merma_secundaria INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS presentacion VARCHAR(100);`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS aplica_iva BOOLEAN DEFAULT TRUE;`);
-        await client.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS marca VARCHAR(100);`);
-
-        // Compromisos Pago
-        await client.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS fecha_emision DATE;`);
-        await client.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS numero_factura VARCHAR(100);`);
-        await client.query(`ALTER TABLE compromisos_pago ADD COLUMN IF NOT EXISTS last_alert_sent_at TIMESTAMP;`);
-
-        // Proveedores
-        await client.query(`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS dias_credito INTEGER DEFAULT 0;`);
-
-        // Ventas
-        await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id);`);
-        await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS observaciones TEXT;`);
-        await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total_base_usd DECIMAL(10, 2) DEFAULT 0.00;`);
-        await client.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total_iva_usd DECIMAL(10, 2) DEFAULT 0.00;`);
-
-        // Caja Sesiones
-        await client.query(`
-            DO $$ 
-            BEGIN 
-                BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_cierre_declarado DECIMAL(12, 2); EXCEPTION WHEN duplicate_column THEN NULL; END;
-                BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_teorico DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
-                BEGIN ALTER TABLE caja_sesiones ADD COLUMN monto_ventas_sistema DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
-                BEGIN ALTER TABLE caja_sesiones ADD COLUMN diferencia DECIMAL(12, 2) DEFAULT 0; EXCEPTION WHEN duplicate_column THEN NULL; END;
-                BEGIN ALTER TABLE caja_sesiones ADD COLUMN detalles_cierre JSONB; EXCEPTION WHEN duplicate_column THEN NULL; END;
-                BEGIN ALTER TABLE caja_sesiones ADD COLUMN observaciones TEXT; EXCEPTION WHEN duplicate_column THEN NULL; END;
-            END $$;
-        `);
-
-        await client.query('COMMIT');
-    } catch (e) {
-        await client.query('ROLLBACK');
-        console.error('Error ensuring tenant schema:', e);
-        throw e;
+        const result = await setupClient.query('SELECT version FROM schema_migrations');
+        appliedVersions = new Set(result.rows.map(r => r.version));
     } finally {
-        client.release();
+        setupClient.release();
+    }
+
+    // Paso 2: Ejecutar cada migración pendiente en su propia transacción
+    for (const migration of TENANT_MIGRATIONS) {
+        if (appliedVersions.has(migration.version)) continue;
+
+        const migClient = await pool.connect();
+        try {
+            await migClient.query('BEGIN');
+            await migration.up(migClient);
+            await migClient.query(
+                'INSERT INTO schema_migrations (version, applied_at) VALUES ($1, NOW())',
+                [migration.version]
+            );
+            await migClient.query('COMMIT');
+            console.log(`[migration] ✓ Aplicada: ${migration.version}`);
+        } catch (err) {
+            await migClient.query('ROLLBACK').catch(() => {});
+            console.error(`[migration] ✗ Falló: ${migration.version} →`, err.message);
+            throw err;
+        } finally {
+            migClient.release();
+        }
     }
 }
 
