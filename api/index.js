@@ -2027,23 +2027,35 @@ app.post('/api/products/bulk-receive', async (req, res) => {
 
         for (const item of items) {
             try {
+                const itemCodigo = item.codigo || item.CODIGO || item.Codigo;
+                const itemCantidad = item.cantidad || item.CANTIDAD || item.Cantidad;
+                const itemCosto = item.costo || item.COSTO_NUEVO || item.COSTO || item.costo_nuevo || item.Costo;
+                const itemProveedor = item.proveedor || item.PROVEEDOR || item.Proveedor;
+                const itemDestino = item.destino || item.DESTINO || item.Destino || 'venta';
+
+                if (!itemCodigo) {
+                    results.failed++;
+                    results.errors.push(`Fila sin código de producto`);
+                    continue;
+                }
+
                 // 1. Find Product
-                const resProd = await client.query('SELECT id, stock, stock_principal, stock_secundaria, proveedor_id, costo_usd FROM productos WHERE codigo = $1', [item.codigo]);
+                const resProd = await client.query('SELECT id, stock, stock_principal, stock_secundaria, proveedor_id, costo_usd FROM productos WHERE codigo = $1', [itemCodigo]);
                 if (resProd.rows.length === 0) {
                     results.failed++;
-                    results.errors.push(`Producto no encontrado: ${item.codigo}`);
+                    results.errors.push(`Producto no encontrado: ${itemCodigo}`);
                     continue;
                 }
                 const product = resProd.rows[0];
-                const qty = parseFloat(item.cantidad) || 0;
+                const qty = parseFloat(itemCantidad) || 0;
                 if (qty <= 0) { /* skip 0 qty? maybe warning */ continue; }
 
-                const newCost = item.costo ? parseFloat(item.costo) : (item.costo_nuevo ? parseFloat(item.costo_nuevo) : product.costo_usd); // Support multiple keys
+                const newCost = itemCosto ? parseFloat(itemCosto) : product.costo_usd; // Support multiple keys
 
                 // 2. Resolve Provider (Optional override)
                 let finalProvId = product.proveedor_id;
-                if (item.proveedor) {
-                    const resProv = await client.query('SELECT id FROM proveedores WHERE LOWER(nombre) = LOWER($1)', [item.proveedor.trim()]);
+                if (itemProveedor && typeof itemProveedor === 'string') {
+                    const resProv = await client.query('SELECT id FROM proveedores WHERE LOWER(nombre) = LOWER($1)', [itemProveedor.trim()]);
                     if (resProv.rows.length > 0) {
                         finalProvId = resProv.rows[0].id;
                         await client.query('UPDATE productos SET proveedor_id = $1 WHERE id = $2', [finalProvId, product.id]);
@@ -2054,7 +2066,7 @@ app.post('/api/products/bulk-receive', async (req, res) => {
                 // 3. Update Stock & Cost
                 // Determine destination column
                 let destCol = 'stock'; // Default logic: 'venta' or unspecified -> stock
-                let destInput = (item.destino || item.DESTINO || 'venta').toLowerCase().trim();
+                let destInput = typeof itemDestino === 'string' ? itemDestino.toLowerCase().trim() : 'venta';
 
                 if (destInput.includes('principal') || destInput.includes('bodega principal')) destCol = 'stock_principal';
                 else if (destInput.includes('secundaria') || destInput.includes('bodega secundaria')) destCol = 'stock_secundaria';
@@ -2077,8 +2089,9 @@ app.post('/api/products/bulk-receive', async (req, res) => {
                 results.success++;
 
             } catch (rowErr) {
+                const itemCodigoFallback = item.codigo || item.CODIGO || item.Codigo || 'fila';
                 results.failed++;
-                results.errors.push(`Error en ${item.codigo}: ${rowErr.message}`);
+                results.errors.push(`Error en ${itemCodigoFallback}: ${rowErr.message}`);
             }
         }
 
