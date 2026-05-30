@@ -3167,7 +3167,7 @@ window.downloadTemplate = (type) => {
             ['CODIGO', 'Obligatorio. El producto ya debe existir en Alta Productos.'],
             ['CANTIDAD', 'Obligatorio. Cantidad de unidades a sumar al inventario.'],
             ['COSTO_NUEVO', 'Opcional. Si lo colocas, actualizará el costo del producto.'],
-            ['DESTINO', 'Obligatorio. Dónde entrará el stock. Escribe alguna de estas opciones:\n- Principal\n- Secundaria\n- Venta']
+            ['DESTINO', 'Obligatorio. Dónde entrará el stock. Escribe alguna de estas opciones:\n- Principal\n- Secundaria\n- Disponibilidad para Venta']
         ];
     } else {
         instructions = [['INSTRUCCIONES'], ['Llena los datos respetando los encabezados de la primera fila.']];
