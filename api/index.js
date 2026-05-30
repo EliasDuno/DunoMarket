@@ -1962,7 +1962,7 @@ app.post('/api/products/bulk-create', async (req, res) => {
                     catId = resCat.rows[0].id;
                 } else {
                     // Create Category if not exists
-                    const newCat = await client.query('INSERT INTO categorias (nombre, descripcion) VALUES ($1, $2) RETURNING id', [catName, 'Categoría automática']);
+                    const newCat = await client.query('INSERT INTO categorias (nombre) VALUES ($1) RETURNING id', [catName]);
                     catId = newCat.rows[0].id;
                 }
 
@@ -1976,7 +1976,7 @@ app.post('/api/products/bulk-create', async (req, res) => {
                     provId = resProv.rows[0].id;
                 } else {
                     // Create Provider if not exists
-                    const newProv = await client.query('INSERT INTO proveedores (nombre, contacto) VALUES ($1, $2) RETURNING id', [provName, 'Proveedor automático']);
+                    const newProv = await client.query('INSERT INTO proveedores (nombre) VALUES ($1) RETURNING id', [provName]);
                     provId = newProv.rows[0].id;
                 }
 
