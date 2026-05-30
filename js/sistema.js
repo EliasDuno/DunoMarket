@@ -3148,15 +3148,43 @@ window.downloadTemplate = (type) => {
             break;
     }
 
+    let instructions = [];
+    if (type === 'create') {
+        instructions = [
+            ['COLUMNA', 'INSTRUCCIONES / VALORES PERMITIDOS'],
+            ['CODIGO', 'Obligatorio. Código único del producto.'],
+            ['NOMBRE', 'Obligatorio. Nombre del producto.'],
+            ['COSTO_USD', 'Costo en dólares (ej. 1.50). Usa punto para decimales.'],
+            ['MARGEN', 'Margen de ganancia en porcentaje (ej. 30 para 30%).'],
+            ['STOCK', 'Inventario inicial para la tienda (Venta).'],
+            ['CATEGORIA', 'Nombre de la categoría. Si no existe, se creará.'],
+            ['PROVEEDOR', 'Nombre del proveedor. Si no existe, se creará.'],
+            ['MARCA', 'Marca del producto (opcional).']
+        ];
+    } else if (type === 'receive') {
+        instructions = [
+            ['COLUMNA', 'INSTRUCCIONES / VALORES PERMITIDOS'],
+            ['CODIGO', 'Obligatorio. El producto ya debe existir en Alta Productos.'],
+            ['CANTIDAD', 'Obligatorio. Cantidad de unidades a sumar al inventario.'],
+            ['COSTO_NUEVO', 'Opcional. Si lo colocas, actualizará el costo del producto.'],
+            ['DESTINO', 'Obligatorio. Dónde entrará el stock. Escribe alguna de estas opciones:\n- Principal\n- Secundaria\n- Venta']
+        ];
+    } else {
+        instructions = [['INSTRUCCIONES'], ['Llena los datos respetando los encabezados de la primera fila.']];
+    }
+
     try {
         const wb = XLSX.utils.book_new();
+        
         const ws = XLSX.utils.aoa_to_sheet(data);
-
-        // Adjust column widths for better readability
         const wscols = data[0].map(() => ({ wch: 20 }));
         ws['!cols'] = wscols;
-
         XLSX.utils.book_append_sheet(wb, ws, "Plantilla");
+
+        const wsInst = XLSX.utils.aoa_to_sheet(instructions);
+        wsInst['!cols'] = [{ wch: 20 }, { wch: 80 }];
+        XLSX.utils.book_append_sheet(wb, wsInst, "Instrucciones");
+
         XLSX.writeFile(wb, filename);
     } catch (err) {
         console.error('Error generando plantilla:', err);
