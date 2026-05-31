@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkPagePermission();
         loadGlobalProfile();
         checkAlerts(); // From alerts.js
-        initInactivityTimer(); // Auto-Logout
+        // initInactivityTimer(); // Auto-Logout desactivado por petición del cliente
         
         // Dynamically load tenant logo
         const tenantSlug = sessionStorage.getItem('tenant_slug');
@@ -475,28 +475,9 @@ window.logout = function () {
 };
 
 // --- INACTIVITY TIMER ---
+// --- INACTIVITY TIMER ---
 function initInactivityTimer() {
-    let timeout;
-    const LIMIT = 10 * 60 * 1000; // 10 minutes
-
-    function resetTimer() {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            console.log('Sesión expirada por inactividad.');
-            window.logout();
-        }, LIMIT);
-    }
-
-    // Events to monitor
-    // Use resetTimer() immediately since we are in DOMContentLoaded or later
-    resetTimer();
-
-    // Use addEventListener to avoid overwriting window.onload or other handlers
-    window.addEventListener('load', resetTimer);
-    document.addEventListener('mousemove', resetTimer);
-    document.addEventListener('keypress', resetTimer);
-    document.addEventListener('click', resetTimer);
-    document.addEventListener('scroll', resetTimer);
+    // Desactivado para evitar cierres de sesión molestos
 }
 
 // --- NOTIFICACIONES Y MODALES ---
