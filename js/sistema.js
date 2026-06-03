@@ -1233,9 +1233,10 @@ function initPOS() {
             const config = await res.json();
             exchangeRate = parseFloat(config.precio_dolar) || 0;
             protectionMargin = parseFloat(config.margen_proteccion) || 0;
+            window.comisionAvance = parseFloat(config.comision_avance) || 12;
             const el = document.getElementById('currentDollarRate');
             if (el) el.textContent = formatCurrency(exchangeRate);
-        } catch (e) { }
+        } catch (e) { console.error('Error fetching config:', e); }
     }
 
     async function loadProducts() {
@@ -1839,17 +1840,9 @@ function initPOS() {
     };
     
     // CASH ADVANCE LOGIC
-    window.calculateCashAdvance = async () => {
+    window.calculateCashAdvance = () => {
         const cashAmount = parseFloat(document.getElementById('caAmountCash').value) || 0;
-        let commissionRate = 12; // Default
-        
-        try {
-            const res = await fetch('/api/config');
-            if(res.ok) {
-                const config = await res.json();
-                if(config.comision_avance) commissionRate = parseFloat(config.comision_avance);
-            }
-        } catch(e) { console.error('Error fetching config for cash advance', e); }
+        let commissionRate = window.comisionAvance || 12; // Default
         
         document.getElementById('caCommissionRate').innerText = `${commissionRate}%`;
         
@@ -1873,19 +1866,15 @@ function initPOS() {
             
             try {
                 // Ensure Caja is open
-                if (!cajaId) {
+                const activeCajaId = window.activeCajaSessionId;
+                if (!activeCajaId) {
                     if (typeof window.showNotification === 'function') window.showNotification('Error', 'La caja no está abierta.');
                     btnProcessCA.disabled = false;
                     return;
                 }
                 
                 // Get config to calculate total
-                let commissionRate = 12;
-                const configRes = await fetch('/api/config');
-                if(configRes.ok) {
-                    const config = await configRes.json();
-                    if(config.comision_avance) commissionRate = parseFloat(config.comision_avance);
-                }
+                let commissionRate = window.comisionAvance || 12;
                 
                 const totalCharge = cashAmount * (1 + (commissionRate / 100));
                 const paymentMethod = document.getElementById('caPaymentMethod').value;
@@ -1895,7 +1884,7 @@ function initPOS() {
                     amountChargeBs: totalCharge,
                     rate: exchangeRate,
                     paymentMethod: paymentMethod,
-                    cajaId: cajaId,
+                    cajaId: activeCajaId,
                     observaciones: 'Avance de Efectivo - Comisión: ' + commissionRate + '%'
                 };
                 

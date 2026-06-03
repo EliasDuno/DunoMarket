@@ -567,12 +567,14 @@
 
             <div class="input-group">
                 <label>Método de Pago Electrónico (Ingreso)</label>
-                <select id="caPaymentMethod" class="input-wrapper" style="width: 100%; padding: 0.8rem; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-light);">
-                    <option value="TDC">Tarjeta (TDC/TDD)</option>
-                    <option value="PAGO_MOVIL">Pago Móvil</option>
-                    <option value="TRANSFERENCIA">Transferencia</option>
-                    <option value="OTROS">Otros</option>
-                </select>
+                <div class="input-wrapper">
+                    <select id="caPaymentMethod">
+                        <option value="TDC">Tarjeta (TDC/TDD)</option>
+                        <option value="PAGO_MOVIL">Pago Móvil</option>
+                        <option value="TRANSFERENCIA">Transferencia</option>
+                        <option value="OTROS">Otros</option>
+                    </select>
+                </div>
             </div>
 
             <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
