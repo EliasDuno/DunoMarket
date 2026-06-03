@@ -3014,23 +3014,19 @@ function initSettings() {
                 'Confirmar Alta de Productos',
                 `¿Cargar ${file.name} para Alta de Productos?`,
                 async () => {
-                    alert("Iniciando lectura del archivo Excel...");
                     try {
                         const items = await readExcel(file);
-                        alert(`Archivo leído correctamente. Filas encontradas: ${items.length}. Enviando a servidor...`);
                         const res = await fetch('/api/products/bulk-create', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ products: items })
                         });
-                        alert("Respuesta del servidor recibida. Procesando JSON...");
                         const result = await res.json();
-                        alert(`Proceso finalizado. Éxitos: ${result.results?.success || 0}, Fallos: ${result.results?.failed || 0}`);
                         logBulkResult('Alta de Productos', result);
+                        showNotification('Alta Completada', `Proceso finalizado. Éxitos: ${result.results?.success || 0}, Fallos: ${result.results?.failed || 0}.`);
                     } catch (e) { 
                         console.error(e); 
-                        alert("Ocurrió un error en JS: " + e.message);
-                        showNotification('Error', 'Ocurrió un error al cargar.'); 
+                        showNotification('Error', 'Ocurrió un error al cargar. ' + e.message); 
                     }
                     createInput.value = '';
                 },
@@ -3055,23 +3051,19 @@ function initSettings() {
                 'Confirmar Recepción de Stock',
                 `¿Cargar ${file.name} para Recepción de Stock?`,
                 async () => {
-                    alert("Iniciando lectura del archivo Excel de recepción...");
                     try {
                         const items = await readExcel(file);
-                        alert(`Archivo de recepción leído. Filas: ${items.length}. Enviando a servidor...`);
                         const res = await fetch('/api/products/bulk-receive', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ items: items })
                         });
-                        alert("Respuesta de recepción recibida. Procesando...");
                         const result = await res.json();
-                        alert(`Proceso finalizado. Éxitos: ${result.results?.success || 0}, Fallos: ${result.results?.failed || 0}`);
                         logBulkResult('Recepción de Stock', result);
+                        showNotification('Recepción Completada', `Proceso finalizado. Éxitos: ${result.results?.success || 0}, Fallos: ${result.results?.failed || 0}.`);
                     } catch (e) { 
                         console.error(e); 
-                        alert("Ocurrió un error en JS de recepción: " + e.message);
-                        showNotification('Error', 'Ocurrió un error al procesar la recepción.'); 
+                        showNotification('Error', 'Ocurrió un error al procesar la recepción. ' + e.message); 
                     }
                     receiveInput.value = '';
                 },
