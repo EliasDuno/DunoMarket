@@ -519,6 +519,12 @@ const TENANT_MIGRATIONS = [
                 END $$;
             `);
         }
+    },
+    {
+        version: '028_add_cash_advance_config',
+        up: async (client) => {
+            await client.query(`INSERT INTO configuracion (clave, valor) VALUES ('comision_avance', '12') ON CONFLICT (clave) DO NOTHING;`);
+        }
     }
 ];
 
@@ -2415,6 +2421,37 @@ app.post('/api/users/bulk-create', async (req, res) => {
         await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ success: false, message: 'Error general en usuarios' });
+    } finally {
+        client.release();
+    }
+});
+
+app.post('/api/cash-advance', async (req, res) => {
+    const { amountCashBs, amountChargeBs, rate, paymentMethod, cajaId, observaciones } = req.body;
+    const client = await req.pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // 1. Ingreso electrónico
+        const totalUsdCharge = parseFloat(amountChargeBs) / parseFloat(rate);
+        await client.query(
+            'INSERT INTO ventas (metodo_pago, total_usd, tasa_bcv, total_bs, caja_id, observaciones) VALUES ($1, $2, $3, $4, $5, $6)',
+            [paymentMethod, totalUsdCharge, rate, amountChargeBs, cajaId, observaciones || 'Avance de Efectivo (Ingreso Electrónico)']
+        );
+        
+        // 2. Egreso de efectivo
+        const totalUsdCash = -(parseFloat(amountCashBs) / parseFloat(rate));
+        await client.query(
+            'INSERT INTO ventas (metodo_pago, total_usd, tasa_bcv, total_bs, caja_id, observaciones) VALUES ($1, $2, $3, $4, $5, $6)',
+            ['EFECTIVO_BS', totalUsdCash, rate, -amountCashBs, cajaId, 'Avance de Efectivo (Salida de Caja)']
+        );
+        
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Avance registrado correctamente' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error procesando avance' });
     } finally {
         client.release();
     }

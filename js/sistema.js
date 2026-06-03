@@ -1837,6 +1837,93 @@ function initPOS() {
     window.closePaymentModal = () => {
         document.getElementById('paymentModal').style.display = 'none';
     };
+    
+    // CASH ADVANCE LOGIC
+    window.calculateCashAdvance = async () => {
+        const cashAmount = parseFloat(document.getElementById('caAmountCash').value) || 0;
+        let commissionRate = 12; // Default
+        
+        try {
+            const res = await fetch('/api/config');
+            if(res.ok) {
+                const config = await res.json();
+                if(config.comision_avance) commissionRate = parseFloat(config.comision_avance);
+            }
+        } catch(e) { console.error('Error fetching config for cash advance', e); }
+        
+        document.getElementById('caCommissionRate').innerText = `${commissionRate}%`;
+        
+        const commissionAmount = cashAmount * (commissionRate / 100);
+        const totalCharge = cashAmount + commissionAmount;
+        
+        document.getElementById('caCommissionAmount').innerText = `${commissionAmount.toFixed(2)} Bs`;
+        document.getElementById('caTotalCharge').innerText = `${totalCharge.toFixed(2)} Bs`;
+    };
+    
+    const btnProcessCA = document.getElementById('btnProcessCashAdvance');
+    if (btnProcessCA) {
+        btnProcessCA.onclick = async () => {
+            const cashAmount = parseFloat(document.getElementById('caAmountCash').value) || 0;
+            if (cashAmount <= 0) {
+                if (typeof window.showNotification === 'function') window.showNotification('Error', 'Ingrese un monto válido.');
+                return;
+            }
+            
+            btnProcessCA.disabled = true;
+            
+            try {
+                // Ensure Caja is open
+                if (!cajaId) {
+                    if (typeof window.showNotification === 'function') window.showNotification('Error', 'La caja no está abierta.');
+                    btnProcessCA.disabled = false;
+                    return;
+                }
+                
+                // Get config to calculate total
+                let commissionRate = 12;
+                const configRes = await fetch('/api/config');
+                if(configRes.ok) {
+                    const config = await configRes.json();
+                    if(config.comision_avance) commissionRate = parseFloat(config.comision_avance);
+                }
+                
+                const totalCharge = cashAmount * (1 + (commissionRate / 100));
+                const paymentMethod = document.getElementById('caPaymentMethod').value;
+                
+                const payload = {
+                    amountCashBs: cashAmount,
+                    amountChargeBs: totalCharge,
+                    rate: exchangeRate,
+                    paymentMethod: paymentMethod,
+                    cajaId: cajaId,
+                    observaciones: 'Avance de Efectivo - Comisión: ' + commissionRate + '%'
+                };
+                
+                const res = await fetch('/api/cash-advance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-tenant': tenantSlug
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                if(data.success) {
+                    if (typeof window.showNotification === 'function') window.showNotification('Éxito', 'Avance procesado correctamente.');
+                    document.getElementById('cashAdvanceModal').style.display = 'none';
+                    document.getElementById('caAmountCash').value = '';
+                } else {
+                    if (typeof window.showNotification === 'function') window.showNotification('Error', data.message || 'Error al procesar avance.');
+                }
+            } catch (err) {
+                console.error('Cash advance error', err);
+                if (typeof window.showNotification === 'function') window.showNotification('Error', 'Error de red.');
+            } finally {
+                btnProcessCA.disabled = false;
+            }
+        };
+    }
 }
 
 // =============================================================================
@@ -2495,7 +2582,8 @@ function initSettings() {
                 'admin_phone': 'adminPhone',
                 'whatsapp_phone': 'whatsappPhone',
                 'smtp_email': 'smtpEmail',
-                'smtp_password': 'smtpPass'
+                'smtp_password': 'smtpPass',
+                'comision_avance': 'cashAdvanceCommission'
             };
 
             for (const [key, id] of Object.entries(map)) {
@@ -2523,7 +2611,8 @@ function initSettings() {
                 'margen_proteccion': document.getElementById('protectionMargin')?.value,
                 'commerce_address': document.getElementById('commerceAddress')?.value,
                 'admin_phone': document.getElementById('adminPhone')?.value,
-                'whatsapp_phone': document.getElementById('whatsappPhone')?.value
+                'whatsapp_phone': document.getElementById('whatsappPhone')?.value,
+                'comision_avance': document.getElementById('cashAdvanceCommission')?.value
             };
 
             try {

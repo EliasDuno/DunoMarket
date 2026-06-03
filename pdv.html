@@ -130,6 +130,9 @@
 
                 <div class="header-right-group" style="display: flex; align-items: center; gap: 1.5rem;">
                     <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+                        <button class="btn-cancel" onclick="document.getElementById('cashAdvanceModal').style.display='flex'" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border: 1px solid var(--primary-color); color: var(--primary-color);">
+                            <i class="fas fa-hand-holding-usd"></i> Avance de Efectivo
+                        </button>
                         <div class="dollar-badge" id="dollarBadge">
                             <i class="fas fa-dollar-sign"></i>
                             <span>Tasa: <strong id="currentDollarRate">0.00</strong> Bs</span>
@@ -544,6 +547,52 @@
             <div class="button-group">
                 <button class="btn-cancel" onclick="window.location.href='/'">Cerrar</button>
                 <button class="btn-login" onclick="printReport()"><i class="fas fa-print"></i> Imprimir</button>
+            </div>
+        </div>
+    </div>
+    <div id="cashAdvanceModal" class="modal">
+        <div class="modal-content login-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-hand-holding-usd"></i> Avance de Efectivo</h2>
+                <span class="close-button" onclick="document.getElementById('cashAdvanceModal').style.display='none'">&times;</span>
+            </div>
+            
+            <div class="input-group" style="margin-top: 1rem;">
+                <label>Efectivo a Entregar (Bs)</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <input type="number" id="caAmountCash" step="0.01" placeholder="Ej: 100.00" oninput="calculateCashAdvance()">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Método de Pago Electrónico (Ingreso)</label>
+                <select id="caPaymentMethod" class="input-wrapper" style="width: 100%; padding: 0.8rem; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-light);">
+                    <option value="TDC">Tarjeta (TDC/TDD)</option>
+                    <option value="PAGO_MOVIL">Pago Móvil</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                    <option value="OTROS">Otros</option>
+                </select>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-muted);">Comisión Configurada:</span>
+                    <strong id="caCommissionRate">12%</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-muted);">Monto Comisión:</span>
+                    <strong id="caCommissionAmount">0.00 Bs</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; font-size: 1.2rem; color: var(--primary-color);">
+                    <span>Total a Cobrar:</span>
+                    <strong id="caTotalCharge">0.00 Bs</strong>
+                </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 1.5rem; justify-content: flex-end;">
+                <button class="btn-cancel" onclick="document.getElementById('cashAdvanceModal').style.display='none'">Cancelar</button>
+                <button id="btnProcessCashAdvance" class="btn-login" style="width: auto;">Procesar Avance</button>
             </div>
         </div>
     </div>
