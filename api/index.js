@@ -506,6 +506,19 @@ const TENANT_MIGRATIONS = [
                 END $$;
             `);
         }
+    },
+    {
+        version: '027_add_expo_push_token_to_usuarios',
+        up: async (client) => {
+            await client.query(`
+                DO $$
+                BEGIN
+                    ALTER TABLE usuarios ADD COLUMN expo_push_token text;
+                EXCEPTION WHEN duplicate_column THEN
+                    NULL;
+                END $$;
+            `);
+        }
     }
 ];
 
@@ -1364,6 +1377,62 @@ app.delete('/api/users/:id', global.checkFiscal, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Error al eliminar usuario' });
+    }
+});
+app.post('/api/users/push-token', async (req, res) => {
+    const { email, token } = req.body;
+    if (!email || !token) return res.status(400).json({ success: false, message: 'Faltan datos' });
+    try {
+        await req.pool.query('UPDATE usuarios SET expo_push_token = $1 WHERE email = $2', [token, email]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get('/api/cron/check-invoices', async (req, res) => {
+    try {
+        const { rows: tenants } = await masterPool.query('SELECT slug FROM tenants');
+        let totalSent = 0;
+        
+        for (const tenant of tenants) {
+            const pool = await getTenantPool(tenant.slug);
+            if (!pool) continue;
+            
+            // Verificar si la columna expo_push_token existe
+            const { rows: columns } = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name='usuarios' AND column_name='expo_push_token'");
+            if (columns.length === 0) continue; // Si no han corrido la migración, saltar
+
+            // Buscar administradores con token
+            const { rows: admins } = await pool.query("SELECT expo_push_token FROM usuarios WHERE (rol = 'admin' OR rol = 'administrador' OR rol = 'superadmin') AND expo_push_token IS NOT NULL");
+            if (admins.length === 0) continue;
+            
+            const tokens = admins.map(a => a.expo_push_token);
+            
+            // Buscar facturas vencidas
+            const { rows: invoices } = await pool.query("SELECT count(*) as count FROM compromisos_pago WHERE estado != 'PAGADO' AND fecha_vencimiento < CURRENT_DATE");
+            const count = parseInt(invoices[0].count);
+            
+            if (count > 0) {
+                // Enviar push
+                await fetch('https://exp.host/--/api/v2/push/send', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tokens.map(token => ({
+                        to: token,
+                        sound: 'default',
+                        title: 'Facturas Vencidas',
+                        body: `🚨 Tienes ${count} cuenta(s) por pagar vencidas o urgentes en la empresa ${tenant.slug}.`
+                    })))
+                });
+                totalSent += tokens.length;
+            }
+        }
+        res.json({ success: true, messagesSent: totalSent });
+    } catch (err) {
+        console.error('CRON Error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
