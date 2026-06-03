@@ -1892,7 +1892,7 @@ function initPOS() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-tenant': tenantSlug
+                        'x-tenant-slug': sessionStorage.getItem('tenant_slug')
                     },
                     body: JSON.stringify(payload)
                 });
