@@ -4,6 +4,74 @@
  */
 console.log('SISTEMA.JS LOADED - v5');
 
+window.paginationState = window.paginationState || {
+    inventory: { current: 1, limit: 15 },
+    categories: { current: 1, limit: 15 },
+    suppliers: { current: 1, limit: 15 },
+    clients: { current: 1, limit: 15 },
+    cuentas: { current: 1, limit: 15 }
+};
+
+window.renderPagination = function(selectId, buttonsId, viewKey, totalItems, onPageChange) {
+    const select = document.getElementById(selectId);
+    const buttonsContainer = document.getElementById(buttonsId);
+    if (!select || !buttonsContainer) return;
+
+    const state = window.paginationState[viewKey];
+
+    select.onchange = (e) => {
+        state.limit = parseInt(e.target.value, 10);
+        state.current = 1;
+        onPageChange();
+    };
+
+    if (select.value != state.limit) select.value = state.limit;
+
+    const totalPages = Math.ceil(totalItems / state.limit) || 1;
+    if (state.current > totalPages) state.current = totalPages;
+    if (state.current < 1) state.current = 1;
+
+    buttonsContainer.innerHTML = '';
+    
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn-login';
+    prevBtn.style.width = 'auto';
+    prevBtn.style.padding = '5px 10px';
+    prevBtn.style.fontSize = '0.8rem';
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Anterior';
+    prevBtn.disabled = state.current === 1;
+    prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+    prevBtn.onclick = () => {
+        if (state.current > 1) {
+            state.current--;
+            onPageChange();
+        }
+    };
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn-login';
+    nextBtn.style.width = 'auto';
+    nextBtn.style.padding = '5px 10px';
+    nextBtn.style.fontSize = '0.8rem';
+    nextBtn.innerHTML = 'Siguiente <i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = state.current === totalPages;
+    nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+    nextBtn.onclick = () => {
+        if (state.current < totalPages) {
+            state.current++;
+            onPageChange();
+        }
+    };
+
+    const info = document.createElement('span');
+    info.style.color = 'var(--text-color)';
+    info.style.margin = '0 10px';
+    info.textContent = `Página ${state.current} de ${totalPages}`;
+
+    buttonsContainer.appendChild(prevBtn);
+    buttonsContainer.appendChild(info);
+    buttonsContainer.appendChild(nextBtn);
+};
 function isDashboardRoute(path) {
     const normalizedPath = path.replace(/\/+$/, '');
     const page = normalizedPath.split('/').pop();
@@ -436,7 +504,49 @@ function initInventory() {
             if (thMerma) thMerma.style.display = 'none';
         }
 
-        products.forEach(p => {
+        // Search Filter
+        let filteredProducts = products;
+        const searchInput = document.getElementById('productSearch');
+        if (searchInput && searchInput.value.trim() !== '') {
+            const term = searchInput.value.trim().toLowerCase();
+            filteredProducts = products.filter(p => 
+                (p.nombre && p.nombre.toLowerCase().includes(term)) || 
+                (p.codigo && p.codigo.toLowerCase().includes(term))
+            );
+        }
+        
+        // Add listener if not added
+        if (searchInput && !searchInput.dataset.listenerAdded) {
+            searchInput.dataset.listenerAdded = 'true';
+            searchInput.addEventListener('input', () => {
+                window.paginationState.inventory.current = 1;
+                // Recursive call with original products
+                renderProductTableForInventory(products, tab);
+            });
+        }
+
+        // Tab Filter
+        filteredProducts = filteredProducts.filter(p => {
+            let stockToShow = p.stock;
+            if (tab === 'principal') stockToShow = p.stock_principal || 0;
+            else if (tab === 'secundaria') stockToShow = p.stock_secundaria || 0;
+            
+            if ((tab === 'principal' || tab === 'secundaria') && stockToShow <= 0) {
+                return false;
+            }
+            return true;
+        });
+
+        // Pagination
+        window.renderPagination('pageSizeSelect', 'paginationButtons', 'inventory', filteredProducts.length, () => {
+            renderProductTableForInventory(products, tab);
+        });
+
+        const state = window.paginationState.inventory;
+        const startIndex = (state.current - 1) * state.limit;
+        const paginatedProducts = filteredProducts.slice(startIndex, startIndex + state.limit);
+
+        paginatedProducts.forEach(p => {
             // Determine stock to show
             let stockToShow = p.stock;
             let mermaToShow = 0;
@@ -2282,31 +2392,59 @@ function initSuppliers() {
     console.log('Inicializando Proveedores...');
     loadSuppliers();
 
+    let suppliersData = [];
     async function loadSuppliers() {
         try {
             const res = await fetch('/api/suppliers');
-            const suppliers = await res.json();
-            const tbody = document.getElementById('suppliersBody');
-            if (tbody) {
-                tbody.innerHTML = '';
-                suppliers.forEach(s => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${s.rif}</td>
-                            <td>${s.nombre}</td>
-                            <td>${s.telefono || '-'}</td>
-                            <td>${s.dias_credito} días</td>
-                            <td><span class="badge ${s.activo ? 'badge-user' : 'badge-low-stock'}">${s.activo ? 'Activo' : 'Suspendido'}</span></td>
-                            <td>
-                                <button class="btn-action btn-edit" onclick='openSupplierModal(${JSON.stringify(s)})'><i class="fas fa-edit"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
+            suppliersData = await res.json();
+            renderSuppliersTable();
         } catch (e) {
             console.error(e);
         }
+    }
+
+    function renderSuppliersTable() {
+        const tbody = document.getElementById('suppliersBody');
+        if (!tbody) return;
+
+        let filtered = suppliersData;
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value.trim() !== '') {
+            const term = searchInput.value.trim().toLowerCase();
+            filtered = suppliersData.filter(s => 
+                (s.nombre && s.nombre.toLowerCase().includes(term)) ||
+                (s.rif && s.rif.toLowerCase().includes(term))
+            );
+        }
+
+        if (searchInput && !searchInput.dataset.listenerAdded) {
+            searchInput.dataset.listenerAdded = 'true';
+            searchInput.addEventListener('input', () => {
+                window.paginationState.suppliers.current = 1;
+                renderSuppliersTable();
+            });
+        }
+
+        window.renderPagination('pageSizeSelect', 'paginationButtons', 'suppliers', filtered.length, renderSuppliersTable);
+        const state = window.paginationState.suppliers;
+        const start = (state.current - 1) * state.limit;
+        const paginated = filtered.slice(start, start + state.limit);
+
+        tbody.innerHTML = '';
+        paginated.forEach(s => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${s.rif}</td>
+                    <td>${s.nombre}</td>
+                    <td>${s.telefono || '-'}</td>
+                    <td>${s.dias_credito} días</td>
+                    <td><span class="badge ${s.activo ? 'badge-user' : 'badge-low-stock'}">${s.activo ? 'Activo' : 'Suspendido'}</span></td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick='openSupplierModal(${JSON.stringify(s)})'><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
     }
 
 
@@ -2401,27 +2539,52 @@ function initCategories() {
     console.log('Inicializando Categorias...');
     loadCategories();
 
+    let categoriesData = [];
     async function loadCategories() {
         try {
             const res = await fetch('/api/categories');
-            const data = await res.json();
-            const tbody = document.getElementById('categoriesBody');
-            if (tbody) {
-                tbody.innerHTML = '';
-                data.forEach(c => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${c.id}</td>
-                            <td>${c.nombre}</td>
-                            <td><span class="badge ${c.activo ? 'badge-user' : 'badge-low-stock'}">${c.activo ? 'Activa' : 'Suspendida'}</span></td>
-                            <td>
-                                <button class="btn-action btn-edit" onclick='openCategoryModal(${JSON.stringify(c)})'><i class="fas fa-edit"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
+            categoriesData = await res.json();
+            renderCategoriesTable();
         } catch (e) { }
+    }
+
+    function renderCategoriesTable() {
+        const tbody = document.getElementById('categoriesBody');
+        if (!tbody) return;
+
+        let filtered = categoriesData;
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value.trim() !== '') {
+            const term = searchInput.value.trim().toLowerCase();
+            filtered = categoriesData.filter(c => c.nombre && c.nombre.toLowerCase().includes(term));
+        }
+
+        if (searchInput && !searchInput.dataset.listenerAdded) {
+            searchInput.dataset.listenerAdded = 'true';
+            searchInput.addEventListener('input', () => {
+                window.paginationState.categories.current = 1;
+                renderCategoriesTable();
+            });
+        }
+
+        window.renderPagination('pageSizeSelect', 'paginationButtons', 'categories', filtered.length, renderCategoriesTable);
+        const state = window.paginationState.categories;
+        const start = (state.current - 1) * state.limit;
+        const paginated = filtered.slice(start, start + state.limit);
+
+        tbody.innerHTML = '';
+        paginated.forEach(c => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${c.id}</td>
+                    <td>${c.nombre}</td>
+                    <td><span class="badge ${c.activo ? 'badge-user' : 'badge-low-stock'}">${c.activo ? 'Activa' : 'Suspendida'}</span></td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick='openCategoryModal(${JSON.stringify(c)})'><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
     }
 
     window.openCategoryModal = (c = null) => {
@@ -2511,28 +2674,56 @@ function initClients() {
 
     loadClients();
 
+    let clientsData = [];
     async function loadClients() {
         try {
             const res = await fetch('/api/clients');
-            const data = await res.json();
-            const tbody = document.getElementById('clientsBody');
-            if (tbody) {
-                tbody.innerHTML = '';
-                data.forEach(c => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${c.cedula}</td>
-                            <td>${c.nombre}</td>
-                            <td>${c.email || '-'}</td>
-                            <td>${c.telefono || '-'}</td>
-                            <td>
-                                <button class="btn-action btn-edit" onclick='openClientModal(${JSON.stringify(c)})'><i class="fas fa-edit"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
+            clientsData = await res.json();
+            renderClientsTable();
         } catch (e) { }
+    }
+
+    function renderClientsTable() {
+        const tbody = document.getElementById('clientsBody');
+        if (!tbody) return;
+
+        let filtered = clientsData;
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value.trim() !== '') {
+            const term = searchInput.value.trim().toLowerCase();
+            filtered = clientsData.filter(c => 
+                (c.nombre && c.nombre.toLowerCase().includes(term)) ||
+                (c.cedula && c.cedula.toLowerCase().includes(term))
+            );
+        }
+
+        if (searchInput && !searchInput.dataset.listenerAdded) {
+            searchInput.dataset.listenerAdded = 'true';
+            searchInput.addEventListener('input', () => {
+                window.paginationState.clients.current = 1;
+                renderClientsTable();
+            });
+        }
+
+        window.renderPagination('pageSizeSelect', 'paginationButtons', 'clients', filtered.length, renderClientsTable);
+        const state = window.paginationState.clients;
+        const start = (state.current - 1) * state.limit;
+        const paginated = filtered.slice(start, start + state.limit);
+
+        tbody.innerHTML = '';
+        paginated.forEach(c => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${c.cedula}</td>
+                    <td>${c.nombre}</td>
+                    <td>${c.email || '-'}</td>
+                    <td>${c.telefono || '-'}</td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick='openClientModal(${JSON.stringify(c)})'><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
     }
 
     window.openClientModal = (c = null) => {
@@ -3361,7 +3552,7 @@ function initCuentas() {
         } catch (e) { console.error(e); }
     }
 
-    // Load Commitments Global Function (attached to window for filters)
+    let cuentasData = [];
     window.loadCommitments = async function () {
         try {
             const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : 'ALL';
@@ -3371,22 +3562,46 @@ function initCuentas() {
             }
 
             const res = await fetch(url);
-            const commitments = await res.json();
-            renderCommitments(commitments);
+            cuentasData = await res.json();
+            renderCommitments();
         } catch (e) { console.error(e); }
     };
 
-    function renderCommitments(data) {
+    function renderCommitments() {
         const tbody = document.getElementById('commitmentsTableBody');
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay compromisos registrados.</td></tr>';
+        let filtered = cuentasData;
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value.trim() !== '') {
+            const term = searchInput.value.trim().toLowerCase();
+            filtered = cuentasData.filter(c => 
+                (c.proveedor_nombre && c.proveedor_nombre.toLowerCase().includes(term)) ||
+                (c.numero_factura && c.numero_factura.toLowerCase().includes(term)) ||
+                (c.descripcion && c.descripcion.toLowerCase().includes(term))
+            );
+        }
+
+        if (searchInput && !searchInput.dataset.listenerAdded) {
+            searchInput.dataset.listenerAdded = 'true';
+            searchInput.addEventListener('input', () => {
+                window.paginationState.cuentas.current = 1;
+                renderCommitments();
+            });
+        }
+
+        window.renderPagination('pageSizeSelect', 'paginationButtons', 'cuentas', filtered.length, renderCommitments);
+        const state = window.paginationState.cuentas;
+        const start = (state.current - 1) * state.limit;
+        const paginated = filtered.slice(start, start + state.limit);
+
+        if (paginated.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay compromisos registrados o no coinciden con la búsqueda.</td></tr>';
             return;
         }
 
-        data.forEach(c => {
+        paginated.forEach(c => {
             // Calculate progress
             const total = parseFloat(c.monto_total_usd);
             const paid = parseFloat(c.monto_pagado_usd);

@@ -155,6 +155,20 @@
                     </button>
                 </div>
 
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem;">
+                    <div class="rows-per-page">
+                        <label for="pageSizeSelect" style="color: var(--text-color);">Mostrar: </label>
+                        <select id="pageSizeSelect" class="search-input" style="width: auto; padding: 5px; display: inline-block; cursor: pointer; appearance: auto; background: rgba(0,0,0,0.2);">
+                            <option value="15" selected>15</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="pagination-buttons" id="paginationButtons" style="display: flex; gap: 10px; align-items: center;">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
                 <div class="table-container">
                     <table id="inventoryTable">
                         <thead>
