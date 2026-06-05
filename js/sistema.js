@@ -531,8 +531,12 @@ function initInventory() {
             if (tab === 'principal') stockToShow = p.stock_principal || 0;
             else if (tab === 'secundaria') stockToShow = p.stock_secundaria || 0;
             
-            if ((tab === 'principal' || tab === 'secundaria') && stockToShow <= 0) {
-                return false;
+            let totalStock = (p.stock || 0) + (p.stock_principal || 0) + (p.stock_secundaria || 0);
+
+            if (tab === 'agotado') {
+                return totalStock <= 0;
+            } else {
+                if (stockToShow <= 0) return false;
             }
             return true;
         });
@@ -562,8 +566,8 @@ function initInventory() {
                 mermaToShow = p.stock_merma_venta || 0;
             }
 
-            // FILTER: If we are in a warehouse tab and stock is 0, skip this product
-            if ((tab === 'principal' || tab === 'secundaria') && stockToShow <= 0) {
+            // FILTER: If we are not in agotado tab and stock is 0, skip this product
+            if (tab !== 'agotado' && stockToShow <= 0) {
                 return;
             }
 
@@ -572,10 +576,15 @@ function initInventory() {
             const precioUSDBase = costo * (1 + (margen / 100));
             const precioUSD = precioUSDBase * (1 + (protectionMargin / 100));
             const precioBS = precioUSD * dollarRate;
-            let badgeClass = 'badge-user';
-
-            const isLowStock = stockToShow <= p.stock_minimo;
-            badgeClass = isLowStock ? 'badge-low-stock' : 'badge-user';
+            
+            let badgeStyle = '';
+            if (stockToShow <= 0) {
+                badgeStyle = 'background: #ef4444; color: white; border: 1px solid rgba(239, 68, 68, 0.3);'; // Rojo
+            } else if (stockToShow <= p.stock_minimo) {
+                badgeStyle = 'background: #eab308; color: white; border: 1px solid rgba(234, 179, 8, 0.3);'; // Amarillo
+            } else {
+                badgeStyle = 'background: #22c55e; color: white; border: 1px solid rgba(34, 197, 94, 0.3);'; // Verde
+            }
 
             const tr = document.createElement('tr');
 
@@ -590,7 +599,7 @@ function initInventory() {
             tr.innerHTML = `
                 <td><code>${p.codigo}</code></td>
                 <td><strong>${p.nombre}</strong><br><small>${p.categoria_nombre || 'Sin cat.'} | ${p.proveedor_nombre || 'S/P'}</small></td>
-                <td><span class="badge ${badgeClass}">${stockToShow}</span></td>
+                <td><span class="badge" style="${badgeStyle}">${stockToShow}</span></td>
                 ${mermaCell}
                 <td style="white-space: nowrap;">$ ${costo.toFixed(2)}</td>
                 <td>${margen.toFixed(1)}%</td>
