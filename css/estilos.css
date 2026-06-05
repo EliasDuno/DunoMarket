@@ -2248,14 +2248,14 @@ body.embed-mode {
     position: absolute;
     top: 20px;
     left: 30px;
-    max-height: 150px;
+    max-height: 110px; /* Reduced by ~25% from 150px */
     z-index: 10;
     transition: all 0.3s ease;
 }
 
 @media (max-width: 768px) {
     .login-logo-corner {
-        max-height: 100px;
+        max-height: 75px; /* Reduced by 25% from 100px */
         top: 15px;
         left: 20px;
     }
@@ -2264,7 +2264,7 @@ body.embed-mode {
 @media (max-width: 480px) {
     .login-logo-corner {
         position: static;
-        max-height: 80px;
+        max-height: 60px; /* Reduced by 25% from 80px */
         margin: 1rem auto;
         display: block;
     }
