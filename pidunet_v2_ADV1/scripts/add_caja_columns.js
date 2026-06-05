@@ -1,0 +1,26 @@
+const { Pool } = require('pg');
+const { getMasterPoolConfig } = require('../config/db');
+
+const pool = new Pool(getMasterPoolConfig());
+
+async function migrate() {
+    try {
+        console.log('Adding missing columns to caja_sesiones...');
+
+        await pool.query(`
+            ALTER TABLE caja_sesiones 
+            ADD COLUMN IF NOT EXISTS monto_ventas_sistema DECIMAL(10,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS monto_cierre_declarado DECIMAL(10,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS monto_teorico DECIMAL(10,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS diferencia DECIMAL(10,2) DEFAULT 0;
+        `);
+
+        console.log('✅ Columns added successfully.');
+    } catch (err) {
+        console.error('❌ Migration Error:', err);
+    } finally {
+        pool.end();
+    }
+}
+
+migrate();

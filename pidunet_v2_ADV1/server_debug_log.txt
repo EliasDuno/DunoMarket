@@ -1,0 +1,6 @@
+--- Starting Server Debug ---
+Servidor corriendo en http://localhost:3000
+Base de datos conectada exitosamente
+Tabla clientes verificada/creada.
+Checking for payment alerts...
+WhatsApp QR Recibido
