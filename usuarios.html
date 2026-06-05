@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -31,13 +31,12 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestiÃ³n de Usuarios</title>
+    <title>Gestión de Usuarios</title>
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -61,12 +60,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">GestiÃ³n</div>
+                <div class="sidebar-label">Gestión</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> CategorÃ­as
+                    <i class="fas fa-tags"></i> Categorías
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -83,7 +82,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
+                    <i class="fas fa-cog"></i> Configuración
                 </a>
             </div>
 
@@ -91,7 +90,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar SesiÃ³n</span>
+                        <span class="name">Cerrar Sesión</span>
                     </div>
                 </div>
             </div>
@@ -101,7 +100,7 @@
             <div class="main-container" style="max-width: 100%;">
                 <header class="page-header">
                     <div class="header-left">
-                        <h1>GestiÃ³n de Usuarios</h1>
+                        <h1>Gestión de Usuarios</h1>
                     </div>
 
                     <div class="header-actions">
@@ -181,7 +180,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="itemPassword">ContraseÃ±a</label>
+                    <label for="itemPassword">Contraseña</label>
                     <div class="input-wrapper">
                         <i class="fas fa-lock"></i>
                         <input type="password" id="itemPassword" placeholder="Dejar en blanco para no cambiar">
@@ -243,9 +242,9 @@
                 </h2>
             </div>
             <p style="color: var(--text-color); margin-bottom: 1rem;">
-                Establece la contraseÃ±a para <strong id="sendUserEmail" style="color: var(--primary-color);"></strong>.
-                <br><span style="font-size: 0.85rem; color: #ef4444;">Nota: No se puede enviar la contraseÃ±a actual
-                    (estÃ¡ encriptada). Debes crear una nueva.</span>
+                Establece la contraseña para <strong id="sendUserEmail" style="color: var(--primary-color);"></strong>.
+                <br><span style="font-size: 0.85rem; color: #ef4444;">Nota: No se puede enviar la contraseña actual
+                    (está encriptada). Debes crear una nueva.</span>
             </p>
 
             <form id="sendCredsForm">
@@ -255,7 +254,7 @@
                 <div class="input-group">
                     <div class="input-wrapper">
                         <i class="fas fa-key"></i>
-                        <input type="text" id="newCredPassword" placeholder="Escribe la NUEVA contraseÃ±a..." required
+                        <input type="text" id="newCredPassword" placeholder="Escribe la NUEVA contraseña..." required
                             autocomplete="off">
                         <i class="fas fa-random" id="btnGenPass" style="cursor: pointer;" title="Generar Aleatoria"></i>
                     </div>
@@ -274,7 +273,7 @@
     <div id="confirmModal" class="modal">
         <div class="modal-content login-container" style="margin: 0; text-align: center;">
             <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
-                <h2 id="confirmTitle" style="color: var(--primary-color);">ConfirmaciÃ³n</h2>
+                <h2 id="confirmTitle" style="color: var(--primary-color);">Confirmación</h2>
             </div>
             <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color);"></p>
             <div class="button-group" style="justify-content: center; gap: 10px;">
@@ -289,4 +288,3 @@
 </body>
 
 </html>
-

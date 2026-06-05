@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -11,7 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -35,12 +34,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">GestiÃ³n</div>
+                <div class="sidebar-label">Gestión</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> CategorÃ­as
+                    <i class="fas fa-tags"></i> Categorías
                 </a>
                 <a href="proveedores.html" class="nav-item active">
                     <i class="fas fa-truck"></i> Proveedores
@@ -57,7 +56,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
+                    <i class="fas fa-cog"></i> Configuración
                 </a>
             </div>
 
@@ -65,7 +64,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar SesiÃ³n</span>
+                        <span class="name">Cerrar Sesión</span>
                     </div>
                 </div>
             </div>
@@ -113,8 +112,8 @@
                             <tr>
                                 <th>RIF</th>
                                 <th>Nombre</th>
-                                <th>TelÃ©fono</th>
-                                <th>DÃ­as CrÃ©dito</th>
+                                <th>Teléfono</th>
+                                <th>Días Crédito</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -135,28 +134,28 @@
             <form id="supplierForm">
                 <input type="hidden" id="supplierId">
                 <div class="input-group">
-                    <label for="supRif">RIF (Ãšnico)</label>
+                    <label for="supRif">RIF (Único)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-id-card"></i>
                         <input type="text" id="supRif" required placeholder="J-12345678-0">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="supNombre">Nombre / RazÃ³n Social</label>
+                    <label for="supNombre">Nombre / Razón Social</label>
                     <div class="input-wrapper">
                         <i class="fas fa-building"></i>
                         <input type="text" id="supNombre" required>
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="supTelefono">TelÃ©fono</label>
+                    <label for="supTelefono">Teléfono</label>
                     <div class="input-wrapper">
                         <i class="fas fa-phone"></i>
                         <input type="text" id="supTelefono">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="supDiasCredito">DÃ­as de CrÃ©dito</label>
+                    <label for="supDiasCredito">Días de Crédito</label>
                     <div class="input-wrapper">
                         <i class="fas fa-calendar-day"></i>
                         <input type="number" id="supDiasCredito" min="0" placeholder="0">
@@ -199,4 +198,3 @@
 </body>
 
 </html>
-
