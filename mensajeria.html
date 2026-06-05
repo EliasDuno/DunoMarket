@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mensajería WhatsApp - PiduNet</title>
+    <title>MensajerÃ­a WhatsApp - PiduNet</title>
 
     <script>
         // Security Check REMOVED
@@ -401,6 +401,7 @@
             }
         }
     </style>
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -417,7 +418,7 @@
                 <div class="sidebar-actions">
                     <div style="font-weight: 600; color: var(--text-secondary);">BANDEJA DE ENTRADA</div>
                     <!-- <i class="fas fa-comment-alt" title="Nuevo chat"></i> REMOVED -->
-                    <i class="fas fa-ellipsis-v" title="Menú"></i>
+                    <i class="fas fa-ellipsis-v" title="MenÃº"></i>
                 </div>
             </div>
 
@@ -442,7 +443,7 @@
                 <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="100"
                     style="margin-bottom: 20px; opacity: 0.3;">
                 <h2 style="color: #41525d; font-weight: 300;">WhatsApp Web</h2>
-                <p style="color: #667781;">Envía y recibe mensajes sin mantener tu teléfono conectado.</p>
+                <p style="color: #667781;">EnvÃ­a y recibe mensajes sin mantener tu telÃ©fono conectado.</p>
             </div>
 
             <!-- ACTIVE CHAT UI -->
@@ -452,7 +453,7 @@
                             class="fas fa-user"></i></div>
                     <div class="header-info">
                         <div class="header-name" id="headerName">Nombre del Contacto</div>
-                        <div class="header-status">en línea</div>
+                        <div class="header-status">en lÃ­nea</div>
                     </div>
                     <div class="sidebar-actions">
                         <i class="fas fa-search"></i>
@@ -468,7 +469,7 @@
                 <div class="chat-input-area">
                     <i class="far fa-smile btn-icon"></i>
                     <div class="input-wrapper">
-                        <input type="text" id="messageInput" placeholder="Escribe un mensaje aquí">
+                        <input type="text" id="messageInput" placeholder="Escribe un mensaje aquÃ­">
                     </div>
                     <!-- <i class="fas fa-microphone btn-icon" id="btnMic"></i> REMOVED -->
                     <i class="fas fa-paper-plane btn-icon" id="btnSend"
@@ -480,14 +481,14 @@
             <!-- QR OVERLAY -->
             <div id="qrOverlay">
                 <div style="font-size: 2rem; color: #41525d; margin-bottom: 10px;">Enlazar Dispositivo</div>
-                <div style="color: #667781; margin-bottom: 30px;">Abre WhatsApp en tu teléfono y escanea este código.
+                <div style="color: #667781; margin-bottom: 30px;">Abre WhatsApp en tu telÃ©fono y escanea este cÃ³digo.
                 </div>
                 <div id="qrCodeContainer"
                     style="padding: 10px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none;">
                     <img id="qrImage" src="" width="264" height="264">
                 </div>
                 <div id="statusText" style="margin-top: 20px; color: var(--primary-accent); font-weight: 600;">Esperando
-                    conexión...</div>
+                    conexiÃ³n...</div>
             </div>
 
         </div>
@@ -557,7 +558,7 @@
                 hasMedia: msg.hasMedia,
                 media: msg.media
             });
-            chats[chatId].lastMessage = msg.media ? (msg.media.mimetype.includes('image') ? '📷 Imagen' : '📄 Archivo') : msg.body;
+            chats[chatId].lastMessage = msg.media ? (msg.media.mimetype.includes('image') ? 'ðŸ“· Imagen' : 'ðŸ“„ Archivo') : msg.body;
             chats[chatId].timestamp = Math.floor(Date.now() / 1000);
 
             renderContacts();
@@ -708,9 +709,9 @@
             // Set Last Message text
             let lastMsgText = msg.body;
             if (msg.hasMedia) {
-                if (msg.type === 'image') lastMsgText = '📷 Imagen';
-                else if (msg.type === 'ptt' || msg.type === 'audio') lastMsgText = '🎤 Audio';
-                else if (msg.type === 'document') lastMsgText = '📄 Archivo';
+                if (msg.type === 'image') lastMsgText = 'ðŸ“· Imagen';
+                else if (msg.type === 'ptt' || msg.type === 'audio') lastMsgText = 'ðŸŽ¤ Audio';
+                else if (msg.type === 'document') lastMsgText = 'ðŸ“„ Archivo';
             }
             chats[chatId].lastMessage = lastMsgText;
             chats[chatId].timestamp = msg.timestamp;

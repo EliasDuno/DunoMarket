@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es-VE">
 
 <head>
@@ -43,6 +43,7 @@
             return false;
         };
     </script>
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -67,12 +68,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">Gestión</div>
+                <div class="sidebar-label">GestiÃ³n</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> Categorías
+                    <i class="fas fa-tags"></i> CategorÃ­as
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -89,7 +90,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
                 </a>
             </div>
 
@@ -97,7 +98,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -107,7 +108,7 @@
             <div class="main-container">
                 <header class="page-header">
                     <div class="header-left">
-                        <h1>Reportes y Estadísticas</h1>
+                        <h1>Reportes y EstadÃ­sticas</h1>
                         <p style="color: var(--text-muted); font-size: 0.9rem;">Analiza el rendimiento de tu negocio</p>
                     </div>
 
@@ -166,7 +167,7 @@
                         <i class="fas fa-history"></i> Historial de Ventas
                     </button>
                     <button id="tabAudit" class="btn-cancel">
-                        <i class="fas fa-user-secret"></i> Auditoría
+                        <i class="fas fa-user-secret"></i> AuditorÃ­a
                     </button>
                 </div>
 
@@ -226,7 +227,7 @@
                             <thead>
                                 <tr>
                                     <th>Producto</th>
-                                    <th>Categoría</th>
+                                    <th>CategorÃ­a</th>
                                     <th>Cant. Vendida</th>
                                     <th>Total Ventas (USD)</th>
                                     <th>Ganancia Est. (USD)</th>
@@ -254,12 +255,12 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>N° Control</th>
+                                    <th>NÂ° Control</th>
                                     <th>Fecha</th>
                                     <th>Cliente</th>
                                     <th>Total USD</th>
                                     <th>Total Bs</th>
-                                    <th>Método</th>
+                                    <th>MÃ©todo</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -278,13 +279,13 @@
                 <!-- 4. Audit View -->
                 <div id="viewAudit" style="display: none;">
                         <div class="table-container">
-                            <h3 style="margin-bottom: 1rem; color: var(--text-color);">Bitácora de Seguridad</h3>
+                            <h3 style="margin-bottom: 1rem; color: var(--text-color);">BitÃ¡cora de Seguridad</h3>
                             <table>
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
                                         <th>Usuario</th>
-                                        <th>Acción</th>
+                                        <th>AcciÃ³n</th>
                                         <th>Tabla</th>
                                         <th>Detalle</th>
                                         <th>IP</th>
@@ -320,9 +321,9 @@
     <div id="confirmModal" class="modal" style="display: none;">
         <div class="modal-content login-container" style="margin: 0; text-align: center; max-width: 400px;">
             <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
-                <h3 id="confirmTitle" style="color: var(--primary-color);">Confirmar Acción</h3>
+                <h3 id="confirmTitle" style="color: var(--primary-color);">Confirmar AcciÃ³n</h3>
             </div>
-            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color);">¿Estás seguro?</p>
+            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color);">Â¿EstÃ¡s seguro?</p>
             <div class="button-group" style="justify-content: center; gap: 1rem;">
                 <button id="btnConfirmCancel" class="btn-cancel">Cancelar</button>
                 <button id="btnConfirmOk" class="btn-login">Confirmar</button>
@@ -335,3 +336,4 @@
 </body>
 
 </html>
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -34,12 +35,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">Gestión</div>
+                <div class="sidebar-label">GestiÃ³n</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> Categorías
+                    <i class="fas fa-tags"></i> CategorÃ­as
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -56,7 +57,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
                 </a>
             </div>
 
@@ -64,7 +65,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -110,10 +111,10 @@
                     <table id="clientsTable">
                         <thead>
                             <tr>
-                                <th>Cédula / ID</th>
+                                <th>CÃ©dula / ID</th>
                                 <th>Nombre</th>
                                 <th>Email</th>
-                                <th>Teléfono</th>
+                                <th>TelÃ©fono</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -133,7 +134,7 @@
             <form id="clientForm">
                 <input type="hidden" id="clientId">
                 <div class="input-group">
-                    <label for="cliCedula">Cédula / ID (Único)</label>
+                    <label for="cliCedula">CÃ©dula / ID (Ãšnico)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-id-card"></i>
                         <input type="text" id="cliCedula" required placeholder="V-12345678">
@@ -154,7 +155,7 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="cliTelefono">Teléfono</label>
+                    <label for="cliTelefono">TelÃ©fono</label>
                     <div class="input-wrapper">
                         <i class="fas fa-phone"></i>
                         <input type="text" id="cliTelefono">
@@ -186,3 +187,4 @@
 </body>
 
 </html>
+

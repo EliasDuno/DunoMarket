@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -33,12 +34,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">Gestión</div>
+                <div class="sidebar-label">GestiÃ³n</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> Categorías
+                    <i class="fas fa-tags"></i> CategorÃ­as
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -55,7 +56,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
                 </a>
             </div>
 
@@ -63,7 +64,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -132,8 +133,8 @@
                             <tr>
                                 <th>Proveedor</th>
                                 <th>Factura</th>
-                                <th>Emisión</th>
-                                <th>Descripción</th>
+                                <th>EmisiÃ³n</th>
+                                <th>DescripciÃ³n</th>
                                 <th>Monto Total $</th>
                                 <th>Pagado $</th>
                                 <th>Progreso</th>
@@ -170,7 +171,7 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Descripción / Concepto</label>
+                    <label>DescripciÃ³n / Concepto</label>
                     <div class="input-wrapper">
                         <i class="fas fa-file-invoice"></i>
                         <input type="text" id="newDescription" required placeholder="Ej: Factura 001">
@@ -192,7 +193,7 @@
                 </div>
                 <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="input-group">
-                        <label>Fecha Emisión</label>
+                        <label>Fecha EmisiÃ³n</label>
                         <div class="input-wrapper">
                             <i class="fas fa-calendar-day"></i>
                             <input type="date" id="newIssueDate" required>
@@ -251,7 +252,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label>Referencia / Nº Transacción</label>
+                    <label>Referencia / NÂº TransacciÃ³n</label>
                     <div class="input-wrapper">
                         <i class="fas fa-receipt"></i>
                         <input type="text" id="payReference" required placeholder="Ej: Zelle #123456">
@@ -282,3 +283,4 @@
     <script src="js/sistema.js"></script>
 </body>
 </html>
+

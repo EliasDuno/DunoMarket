@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -41,11 +41,12 @@
     <script>
         window.onerror = function (msg, url, line, col, error) {
             console.error("JS Error: " + msg + "\nLine: " + line);
-            // Si core.js ya cargó, podríamos usar showNotification, pero es arriesgado en onerror temprano.
+            // Si core.js ya cargÃ³, podrÃ­amos usar showNotification, pero es arriesgado en onerror temprano.
             // Mejor solo console.error para no bloquear.
             return false;
         };
     </script>
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -70,12 +71,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">Gestión</div>
+                <div class="sidebar-label">GestiÃ³n</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> Categorías
+                    <i class="fas fa-tags"></i> CategorÃ­as
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -92,7 +93,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
                 </a>
             </div>
 
@@ -100,7 +101,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -156,7 +157,7 @@
                 <div class="pos-left">
                     <div class="search-container-large">
                         <input type="text" id="posSearch" class="search-input-large"
-                            placeholder="Buscar producto por nombre o código..." autocomplete="off">
+                            placeholder="Buscar producto por nombre o cÃ³digo..." autocomplete="off">
                         <i class="fas fa-search"></i>
                         <div class="search-results-dropdown" id="searchResults">
                             <!-- Populated via JS -->
@@ -197,7 +198,7 @@
                         <div class="input-group" style="margin-bottom: 0.5rem;">
                             <div class="input-wrapper" style="background: rgba(255, 255, 255, 0.05);">
                                 <i class="fas fa-user-tag" style="color: var(--primary-color);"></i>
-                                <input type="text" id="posClientCedula" placeholder="Cédula Cliente (V-12345678)"
+                                <input type="text" id="posClientCedula" placeholder="CÃ©dula Cliente (V-12345678)"
                                     style="font-size: 0.9rem; padding-right: 2.5rem;">
                                 <i class="fas fa-search" id="btnSearchClient"
                                     style="cursor: pointer; position: absolute; right: 1rem; left: auto; pointer-events: auto;"></i>
@@ -296,7 +297,7 @@
             </div>
             <form id="posClientForm">
                 <div class="input-group">
-                    <label>Cédula / ID</label>
+                    <label>CÃ©dula / ID</label>
                     <div class="input-wrapper">
                         <i class="fas fa-id-card"></i>
                         <input type="text" id="newPosClientCedula" required>
@@ -316,7 +317,7 @@
                             id="newPosClientEmail"></div>
                 </div>
                 <div class="input-group">
-                    <label>Teléfono</label>
+                    <label>TelÃ©fono</label>
                     <div class="input-wrapper"><i class="fas fa-phone"></i><input type="text" id="newPosClientPhone">
                     </div>
                 </div>
@@ -399,10 +400,10 @@
                     style="width: 100%; padding: 0.4rem;" step="0.01">
 
                 <!-- Row 3: Mobile -->
-                <span>Pago Móvil:</span>
+                <span>Pago MÃ³vil:</span>
                 <strong id="sys_mobile">0.00</strong>
                 <div></div>
-                <input type="number" id="dec_mobile" class="search-input" placeholder="Pago Móvil"
+                <input type="number" id="dec_mobile" class="search-input" placeholder="Pago MÃ³vil"
                     style="width: 100%; padding: 0.4rem;" step="0.01">
 
                 <!-- Row 4: Other -->
@@ -419,7 +420,7 @@
                         Bs</strong></div>
 
                 <div id="diff_reason_container" style="display: none;">
-                    <label style="display: block; font-size: 0.85rem; color: #ef4444; margin-bottom: 5px;">Justificación
+                    <label style="display: block; font-size: 0.85rem; color: #ef4444; margin-bottom: 5px;">JustificaciÃ³n
                         de Diferencia</label>
                     <textarea id="diff_reason" rows="2" class="search-input"
                         style="width: 100%; border-radius: 0.5rem;"></textarea>
@@ -456,7 +457,7 @@
 
             <!-- Split Payment Interface -->
             <div style="margin-bottom: 20px;">
-                <h3 style="margin-bottom: 10px; color: var(--text-color);">Métodos de Pago</h3>
+                <h3 style="margin-bottom: 10px; color: var(--text-color);">MÃ©todos de Pago</h3>
 
                 <!-- Payment List -->
                 <div id="paymentList"
@@ -469,13 +470,13 @@
                 <div style="display: flex; gap: 10px; align-items: flex-end;">
                     <div style="flex: 2;">
                         <label
-                            style="display: block; font-size: 0.8rem; margin-bottom: 5px; color: var(--text-muted);">Método</label>
+                            style="display: block; font-size: 0.8rem; margin-bottom: 5px; color: var(--text-muted);">MÃ©todo</label>
                         <div class="input-wrapper">
                             <select id="paymentMethodSelect">
                                 <option value="" disabled selected>-- Seleccione --</option>
                                 <option value="EFECTIVO_USD">Efectivo USD ($)</option>
                                 <option value="EFECTIVO_BS">Efectivo Bs</option>
-                                <option value="PAGO_MOVIL">Pago Móvil</option>
+                                <option value="PAGO_MOVIL">Pago MÃ³vil</option>
                                 <option value="TDC">Punto de Venta</option>
                                 <option value="ZELLE">Zelle</option>
                                 <option value="BIOPAGO">Biopago</option>
@@ -537,7 +538,7 @@
         <div class="modal-content login-container" style="max-width: 500px;">
             <div class="modal-header"
                 style="text-align: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
-                <h2>📋 Reporte de Cierre</h2>
+                <h2>ðŸ“‹ Reporte de Cierre</h2>
                 <button onclick="window.location.href='/'"
                     style="background:none; border:none; color:white; font-size: 1.5rem;">&times;</button>
             </div>
@@ -566,11 +567,11 @@
             </div>
 
             <div class="input-group">
-                <label>Método de Pago Electrónico (Ingreso)</label>
+                <label>MÃ©todo de Pago ElectrÃ³nico (Ingreso)</label>
                 <div class="input-wrapper">
                     <select id="caPaymentMethod">
                         <option value="TDC">Tarjeta (TDC/TDD)</option>
-                        <option value="PAGO_MOVIL">Pago Móvil</option>
+                        <option value="PAGO_MOVIL">Pago MÃ³vil</option>
                         <option value="TRANSFERENCIA">Transferencia</option>
                         <option value="OTROS">Otros</option>
                     </select>
@@ -579,11 +580,11 @@
 
             <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span style="color: var(--text-muted);">Comisión Configurada:</span>
+                    <span style="color: var(--text-muted);">ComisiÃ³n Configurada:</span>
                     <strong id="caCommissionRate">12%</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span style="color: var(--text-muted);">Monto Comisión:</span>
+                    <span style="color: var(--text-muted);">Monto ComisiÃ³n:</span>
                     <strong id="caCommissionAmount">0.00 Bs</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; font-size: 1.2rem; color: var(--primary-color);">
@@ -605,7 +606,7 @@
             <div style="margin-bottom: 1rem;">
                 <i class="fas fa-info-circle" style="font-size: 3rem; color: var(--primary-color);"></i>
             </div>
-            <h2 id="notificationTitle" style="margin-bottom: 0.5rem;">Notificación</h2>
+            <h2 id="notificationTitle" style="margin-bottom: 0.5rem;">NotificaciÃ³n</h2>
             <div id="notificationMessage" style="color: var(--text-muted); margin-bottom: 1.5rem; text-align: left;">
                 Mensaje...</div>
             <div id="notificationActions" class="button-group" style="justify-content: center;">
@@ -620,12 +621,12 @@
             <div style="margin-bottom: 1rem;">
                 <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--primary-color);"></i>
             </div>
-            <h2 id="confirmTitle" style="margin-bottom: 0.5rem;">Confirmación</h2>
+            <h2 id="confirmTitle" style="margin-bottom: 0.5rem;">ConfirmaciÃ³n</h2>
             <div id="confirmMessage" style="color: var(--text-muted); margin-bottom: 1.5rem; text-align: left;">
-                ¿Está seguro?</div>
+                Â¿EstÃ¡ seguro?</div>
             <div class="button-group" style="justify-content: center; gap: 1rem;">
                 <button id="btnConfirmCancel" class="btn-cancel" style="flex: 1;">No</button>
-                <button id="btnConfirmOk" class="btn-login" style="flex: 1;">Sí</button>
+                <button id="btnConfirmOk" class="btn-login" style="flex: 1;">SÃ­</button>
             </div>
         </div>
     </div>
@@ -635,3 +636,4 @@
 </body>
 
 </html>
+

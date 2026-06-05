@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -38,6 +38,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -61,12 +62,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">Gestión</div>
+                <div class="sidebar-label">GestiÃ³n</div>
                 <a href="inventario.html" class="nav-item active">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item">
-                    <i class="fas fa-tags"></i> Categorías
+                    <i class="fas fa-tags"></i> CategorÃ­as
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -83,7 +84,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
                 </a>
             </div>
 
@@ -91,7 +92,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -108,7 +109,7 @@
                         <div class="search-wrapper">
                             <i class="fas fa-search"></i>
                             <input type="text" id="productSearch" class="search-input"
-                                placeholder="Buscar por código o nombre...">
+                                placeholder="Buscar por cÃ³digo o nombre...">
                         </div>
 
                         <div class="dollar-badge" id="dollarBadge">
@@ -119,7 +120,7 @@
                         </div>
 
                         <button id="btnReceiveStock" class="btn-login" style="background: var(--secondary-color);"><i
-                                class="fas fa-truck-loading"></i> Recibir Mercancía</button>
+                                class="fas fa-truck-loading"></i> Recibir MercancÃ­a</button>
                         <button id="btnTransferStock" class="btn-login" style="background: #f59e0b;"><i
                                 class="fas fa-exchange-alt"></i> Traspaso</button>
                         <button id="btnHistory" class="btn-login" style="background: #8b5cf6;"><i
@@ -176,7 +177,7 @@
                     <table id="inventoryTable">
                         <thead>
                             <tr>
-                                <th>Código</th>
+                                <th>CÃ³digo</th>
                                 <th>Producto</th>
                                 <th>Stock</th>
                                 <th id="thMerma" style="display: none;">Merma</th>
@@ -208,14 +209,14 @@
                 <input type="hidden" id="productId">
                 <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="input-group">
-                        <label for="pCodigo">Código / Barras</label>
+                        <label for="pCodigo">CÃ³digo / Barras</label>
                         <div class="input-wrapper">
                             <i class="fas fa-barcode"></i>
                             <input type="text" id="pCodigo" required>
                         </div>
                     </div>
                     <div class="input-group">
-                        <label for="pCategoria">Categoría</label>
+                        <label for="pCategoria">CategorÃ­a</label>
                         <div class="input-wrapper">
                             <i class="fas fa-tag"></i>
                             <select id="pCategoria">
@@ -240,14 +241,14 @@
                         <label for="pMarca">Marca</label>
                         <div class="input-wrapper">
                             <i class="fas fa-tag"></i> <!-- Reusing tag icon or similar -->
-                            <input type="text" id="pMarca" placeholder="Ej. Polar, Nestlé...">
+                            <input type="text" id="pMarca" placeholder="Ej. Polar, NestlÃ©...">
                         </div>
                     </div>
                 </div>
 
                 <div class="input-grid" style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem;">
                     <div class="input-group">
-                        <label for="pPresentacion">Presentación</label>
+                        <label for="pPresentacion">PresentaciÃ³n</label>
                         <div class="input-wrapper">
                             <i class="fas fa-box-open"></i>
                             <select id="pPresentacion">
@@ -336,7 +337,7 @@
 
                 <div class="input-grid" style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
                     <div class="input-group">
-                        <label for="pMinimo">Stock Mínimo (Alerta)</label>
+                        <label for="pMinimo">Stock MÃ­nimo (Alerta)</label>
                         <div class="input-wrapper">
                             <i class="fas fa-exclamation-triangle"></i>
                             <input type="number" id="pMinimo" value="5" required>
@@ -348,7 +349,7 @@
                 <div id="mermaManagementSection"
                     style="display: none; margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px;">
                     <h4 style="color: #ef4444; margin: 0 0 10px 0;"><i class="fas fa-trash-alt"></i> Reportar Merma /
-                        Pérdida</h4>
+                        PÃ©rdida</h4>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end;">
                         <!-- Principal -->
@@ -430,7 +431,7 @@
             <div class="modal-header" style="justify-content: center;">
                 <h2>Actualizar Tasa BCV</h2>
             </div>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Introduce la nueva tasa de cambio del dólar hoy.
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Introduce la nueva tasa de cambio del dÃ³lar hoy.
             </p>
             <form id="dollarForm">
                 <div class="input-group">
@@ -452,15 +453,15 @@
     <div id="receiveStockModal" class="modal">
         <div class="modal-content login-container" style="margin: 0; max-width: 500px;">
             <div class="modal-header">
-                <h2>Recibir Mercancía</h2>
+                <h2>Recibir MercancÃ­a</h2>
                 <span class="close" id="closeReceiveModal">&times;</span>
             </div>
             <form id="receiveForm">
                 <div class="input-group">
-                    <label>Seleccionar Producto (Escáner)</label>
+                    <label>Seleccionar Producto (EscÃ¡ner)</label>
                     <div class="input-wrapper" style="position: relative;">
                         <i class="fas fa-barcode"></i>
-                        <input type="text" id="receiveSearch" placeholder="Escanear código o buscar nombre..."
+                        <input type="text" id="receiveSearch" placeholder="Escanear cÃ³digo o buscar nombre..."
                             autocomplete="off">
                         <input type="hidden" id="receiveProductId" required>
                         <div id="receiveSearchResults" class="search-results-dropdown" style="top: 100%;"></div>
@@ -569,7 +570,7 @@
 
                 <div class="button-group">
                     <button type="button" class="btn-cancel" id="btnCancelReceive">Cancelar</button>
-                    <button type="submit" class="btn-login">Confirmar Recepción</button>
+                    <button type="submit" class="btn-login">Confirmar RecepciÃ³n</button>
                 </div>
             </form>
         </div>
@@ -579,7 +580,7 @@
     <div id="transferModal" class="modal">
         <div class="modal-content login-container" style="margin: 0; max-width: 800px;">
             <div class="modal-header">
-                <h2>Transferir Mercancía</h2>
+                <h2>Transferir MercancÃ­a</h2>
                 <span class="close" onclick="closeTransferModal()">&times;</span>
             </div>
 
@@ -590,7 +591,7 @@
                     <label>Seleccionar Producto (Buscar)</label>
                     <div class="input-wrapper" style="position: relative;">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="transSearchInput" placeholder="Buscar por nombre o código..." autocomplete="off">
+                        <input type="text" id="transSearchInput" placeholder="Buscar por nombre o cÃ³digo..." autocomplete="off">
                         <div id="transSearchResults" class="search-results-dropdown" style="top: 100%;"></div>
                     </div>
                 </div>
@@ -634,8 +635,8 @@
                     style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem; background: rgba(220, 38, 38, 0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid rgba(220, 38, 38, 0.3);">
                     <input type="checkbox" id="checkMerma"
                         style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
-                    <label for="checkMerma" style="margin: 0; color: #ef4444; font-weight: 600; cursor: pointer;">¿Es
-                        Merma / Pérdida?</label>
+                    <label for="checkMerma" style="margin: 0; color: #ef4444; font-weight: 600; cursor: pointer;">Â¿Es
+                        Merma / PÃ©rdida?</label>
                 </div>
 
                 <div class="form-group" style="margin-top: 1rem;">
@@ -741,7 +742,7 @@
                     <i class="fas fa-filter" style="margin-right: 8px;"></i> Filtrar
                 </button>
                 <div class="total-loss">
-                    Total Pérdida: <span id="mermaTotalCost">$0.00</span>
+                    Total PÃ©rdida: <span id="mermaTotalCost">$0.00</span>
                 </div>
             </div>
 
@@ -755,7 +756,7 @@
                             <th>Cant.</th>
                             <th>Costo U.</th>
                             <th>Total ($)</th>
-                            <th>Observación</th>
+                            <th>ObservaciÃ³n</th>
                         </tr>
                     </thead>
                     <tbody id="mermasTableBody">
@@ -799,3 +800,4 @@
 </body>
 
 </html>
+

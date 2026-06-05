@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -31,12 +31,13 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categorías - PiduNet</title>
+    <title>CategorÃ­as - PiduNet</title>
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -60,12 +61,12 @@
                     <i class="fas fa-chart-line"></i> Reportes
                 </a>
 
-                <div class="sidebar-label">Gestión</div>
+                <div class="sidebar-label">GestiÃ³n</div>
                 <a href="inventario.html" class="nav-item">
                     <i class="fas fa-box"></i> Inventario
                 </a>
                 <a href="categorias.html" class="nav-item active">
-                    <i class="fas fa-tags"></i> Categorías
+                    <i class="fas fa-tags"></i> CategorÃ­as
                 </a>
                 <a href="proveedores.html" class="nav-item">
                     <i class="fas fa-truck"></i> Proveedores
@@ -82,7 +83,7 @@
                     <i class="fas fa-users"></i> Usuarios
                 </a>
                 <a href="configuracion.html" class="nav-item">
-                    <i class="fas fa-cog"></i> Configuración
+                    <i class="fas fa-cog"></i> ConfiguraciÃ³n
                 </a>
             </div>
 
@@ -90,7 +91,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -100,11 +101,11 @@
             <div class="main-container" style="max-width: 100%;">
                 <header class="page-header">
                     <div class="header-left">
-                        <h1>Categorías</h1>
+                        <h1>CategorÃ­as</h1>
                     </div>
                     <div class="header-actions">
                         <button id="btnNewCategory" class="btn-login"><i class="fas fa-plus"></i> Nueva
-                            Categoría</button>
+                            CategorÃ­a</button>
                     </div>
 
                     <div class="user-profile-header" id="userProfileHeader" style="display: none; margin-left: 1rem;">
@@ -152,7 +153,7 @@
     <div id="categoryModal" class="modal">
         <div class="modal-content login-container" style="margin: 0; max-width: 400px;">
             <div class="modal-header">
-                <h2 id="modalTitle">Nueva Categoría</h2>
+                <h2 id="modalTitle">Nueva CategorÃ­a</h2>
                 <span class="close">&times;</span>
             </div>
             <form id="categoryForm">
@@ -201,3 +202,4 @@
 </body>
 
 </html>
+

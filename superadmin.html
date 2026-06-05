@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -137,6 +137,7 @@
             justify-content: flex-end;
         }
     </style>
+    <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 
 <body>
@@ -151,12 +152,12 @@
             </div>
 
             <div class="sidebar-nav">
-                <div class="sidebar-label">Soporte Técnico</div>
+                <div class="sidebar-label">Soporte TÃ©cnico</div>
                 <a href="#" class="nav-item active" id="btnTabTenants" onclick="switchTab('tenants')">
                     <i class="fas fa-city"></i> Empresas (Tenants)
                 </a>
                 <a href="#" class="nav-item" id="btnTabBilling" onclick="switchTab('billing')">
-                    <i class="fas fa-receipt"></i> Facturación & Consumo
+                    <i class="fas fa-receipt"></i> FacturaciÃ³n & Consumo
                 </a>
                 <a href="#" class="nav-item" id="btnTabUsers" onclick="switchTab('users')">
                     <i class="fas fa-users-cog"></i> Usuarios de Soporte
@@ -172,7 +173,7 @@
                 <div class="user-mini-profile" onclick="logout()">
                     <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="user-mini-info">
-                        <span class="name">Cerrar Sesión</span>
+                        <span class="name">Cerrar SesiÃ³n</span>
                     </div>
                 </div>
             </div>
@@ -183,7 +184,7 @@
             <div class="main-container" style="max-width: 100%;">
                 <header class="page-header">
                     <div class="header-left">
-                        <h1 id="pageTitle">Gestión de Empresas SaaS</h1>
+                        <h1 id="pageTitle">GestiÃ³n de Empresas SaaS</h1>
                     </div>
 
                     <div class="header-actions">
@@ -200,7 +201,7 @@
                     </button>
                     <button class="btn-tab" id="btnEmbedBilling" onclick="switchTab('billing')" 
                         style="background: transparent; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas fa-receipt"></i> Facturación & Consumo
+                        <i class="fas fa-receipt"></i> FacturaciÃ³n & Consumo
                     </button>
                     <button class="btn-tab" id="btnEmbedUsers" onclick="switchTab('users')" 
                         style="background: transparent; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
@@ -233,18 +234,18 @@
                     </div>
                 </div>
 
-                <!-- TAB: FACTURACIÓN Y CONSUMO -->
+                <!-- TAB: FACTURACIÃ“N Y CONSUMO -->
                 <div id="panelBilling" style="display: none;">
                     <div class="table-container">
                         <table id="billingTable">
                             <thead>
                                 <tr>
                                     <th>Empresa</th>
-                                    <th>Código (Slug)</th>
+                                    <th>CÃ³digo (Slug)</th>
                                     <th>Estado</th>
                                     <th>Transacciones</th>
                                     <th>Volumen Ventas</th>
-                                    <th>Catálogo (Prods)</th>
+                                    <th>CatÃ¡logo (Prods)</th>
                                     <th>Usuarios</th>
                                     <th>Monto Estimado</th>
                                     <th>Acciones</th>
@@ -300,10 +301,10 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="tSlug">Código de Empresa (Slug único)</label>
+                    <label for="tSlug">CÃ³digo de Empresa (Slug Ãºnico)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-code"></i>
-                        <input type="text" id="tSlug" placeholder="ej: abastoelsol" required pattern="[a-z0-9]+" title="Solo letras minúsculas y números">
+                        <input type="text" id="tSlug" placeholder="ej: abastoelsol" required pattern="[a-z0-9]+" title="Solo letras minÃºsculas y nÃºmeros">
                     </div>
                 </div>
 
@@ -335,10 +336,10 @@
                     </div>
 
                     <div class="input-group">
-                        <label for="tAdminPassword">Contraseña del Administrador</label>
+                        <label for="tAdminPassword">ContraseÃ±a del Administrador</label>
                         <div class="input-wrapper">
                             <i class="fas fa-key"></i>
-                            <input type="password" id="tAdminPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                            <input type="password" id="tAdminPassword" placeholder="MÃ­nimo 6 caracteres" required minlength="6">
                         </div>
                     </div>
                 </div>
@@ -389,7 +390,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="itemPassword">Contraseña</label>
+                    <label for="itemPassword">ContraseÃ±a</label>
                     <div class="input-wrapper">
                         <i class="fas fa-lock"></i>
                         <input type="password" id="itemPassword" placeholder="Dejar en blanco para no cambiar">
@@ -403,7 +404,7 @@
                         <select id="rol" required
                             style="width: 100%; padding: 0.9rem 1rem 0.9rem 2.8rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 0.75rem; color: var(--text-color); font-size: 1rem;">
                             <option value="superadmin">Soporte SaaS (Superadmin)</option>
-                            <option value="soporte">Soporte Técnico (Soporte)</option>
+                            <option value="soporte">Soporte TÃ©cnico (Soporte)</option>
                             <option value="admin">Administrador (Local)</option>
                             <option value="usuario">Usuario (Vendedor)</option>
                         </select>
@@ -483,7 +484,7 @@
                         <div class="tenant-card-header">
                             <div>
                                 <h3>${t.nombre}</h3>
-                                <small>Código: <strong>${t.slug}</strong></small>
+                                <small>CÃ³digo: <strong>${t.slug}</strong></small>
                             </div>
                             ${statusBadge}
                         </div>
@@ -575,7 +576,7 @@
             if (tab === 'tenants') {
                 tabTenants.classList.add('active');
                 panelTenants.style.display = 'block';
-                pageTitle.innerText = 'Gestión de Empresas SaaS';
+                pageTitle.innerText = 'GestiÃ³n de Empresas SaaS';
                 btnNewTenant.style.display = 'block';
                 if (btnEmbedTenants) {
                     btnEmbedTenants.classList.add('active');
@@ -585,7 +586,7 @@
             } else if (tab === 'billing') {
                 tabBilling.classList.add('active');
                 panelBilling.style.display = 'block';
-                pageTitle.innerText = 'Consumo y Facturación por Empresa';
+                pageTitle.innerText = 'Consumo y FacturaciÃ³n por Empresa';
                 if (btnEmbedBilling) {
                     btnEmbedBilling.classList.add('active');
                     btnEmbedBilling.style.color = '#fff';
@@ -686,7 +687,7 @@
                 });
                 const data = await res.json();
                 if (data.success || data.id) {
-                    showNotification('Éxito', 'Usuario guardado correctamente.');
+                    showNotification('Ã‰xito', 'Usuario guardado correctamente.');
                     closeUserModal();
                     loadUsers();
                 } else {
@@ -694,7 +695,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                showNotification('Error', 'Error de conexión con el servidor.');
+                showNotification('Error', 'Error de conexiÃ³n con el servidor.');
             }
         };
 
@@ -727,7 +728,7 @@
                         `;
                     }
 
-                    // Estimado base: $10 de cargo base + $0.05 por transacción (venta)
+                    // Estimado base: $10 de cargo base + $0.05 por transacciÃ³n (venta)
                     const baseFee = 10.00;
                     const txFee = 0.05;
                     const estimatedCost = baseFee + (u.transacciones * txFee);
@@ -789,7 +790,7 @@
                     document.getElementById('tAdminName').required = false;
                     document.getElementById('tAdminEmail').required = false;
                     document.getElementById('tAdminPassword').required = false;
-                    document.getElementById('tAdminPassword').placeholder = 'Dejar vacío para no cambiar';
+                    document.getElementById('tAdminPassword').placeholder = 'Dejar vacÃ­o para no cambiar';
                     
                     title.innerText = 'Editar Empresa';
                     submitBtn.innerText = 'Actualizar Empresa';
@@ -804,7 +805,7 @@
                 document.getElementById('tAdminName').required = true;
                 document.getElementById('tAdminEmail').required = true;
                 document.getElementById('tAdminPassword').required = true;
-                document.getElementById('tAdminPassword').placeholder = 'Mínimo 6 caracteres';
+                document.getElementById('tAdminPassword').placeholder = 'MÃ­nimo 6 caracteres';
                 
                 title.innerText = 'Registrar Nueva Empresa';
                 submitBtn.innerText = 'Guardar Cliente';
@@ -854,7 +855,7 @@
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    showNotification('Éxito', id ? 'Empresa actualizada correctamente.' : 'Cliente registrado correctamente.');
+                    showNotification('Ã‰xito', id ? 'Empresa actualizada correctamente.' : 'Cliente registrado correctamente.');
                     closeTenantModal();
                     loadTenants();
                 } else {
@@ -875,12 +876,12 @@
                     body: JSON.stringify({ slug })
                 });
                 if (res.ok) {
-                    showNotification('Éxito', 'Base de datos aprovisionada correctamente.');
+                    showNotification('Ã‰xito', 'Base de datos aprovisionada correctamente.');
                     loadTenants();
                     loadBillingReport();
                 } else {
                     const err = await res.json();
-                    showNotification('Error', err.message || 'Falló el aprovisionamiento.');
+                    showNotification('Error', err.message || 'FallÃ³ el aprovisionamiento.');
                 }
             } catch (e) {
                 showNotification('Error', 'Error de red al intentar aprovisionar.');
@@ -890,3 +891,4 @@
 </body>
 
 </html>
+
