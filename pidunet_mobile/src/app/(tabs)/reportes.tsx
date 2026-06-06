@@ -145,7 +145,7 @@ export default function ReportesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#f8fafc',
+    color: '#333',
   },
   filtersContainer: {
     flexDirection: 'row',
@@ -170,19 +170,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   dateLabel: {
-    color: '#94a3b8',
+    color: '#666',
     fontSize: 12,
     marginBottom: 4,
   },
   dateBtn: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#fff',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#ccc',
   },
   dateBtnText: {
-    color: '#f8fafc',
+    color: '#333',
   },
   dashboardContainer: {
     flexDirection: 'row',
@@ -192,26 +192,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dashCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#fff',
     width: '48%',
     padding: 16,
     borderRadius: 8,
     borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   dashValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#f8fafc',
+    color: '#111',
   },
   dashLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: '#666',
     marginTop: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#e2e8f0',
+    color: '#333',
     marginHorizontal: 16,
     marginBottom: 8,
   },
@@ -220,15 +225,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   card: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   productName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#f8fafc',
+    color: '#111',
   },
   row: {
     flexDirection: 'row',
@@ -237,16 +247,16 @@ const styles = StyleSheet.create({
   },
   details: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: '#666',
   },
   total: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4ade80',
+    color: '#0d6efd',
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
-    color: '#64748b',
+    color: '#666',
   }
 });
