@@ -1,0 +1,21 @@
+{
+  "name": "PiduNet PDV",
+  "short_name": "PiduNet",
+  "description": "Sistema de Inventario y Punto de Venta",
+  "start_url": "/pdv.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4a90e2",
+  "icons": [
+    {
+      "src": "/images/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
