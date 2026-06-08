@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pidunet-cache-v1';
+const CACHE_NAME = 'pidunet-cache-v2';
 const STATIC_ASSETS = [
     '/',
     '/pdv.html',
@@ -6,7 +6,9 @@ const STATIC_ASSETS = [
     '/css/estilos.css',
     '/js/sistema.js',
     '/js/offline.js',
-    '/images/favicon.png'
+    '/manifest.json',
+    '/images/pwa-icon-192.png',
+    '/images/pwa-icon-512.png'
 ];
 
 self.addEventListener('install', event => {
