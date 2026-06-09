@@ -34,6 +34,9 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_NO_VCS: 1
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2560m -XX:MaxMetaspaceSize=512m"
+          _JAVA_OPTIONS: "-Xmx2560m"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
