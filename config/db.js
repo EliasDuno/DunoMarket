@@ -26,8 +26,8 @@ function getMasterPoolConfig() {
         return {
             connectionString: normalizeDbUrl(process.env.DATABASE_URL),
             ssl: getSslConfig(true),
-            max: 2, // Limite bajo para Vercel Serverless
-            idleTimeoutMillis: 10000,
+            max: 2,
+            idleTimeoutMillis: 1000,
             connectionTimeoutMillis: 5000
         };
     }
@@ -40,7 +40,7 @@ function getMasterPoolConfig() {
         port: Number(process.env.DB_PORT || 5432),
         ssl: getSslConfig(false),
         max: 2,
-        idleTimeoutMillis: 10000,
+        idleTimeoutMillis: 1000,
         connectionTimeoutMillis: 5000
     };
 }
@@ -50,7 +50,7 @@ function getTenantPoolConfig(connectionString, slug) {
         connectionString: normalizeDbUrl(connectionString),
         ssl: getSslConfig(true),
         max: 1, // 1 conexión por tenant por lambda
-        idleTimeoutMillis: 10000,
+        idleTimeoutMillis: 1000,
         connectionTimeoutMillis: 5000
     };
     // Inyectar search_path como opción de sesión de PostgreSQL.

@@ -65,6 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (path.includes('cuentas') || document.getElementById('commitmentsTableBody')) {
         initCuentas();
     }
+
+    // --- RECIBIR MERCANCIA ---
+    if (path.includes('recibir_mercancia') || document.getElementById('invoiceTableBody')) {
+        initRecibirMercancia();
+    }
 });
 
 // =============================================================================
@@ -573,43 +578,7 @@ function initInventory() {
         };
     }
 
-    // --- Receive Stock Form Submission ---
-    const receiveForm = document.getElementById('receiveForm');
-    if (receiveForm) {
-        receiveForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const costVal = parseFloat(document.getElementById('receiveNewCost').value) || 0;
-            const costType = document.querySelector('input[name="receiveCostType"]:checked')?.value || 'usd';
-            const costUsd = costType === 'bs' ? (costVal / dollarRate) : costVal;
 
-            const data = {
-                id: document.getElementById('receiveProductId').value,
-                cantidad: document.getElementById('receiveQty').value,
-                nuevo_costo_usd: costUsd,
-                nuevo_margen: document.getElementById('receiveFinalMargin').value,
-                destino: document.getElementById('receiveDestino').value,
-                proveedor_id: document.getElementById('receiveSupplier').value // Optional update
-            };
-
-            try {
-                const res = await fetch(`${API_URL_PRODUCTS}/receive`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (res.ok) {
-                    if (receiveModal) receiveModal.style.display = 'none';
-                    showNotification('Éxito', 'Stock actualizado correctamente.');
-                    loadProducts();
-                } else {
-                    showNotification('Error', 'No se pudo actualizar el stock.');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('Error', 'Error de conexión.');
-            }
-        };
-    }
 
     window.openDollarModal = () => {
         const dModal = document.getElementById('dollarModal');
@@ -619,15 +588,7 @@ function initInventory() {
         }
     };
 
-    window.openReceiveModal = () => {
-        const rModal = document.getElementById('receiveStockModal');
-        if (rModal) {
-            rModal.style.display = 'flex';
-            document.getElementById('receiveForm').reset();
-            const marginDisp = document.getElementById('calcMarginResult');
-            if (marginDisp) marginDisp.innerText = '0%';
-        }
-    };
+
 
     window.deleteProduct = async (id) => {
         if (!confirm('¿Eliminar producto?')) return;
@@ -3627,6 +3588,315 @@ function initCategories() {
             document.getElementById('modalTitle').innerText = cat ? 'Editar Categoría' : 'Nueva Categoría';
         }
     };
+}
 
+// =============================================================================
+// MÓDULO: RECIBIR MERCANCÍA (NUEVO)
+// =============================================================================
+function initRecibirMercancia() {
+    console.log('Inicializando Recibir Mercancía...');
+    
+    let invoiceItems = [];
+    let invoiceSuppliers = [];
+    let productsList = [];
 
+    const searchInput = document.getElementById('invoiceProductSearch');
+    const searchResults = document.getElementById('invoiceSearchResults');
+    const tableBody = document.getElementById('invoiceTableBody');
+    const globalSupplierSelect = document.getElementById('globalSupplier');
+
+    // 1. Cargar proveedores y productos
+    window.loadInvoiceSuppliers = async () => {
+        try {
+            const res = await fetch('/api/suppliers');
+            invoiceSuppliers = await res.json();
+            globalSupplierSelect.innerHTML = '<option value="">Seleccionar Proveedor...</option>';
+            invoiceSuppliers.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = s.nombre;
+                globalSupplierSelect.appendChild(opt);
+            });
+        } catch (e) { console.error('Error cargando proveedores:', e); }
+    };
+
+    const loadLocalProducts = async () => {
+        try {
+            const res = await fetch('/api/products');
+            productsList = await res.json();
+        } catch (e) { console.error('Error cargando productos:', e); }
+    };
+
+    loadInvoiceSuppliers();
+    loadLocalProducts();
+
+    // 2. Buscador y Lógica de "Producto no encontrado"
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.trim().toLowerCase();
+            if (!term) { searchResults.style.display = 'none'; return; }
+
+            const filtered = productsList.filter(p => 
+                (p.codigo && p.codigo.toLowerCase().includes(term)) || 
+                (p.nombre && p.nombre.toLowerCase().includes(term))
+            ).slice(0, 5);
+
+            searchResults.innerHTML = '';
+            if (filtered.length > 0) {
+                filtered.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item';
+                    div.innerText = `${p.codigo} - ${p.nombre} (Stock: ${p.stock})`;
+                    div.onclick = () => { addInvoiceItem(p); searchInput.value = ''; searchResults.style.display = 'none'; searchInput.focus(); };
+                    searchResults.appendChild(div);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const term = searchInput.value.trim().toLowerCase();
+                if (!term) return;
+
+                const found = productsList.find(p => p.codigo && p.codigo.toLowerCase() === term);
+                if (found) {
+                    addInvoiceItem(found);
+                    searchInput.value = '';
+                    searchResults.style.display = 'none';
+                } else {
+                    if(confirm("Producto no encontrado. ¿Desea registrarlo como un nuevo artículo?")) {
+                        // Open Alta de Productos modal, passing the scanned code!
+                        if (typeof window.openProductModal === 'function') {
+                            window.openProductModal();
+                            // Small timeout to allow modal DOM to be ready
+                            setTimeout(() => {
+                                const codeInput = document.getElementById('pCodigo');
+                                if (codeInput) codeInput.value = term;
+                            }, 200);
+                        } else {
+                            alert("Por favor dirígete a Inventario -> Alta de Productos para crear este ítem primero.");
+                        }
+                    }
+                    searchInput.value = '';
+                    searchResults.style.display = 'none';
+                }
+            }
+        });
+        
+        // Hide search dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && searchResults && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+    }
+
+    // 3. Agregar a la Factura
+    function addInvoiceItem(product) {
+        // Verificar si ya existe en la factura
+        const existingIndex = invoiceItems.findIndex(i => i.id === product.id);
+        if (existingIndex > -1) {
+            invoiceItems[existingIndex].cantidad += 1;
+            recalcInvoiceItem(existingIndex);
+        } else {
+            invoiceItems.push({
+                id: product.id,
+                codigo: product.codigo,
+                nombre: product.nombre,
+                cantidad: 1,
+                costo_usd: parseFloat(product.costo_usd) || 0,
+                aplica_iva: product.aplica_iva,
+                margen_ganancia: product.margen_ganancia,
+                destino: 'principal', // Destino por defecto local
+                proveedor_id: product.proveedor_id || ''
+            });
+        }
+        renderInvoiceTable();
+    }
+
+    // 4. Renderizar Tabla
+    function renderInvoiceTable() {
+        if (invoiceItems.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.5);">No hay productos agregados. Escanea un código o busca un producto arriba.</td></tr>`;
+            updateInvoiceTotals();
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        invoiceItems.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            
+            // Subtotal
+            const subtotal = item.cantidad * item.costo_usd;
+            
+            tr.innerHTML = `
+                <td>${item.codigo || '-'}</td>
+                <td>${item.nombre}</td>
+                <td>
+                    <input type="number" min="1" class="search-input" style="width: 80px; text-align: center;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)">
+                </td>
+                <td>
+                    <input type="number" min="0" step="0.01" class="search-input" style="width: 100px; text-align: right;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)">
+                </td>
+                <td style="text-align: center;">
+                    ${item.aplica_iva ? '<span class="badge badge-low-stock">Sí (16%)</span>' : '<span class="badge badge-user">No</span>'}
+                </td>
+                <td style="text-align: right; font-weight: bold;">
+                    $${subtotal.toFixed(2)}
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-action btn-delete" onclick="removeInvoiceItem(${index})"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        updateInvoiceTotals();
+    }
+
+    window.updateInvoiceItemField = (index, field, value) => {
+        const val = parseFloat(value);
+        if (isNaN(val) || val < 0) return;
+        invoiceItems[index][field] = val;
+        renderInvoiceTable();
+    };
+
+    window.removeInvoiceItem = (index) => {
+        invoiceItems.splice(index, 1);
+        renderInvoiceTable();
+    };
+
+    function recalcInvoiceItem(index) {
+        renderInvoiceTable();
+    }
+
+    function updateInvoiceTotals() {
+        let subtotal = 0;
+        let iva = 0;
+
+        invoiceItems.forEach(item => {
+            const lineTotal = item.cantidad * item.costo_usd;
+            subtotal += lineTotal;
+            if (item.aplica_iva) {
+                iva += lineTotal * 0.16; // Asumiendo IVA 16%
+            }
+        });
+
+        const total = subtotal + iva;
+
+        document.getElementById('invoiceSubtotal').innerText = '$' + subtotal.toFixed(2);
+        document.getElementById('invoiceTax').innerText = '$' + iva.toFixed(2);
+        document.getElementById('invoiceTotal').innerText = '$' + total.toFixed(2);
+    }
+
+    window.clearInvoice = () => {
+        if(confirm('¿Está seguro de limpiar todos los productos de la recepción?')) {
+            invoiceItems = [];
+            document.getElementById('globalSupplier').value = '';
+            document.getElementById('invoiceNumber').value = '';
+            renderInvoiceTable();
+        }
+    };
+
+    // 5. Procesar Recepción y Lógica de Destinos
+    window.processInvoiceReception = () => {
+        if (invoiceItems.length === 0) {
+            alert('Agrega al menos un producto a la factura.');
+            return;
+        }
+
+        if (confirm("¿Todos los productos van a la bodega 'Disponible Venta'?")) {
+            // Yes: process all with 'venta'
+            invoiceItems.forEach(item => item.destino = 'venta');
+            submitBulkReception();
+        } else {
+            // No: open modal to specify destinations
+            openDestinationsModal();
+        }
+    };
+
+    function openDestinationsModal() {
+        const modal = document.getElementById('destinationsModal');
+        const tBody = document.getElementById('destinationsTableBody');
+        
+        document.getElementById('globalDestinationSelect').value = '';
+        tBody.innerHTML = '';
+
+        invoiceItems.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.nombre}</td>
+                <td>${item.cantidad}</td>
+                <td>
+                    <select class="search-input item-dest-select" data-index="${index}" style="width: 100%;">
+                        <option value="venta" ${item.destino === 'venta' ? 'selected' : ''}>Disponible Venta</option>
+                        <option value="principal" ${item.destino === 'principal' ? 'selected' : ''}>Bodega Principal</option>
+                        <option value="secundaria" ${item.destino === 'secundaria' ? 'selected' : ''}>Bodega Secundaria</option>
+                    </select>
+                </td>
+            `;
+            tBody.appendChild(tr);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    window.closeDestinationsModal = () => {
+        document.getElementById('destinationsModal').style.display = 'none';
+    };
+
+    window.applyGlobalDestination = () => {
+        const globDest = document.getElementById('globalDestinationSelect').value;
+        if (!globDest) return;
+        const selects = document.querySelectorAll('.item-dest-select');
+        selects.forEach(s => s.value = globDest);
+    };
+
+    window.confirmAndProcessReception = () => {
+        // Recoger destinos
+        const selects = document.querySelectorAll('.item-dest-select');
+        selects.forEach(s => {
+            const index = s.getAttribute('data-index');
+            invoiceItems[index].destino = s.value;
+        });
+        
+        closeDestinationsModal();
+        submitBulkReception();
+    };
+
+    async function submitBulkReception() {
+        const payload = {
+            global_proveedor_id: document.getElementById('globalSupplier').value,
+            factura_nro: document.getElementById('invoiceNumber').value,
+            items: invoiceItems
+        };
+
+        try {
+            const res = await fetch('/api/products/receive-bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert('¡Mercancía recibida exitosamente!');
+                invoiceItems = [];
+                document.getElementById('globalSupplier').value = '';
+                document.getElementById('invoiceNumber').value = '';
+                renderInvoiceTable();
+                
+                // Reload local products to get new stock numbers
+                loadLocalProducts();
+            } else {
+                alert('Error al procesar: ' + data.message);
+            }
+        } catch (e) {
+            console.error('Network Error:', e);
+            alert('Error de conexión al procesar la mercancía.');
+        }
+    }
 }
