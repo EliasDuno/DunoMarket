@@ -2726,11 +2726,11 @@ app.get('/api/sales', async (req, res) => {
         let idx = 1;
 
         if (startDate) {
-            query += ` AND v.fecha >= $${idx++}`;
+            query += ` AND (v.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas') >= $${idx++}`;
             params.push(startDate + ' 00:00:00');
         }
         if (endDate) {
-            query += ` AND v.fecha <= $${idx++}`;
+            query += ` AND (v.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas') <= $${idx++}`;
             params.push(endDate + ' 23:59:59');
         }
         if (clientId) {
@@ -2804,11 +2804,11 @@ app.get('/api/purchases', async (req, res) => {
         let idx = 1;
 
         if (startDate) {
-            query += ` AND h.fecha >= $${idx++}`;
+            query += ` AND (h.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas') >= $${idx++}`;
             params.push(startDate + ' 00:00:00');
         }
         if (endDate) {
-            query += ` AND h.fecha <= $${idx++}`;
+            query += ` AND (h.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas') <= $${idx++}`;
             params.push(endDate + ' 23:59:59');
         }
         if (supplierId) {
