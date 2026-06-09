@@ -24,7 +24,7 @@ try {
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '..'))); // Serve static files from root
+app.use(express.static(path.join(__dirname, '..'), { extensions: ['html'] })); // Serve static files from root with html fallback
 
 // Configure Multer for Memory Storage (BYTEA)
 const storage = multer.memoryStorage();
@@ -1915,6 +1915,63 @@ app.post('/api/products/receive', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Error al actualizar stock' });
+    }
+});
+
+// RECEIVE Stock Bulk (Invoice Style)
+app.post('/api/products/receive-bulk', async (req, res) => {
+    const { items, global_proveedor_id, factura_nro } = req.body;
+    
+    if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'No se enviaron productos' });
+    }
+
+    const client = await req.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        for (const item of items) {
+            const { id, cantidad, costo_usd, margen_ganancia, aplica_iva, destino, proveedor_id } = item;
+            
+            // Determinar proveedor final (prioridad al global si el item no tiene uno propio y viceversa)
+            const finalProveedorId = global_proveedor_id || proveedor_id || null;
+
+            const targetColumn = (destino === 'principal') ? 'stock_principal' :
+                (destino === 'secundaria') ? 'stock_secundaria' : 'stock';
+
+            // Actualizar inventario del producto
+            await client.query(
+                `UPDATE productos SET 
+                ${targetColumn} = ${targetColumn} + $1, 
+                costo_usd = $2, 
+                margen_ganancia = $3, 
+                aplica_iva = $4,
+                proveedor_id = COALESCE($5, proveedor_id),
+                actualizado_en = NOW() 
+                WHERE id = $6`,
+                [cantidad, costo_usd, margen_ganancia, aplica_iva, finalProveedorId, id]
+            );
+
+            // Registrar en historial de compras
+            await client.query(
+                `INSERT INTO historial_compras (producto_id, proveedor_id, cantidad, costo_unitario_usd) 
+                 VALUES ($1, $2, $3, $4)`,
+                [id, finalProveedorId, cantidad, costo_usd]
+            );
+
+            // Auditoría por línea
+            await global.logAudit(req, req.headers['x-user-id'], 'RECEIVE_STOCK_BULK_ITEM', 'productos', id, 
+                { quantity: cantidad, cost: costo_usd, dest: destino, invoice: factura_nro }, req.ip);
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Mercancía recibida y registrada correctamente.' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error en bulk receive:', err);
+        res.status(500).json({ success: false, message: 'Error en la transacción masiva' });
+    } finally {
+        client.release();
     }
 });
 

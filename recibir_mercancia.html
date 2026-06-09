@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        body {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .invoice-header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .invoice-summary {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            width: 300px;
+            font-size: 1.1rem;
+        }
+
+        .summary-row.total {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .invoice-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+    </style>
+    <script>
+        (function () {
+            const session = sessionStorage.getItem('user_session');
+            const tenant = sessionStorage.getItem('tenant_slug');
+            try {
+                if (!session || session === 'null' || session === 'undefined' || !tenant) throw new Error('No session');
+                const parsed = JSON.parse(session);
+                if (!parsed || !parsed.id) throw new Error('Invalid session');
+
+                // Safer visibility logic: Wait for DOM, then show
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.style.display = 'flex';
+                    setTimeout(() => document.body.style.opacity = '1', 50);
+                });
+            } catch (e) {
+                sessionStorage.removeItem('user_session');
+                sessionStorage.removeItem('tenant_slug');
+                window.top.location.replace('/acceso');
+            }
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibir Mercancía - PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="/" class="nav-item">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="recibir_mercancia.html" class="nav-item active">
+                    <i class="fas fa-truck-loading"></i> Recibir Mercancía
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="main-container" style="max-width: 100%;">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1>Recibir Mercancía</h1>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="dollar-badge" id="dollarBadge">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>Tasa: <strong id="currentDollarRate">0.00</strong> Bs</span>
+                        </div>
+                        <button class="btn-secondary" onclick="window.location.href='inventario.html'">
+                            <i class="fas fa-arrow-left"></i> Volver a Inventario
+                        </button>
+                    </div>
+                </header>
+
+                <div class="invoice-container">
+                    <!-- Invoice Header (Global Data) -->
+                    <div class="invoice-header">
+                        <div class="input-group">
+                            <label>Proveedor Global</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-truck"></i>
+                                <select id="globalSupplier">
+                                    <option value="">Seleccionar Proveedor...</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Número de Factura (Opcional)</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-file-invoice"></i>
+                                <input type="text" id="invoiceNumber" placeholder="Ej. 001-23456">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Fecha de Recepción</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-calendar-day"></i>
+                                <input type="date" id="receiveDate" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Entry Form -->
+                    <div class="search-wrapper" style="margin-bottom: 1.5rem; position: relative;">
+                        <i class="fas fa-barcode"></i>
+                        <input type="text" id="invoiceProductSearch" class="search-input" style="width: 100%; font-size: 1.1rem; padding: 12px 12px 12px 40px;" placeholder="Escanear código de barras o buscar producto para agregar...">
+                        <div id="invoiceSearchResults" class="search-results-dropdown" style="top: 100%; width: 100%;"></div>
+                    </div>
+
+                    <!-- Invoice Table -->
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre del Artículo</th>
+                                    <th style="width: 120px;">Cantidad</th>
+                                    <th style="width: 150px;">Costo Unit. ($)</th>
+                                    <th style="width: 100px;">IVA</th>
+                                    <th style="width: 150px;">Subtotal ($)</th>
+                                    <th style="width: 80px; text-align: center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceTableBody">
+                                <!-- Filas agregadas dinámicamente -->
+                                <tr id="emptyInvoiceRow">
+                                    <td colspan="7" style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.5);">
+                                        No hay productos agregados. Escanea un código o busca un producto arriba.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Invoice Summary -->
+                    <div class="invoice-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="invoiceSubtotal">$0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Total IVA:</span>
+                            <span id="invoiceTax">$0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total General:</span>
+                            <span id="invoiceTotal">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="invoice-actions">
+                        <button class="btn-secondary" onclick="clearInvoice()"><i class="fas fa-trash"></i> Limpiar Todo</button>
+                        <button class="btn-login" style="background: var(--secondary-color); font-size: 1.1rem; padding: 12px 24px;" onclick="processInvoiceReception()"><i class="fas fa-check-circle"></i> Procesar Recepción</button>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Modal de Destinos de Mercancía -->
+    <div id="destinationsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>Asignar Destinos de Mercancía</h2>
+                <span class="close" onclick="closeDestinationsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="input-group" style="margin-bottom: 1.5rem; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                    <label>Aplicar destino global a todos los productos:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="globalDestinationSelect" class="search-input" style="flex: 1;">
+                            <option value="">Seleccionar destino para todos...</option>
+                            <option value="venta">Disponible Venta</option>
+                            <option value="principal">Bodega Principal</option>
+                            <option value="secundaria">Bodega Secundaria</option>
+                        </select>
+                        <button type="button" class="btn-primary" onclick="applyGlobalDestination()">Aplicar</button>
+                    </div>
+                </div>
+
+                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cant.</th>
+                                <th>Destino Específico</th>
+                            </tr>
+                        </thead>
+                        <tbody id="destinationsTableBody">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button class="btn-secondary" onclick="closeDestinationsModal()">Cancelar</button>
+                    <button class="btn-primary" onclick="confirmAndProcessReception()">Confirmar y Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content small-modal">
+            <span class="close" onclick="closeNotification()">&times;</span>
+            <div id="notificationIcon" style="text-align: center; font-size: 3rem; margin-bottom: 1rem;"></div>
+            <h2 id="notificationTitle" style="text-align: center;">...</h2>
+            <p id="notificationMessage" style="text-align: center;">...</p>
+            <button class="btn-primary full-width" onclick="closeNotification()">Aceptar</button>
+        </div>
+    </div>
+
+    <script src="js/nucleo.js"></script>
+    <script src="js/sistema.js"></script>
+    <script>
+        checkGlobalAuth();
+        document.getElementById('receiveDate').valueAsDate = new Date();
+        // Load suppliers for global dropdown
+        setTimeout(() => {
+            if(window.loadInvoiceSuppliers) window.loadInvoiceSuppliers();
+        }, 500);
+    </script>
+</body>
+
+</html>

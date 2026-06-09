@@ -120,7 +120,7 @@
                                     class="fas fa-sync"></i></button>
                         </div>
 
-                        <button id="btnReceiveStock" class="btn-login" style="background: var(--secondary-color);"><i
+                        <button id="btnReceiveStock" class="btn-login" style="background: var(--secondary-color);" onclick="window.location.href='recibir_mercancia.html'"><i
                                 class="fas fa-truck-loading"></i> Recibir Mercancía</button>
                         <button id="btnTransferStock" class="btn-login" style="background: #f59e0b;"><i
                                 class="fas fa-exchange-alt"></i> Traspaso</button>
@@ -128,8 +128,6 @@
                                 class="fas fa-history"></i> Historial</button>
                         <button id="btnMermas" class="btn-secondary" onclick="openMermasReport()"><i
                                 class="fas fa-trash-alt" style="margin-right: 8px;"></i> Mermas</button>
-                        <button id="btnNewProduct" class="btn-login"><i class="fas fa-plus"></i> Alta de
-                            Productos</button>
                     </div>
 
                     <!-- Profile Section -->
@@ -445,133 +443,6 @@
                 <div class="button-group" style="justify-content: center; margin-top: 1.5rem;">
                     <button type="button" class="btn-cancel" id="btnCancelDollar">Cancelar</button>
                     <button type="submit" class="btn-login">Actualizar Tasa</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Receive Stock Modal (Reverse Calculator) -->
-    <div id="receiveStockModal" class="modal">
-        <div class="modal-content login-container" style="margin: 0; max-width: 500px;">
-            <div class="modal-header">
-                <h2>Recibir Mercancía</h2>
-                <span class="close" id="closeReceiveModal">&times;</span>
-            </div>
-            <form id="receiveForm">
-                <div class="input-group">
-                    <label>Seleccionar Producto (Escáner)</label>
-                    <div class="input-wrapper" style="position: relative;">
-                        <i class="fas fa-barcode"></i>
-                        <input type="text" id="receiveSearch" placeholder="Escanear código o buscar nombre..."
-                            autocomplete="off">
-                        <input type="hidden" id="receiveProductId" required>
-                        <div id="receiveSearchResults" class="search-results-dropdown" style="top: 100%;"></div>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>Proveedor</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-truck"></i>
-                        <select id="receiveSupplier">
-                            <option value="">Mantener Actual / Seleccionar...</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>Destino</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-warehouse"></i>
-                        <select id="receiveDestino">
-                            <option value="venta">Disponible Venta</option>
-                            <option value="principal" selected>Bodega Principal</option>
-                            <option value="secundaria">Bodega Secundaria</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-                    <div class="input-group">
-                        <label>Cantidad Recibida</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-plus"></i>
-                            <input type="number" id="receiveQty" value="1" min="1" required>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label>Nuevo Costo</label>
-                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-                            <label style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
-                                <input type="radio" name="receiveCostType" value="usd" checked> USD
-                            </label>
-                            <label style="flex: 1; font-size: 0.7rem; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.4rem; border-radius: 0.4rem; text-align: center;">
-                                <input type="radio" name="receiveCostType" value="bs"> Bs.
-                            </label>
-                        </div>
-                        <div class="input-wrapper">
-                            <i id="receiveCostIcon" class="fas fa-dollar-sign"></i>
-                            <input type="number" id="receiveNewCost" step="0.01" required>
-                        </div>
-                    </div>
-                    <!-- Expiration Date Removed
-                    <div class="input-group">
-                        <label>Vencimiento <small>(Opcional)</small></label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-calendar-alt"></i>
-                            <input type="date" id="receiveFechaVencimiento">
-                        </div>
-                    </div>
-                    -->
-                </div>
-
-                <div class="input-group">
-                    <label>Impuestos</label>
-                    <div class="input-wrapper" id="receiveIvaWrapper"
-                        style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 0 15px; height: 50px; border-radius: 0.75rem; border: 1px solid var(--input-border); transition: all 0.3s ease;">
-                        <span style="color: var(--text-color);">Aplica IVA</span>
-                        <label class="switch"
-                            style="position: relative; display: inline-block; width: 50px; height: 26px; margin: 0;">
-                            <input type="checkbox" id="receiveAplicaIva" style="opacity: 0; width: 0; height: 0;">
-                            <span class="slider round"
-                                style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 34px;"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="pricing-calculator"
-                    style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px dashed var(--glass-border);">
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">
-                        Calculadora de Margen</p>
-
-                    <div class="input-group">
-                        <label>Establecer Precio de Venta en...</label>
-                        <div style="display: flex; gap: 10px; margin-bottom: 0.5rem;">
-                            <label
-                                style="flex: 1; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
-                                <input type="radio" name="priceType" value="usd" checked> USD ($)
-                            </label>
-                            <label
-                                style="flex: 1; cursor: pointer; background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
-                                <input type="radio" name="priceType" value="bs"> Bs.
-                            </label>
-                        </div>
-                        <div class="input-wrapper">
-                            <i id="calcIcon" class="fas fa-dollar-sign"></i>
-                            <input type="number" id="receiveSalePrice" step="0.01" placeholder="Precio de Venta">
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <span style="font-size: 0.9rem;">Margen Resultante: <strong id="calcMarginResult"
-                                style="color: var(--primary-color);">0%</strong></span>
-                        <input type="hidden" id="receiveFinalMargin" value="0">
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button type="button" class="btn-cancel" id="btnCancelReceive">Cancelar</button>
-                    <button type="submit" class="btn-login">Confirmar Recepción</button>
                 </div>
             </form>
         </div>
