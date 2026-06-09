@@ -25,7 +25,10 @@ function getMasterPoolConfig() {
     if (process.env.DATABASE_URL) {
         return {
             connectionString: normalizeDbUrl(process.env.DATABASE_URL),
-            ssl: getSslConfig(true)
+            ssl: getSslConfig(true),
+            max: 2, // Limite bajo para Vercel Serverless
+            idleTimeoutMillis: 10000,
+            connectionTimeoutMillis: 5000
         };
     }
 
@@ -35,14 +38,20 @@ function getMasterPoolConfig() {
         database: process.env.DB_NAME || 'PiduNet',
         password: process.env.DB_PASSWORD || '',
         port: Number(process.env.DB_PORT || 5432),
-        ssl: getSslConfig(false)
+        ssl: getSslConfig(false),
+        max: 2,
+        idleTimeoutMillis: 10000,
+        connectionTimeoutMillis: 5000
     };
 }
 
 function getTenantPoolConfig(connectionString, slug) {
     const config = {
         connectionString: normalizeDbUrl(connectionString),
-        ssl: getSslConfig(true)
+        ssl: getSslConfig(true),
+        max: 1, // 1 conexión por tenant por lambda
+        idleTimeoutMillis: 10000,
+        connectionTimeoutMillis: 5000
     };
     // Inyectar search_path como opción de sesión de PostgreSQL.
     // Esto garantiza que CADA conexión del pool tenga el schema correcto
