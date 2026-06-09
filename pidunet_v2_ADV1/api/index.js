@@ -1957,6 +1957,21 @@ app.get('/api/sales/:id', async (req, res) => {
 });
 
 // --- PURCHASES HISTORY ENDPOINTS ---
+// Edit Purchase History Cost
+app.put('/api/purchases/:id/cost', async (req, res) => {
+    const { id } = req.params;
+    const { costo_unitario_usd } = req.body;
+    try {
+        await req.pool.query('UPDATE historial_compras SET costo_unitario_usd = $1 WHERE id = $2', [costo_unitario_usd, id]);
+        // Also log the audit action
+        await global.logAudit(req, req.headers['x-user-id'], 'EDIT_PURCHASE_HISTORY', 'historial_compras', id, { new_cost: costo_unitario_usd }, req.ip);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error editing purchase history:', err);
+        res.status(500).json({ success: false, message: 'Error updating history' });
+    }
+});
+
 app.get('/api/purchases', async (req, res) => {
     console.log('API: /api/purchases hit');
     const { startDate, endDate, supplierId, productSearch } = req.query;
@@ -2854,6 +2869,25 @@ app.post('/api/commitments', async (req, res) => {
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Error creating commitment:', err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Edit Commitment
+app.put('/api/commitments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { proveedor_id, descripcion, monto_usd, fecha_vencimiento, fecha_emision, numero_factura } = req.body;
+    try {
+        await ensureCommitmentsTables(req.pool);
+        await req.pool.query(
+            `UPDATE compromisos_pago 
+             SET proveedor_id = $1, descripcion = $2, monto_total_usd = $3, fecha_vencimiento = $4, fecha_emision = $5, numero_factura = $6
+             WHERE id = $7`,
+            [proveedor_id, descripcion, monto_usd, fecha_vencimiento, fecha_emision || null, numero_factura || null, id]
+        );
+        res.json({ success: true, message: 'Compromiso actualizado' });
+    } catch (err) {
+        console.error('Error updating commitment:', err);
         res.status(500).send('Server Error');
     }
 });

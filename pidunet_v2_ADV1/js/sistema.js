@@ -704,11 +704,40 @@ function initInventory() {
                 <td>${p.proveedor_nombre || 'N/A'}</td>
                 <td>${p.cantidad}</td>
                 <td>$${parseFloat(p.costo_unitario_usd).toFixed(2)}</td>
-                <td>$${parseFloat(p.total_usd).toFixed(2)}</td>
+                <td>
+                    $${parseFloat(p.total_usd).toFixed(2)}
+                    <button class="btn-sm" onclick="openEditPurchaseCost(${p.id}, ${p.costo_unitario_usd})" style="margin-left: 10px; background: transparent; color: #10b981; border: 1px solid #10b981; padding: 2px 6px;" title="Editar Costo Unitario">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
     }
+
+    window.openEditPurchaseCost = (historyId, currentCost) => {
+        const newCost = prompt('Ingrese el nuevo costo unitario en USD:', currentCost);
+        if (newCost !== null && !isNaN(newCost) && newCost !== '') {
+            fetch(`/api/purchases/${historyId}/cost`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ costo_unitario_usd: parseFloat(newCost) })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Éxito', 'Costo actualizado en el historial.');
+                    loadHistory();
+                } else {
+                    showNotification('Error', 'No se pudo actualizar.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Error', 'Error de red.');
+            });
+        }
+    };
 
     // Expose for filters
     window.loadHistory = loadHistory;
@@ -3064,12 +3093,39 @@ function initCuentas() {
 
     // Modal Logic
     window.openAddModal = () => {
+        document.getElementById('editCommitmentId').value = ''; // Clear edit ID
         const modal = document.getElementById('addModal');
         if (modal) modal.style.display = 'flex';
+        const titleEl = modal.querySelector('.modal-header h2');
+        if (titleEl) titleEl.innerText = 'Nuevo Compromiso';
         // Set default issue date to today
         const issueDate = document.getElementById('newIssueDate');
         if (issueDate && !issueDate.value) {
             issueDate.valueAsDate = new Date();
+        }
+    };
+
+    window.openEditCommitment = (cDataStr) => {
+        const c = JSON.parse(decodeURIComponent(cDataStr));
+        const modal = document.getElementById('addModal');
+        if (modal) modal.style.display = 'flex';
+        
+        const titleEl = modal.querySelector('.modal-header h2');
+        if (titleEl) titleEl.innerText = 'Editar Compromiso';
+        
+        document.getElementById('editCommitmentId').value = c.id;
+        document.getElementById('newSupplierId').value = c.proveedor_id;
+        document.getElementById('newDescription').value = c.descripcion;
+        document.getElementById('newInvoiceNumber').value = c.numero_factura || '';
+        document.getElementById('newAmount').value = c.monto_total_usd;
+        
+        if (c.fecha_emision) {
+            const dateStr = new Date(c.fecha_emision).toISOString().split('T')[0];
+            document.getElementById('newIssueDate').value = dateStr;
+        }
+        if (c.fecha_vencimiento) {
+            const dateStr = new Date(c.fecha_vencimiento).toISOString().split('T')[0];
+            document.getElementById('newDueDate').value = dateStr;
         }
     };
 
@@ -3212,10 +3268,14 @@ function initCuentas() {
                 <td>${formatDate(c.fecha_vencimiento)}</td>
                 <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
                 <td>
-                    <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color);">
-                        <i class="fas fa-hand-holding-usd"></i> Pagar
-                    </button>
-                    <!-- Delete button could adhere here if needed -->
+                    <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
+                        <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 4px 8px;" title="Pagar">
+                            <i class="fas fa-hand-holding-usd"></i> Pagar
+                        </button>
+                        <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -3318,6 +3378,9 @@ async function updateAlertConfig() {
 window.saveCommitment = async () => {
     // alert('Global saveCommitment executing...'); // DEBUG
 
+    const editIdElement = document.getElementById('editCommitmentId');
+    const editId = editIdElement ? editIdElement.value : '';
+
     const data = {
         proveedor_id: document.getElementById('newSupplierId').value,
         descripcion: document.getElementById('newDescription').value,
@@ -3332,11 +3395,12 @@ window.saveCommitment = async () => {
         return;
     }
 
-    // alert('Datos a enviar: ' + JSON.stringify(data)); // DEBUG
-
     try {
-        const res = await fetch('/api/commitments', {
-            method: 'POST',
+        const url = editId ? `/api/commitments/${editId}` : '/api/commitments';
+        const method = editId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
@@ -3346,10 +3410,11 @@ window.saveCommitment = async () => {
         if (res.ok) {
             const json = await res.json();
             // alert('Guardado éxito: ' + JSON.stringify(json)); // DEBUG
-            showNotification('Éxito', 'Compromiso guardado correctamente.');
+            showNotification('Éxito', editId ? 'Compromiso actualizado correctamente.' : 'Compromiso guardado correctamente.');
             closeAddModal();
             loadCommitments(); // Now global
             document.getElementById('addForm').reset();
+            if (editIdElement) editIdElement.value = '';
         } else {
             const text = await res.text();
             // alert('Error servidor: ' + text); // DEBUG
@@ -3452,9 +3517,14 @@ window.renderCommitments = function (data) {
             <td>${formatDate(c.fecha_vencimiento)}</td>
             <td><span class="${statusClass}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
             <td>
-                <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color);">
-                    <i class="fas fa-hand-holding-usd"></i> Pagar
-                </button>
+                <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
+                    <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 4px 8px;" title="Pagar">
+                        <i class="fas fa-hand-holding-usd"></i> Pagar
+                    </button>
+                    <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
