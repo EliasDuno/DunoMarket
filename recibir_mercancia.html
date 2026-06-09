@@ -308,7 +308,51 @@
             <button class="btn-primary full-width" onclick="closeNotification()">Aceptar</button>
         </div>
     </div>
-
+    <!-- Quick Add Product Modal -->
+    <div id="quickAddProductModal" class="modal">
+        <div class="modal-content login-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-box-open"></i> Producto Nuevo</h2>
+                <span class="close-button" onclick="closeQuickAddProductModal()">&times;</span>
+            </div>
+            <div class="input-group" style="margin-top: 1rem;">
+                <label>Código de Barras</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-barcode"></i>
+                    <input type="text" id="quickAddBarcode" placeholder="Ej. 123456789">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Nombre del Artículo</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-tag"></i>
+                    <input type="text" id="quickAddName" placeholder="Ej. Refresco Cola 2L">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Categoría</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-tags"></i>
+                    <select id="quickAddCategory">
+                        <option value="">Seleccionar Categoría...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Presentación</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-box"></i>
+                    <select id="quickAddPresentation">
+                        <option value="">Seleccionar Presentación...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="button-group" style="margin-top: 1.5rem; justify-content: flex-end;">
+                <button class="btn-cancel" onclick="closeQuickAddProductModal()">Cancelar</button>
+                <button class="btn-login" style="width: auto;" onclick="saveQuickProductToInvoice()"><i class="fas fa-check"></i> Agregar a Factura</button>
+            </div>
+        </div>
+    </div>
     <script src="js/nucleo.js?v=3.0"></script>
     <script src="js/sistema.js?v=3.0"></script>
     <script>

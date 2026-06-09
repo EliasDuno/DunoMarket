@@ -1931,10 +1931,22 @@ app.post('/api/products/receive-bulk', async (req, res) => {
         await client.query('BEGIN');
 
         for (const item of items) {
-            const { id, cantidad, costo_usd, margen_ganancia, aplica_iva, destino, proveedor_id } = item;
+            const { cantidad, costo_usd, margen_ganancia, aplica_iva, destino, proveedor_id } = item;
             
             // Determinar proveedor final (prioridad al global si el item no tiene uno propio y viceversa)
             const finalProveedorId = global_proveedor_id || proveedor_id || null;
+
+            let currentId = item.id;
+
+            // Si el producto es nuevo (creado desde la factura rápida)
+            if (item.is_new || !currentId) {
+                const result = await client.query(
+                    `INSERT INTO productos (codigo, nombre, categoria_id, presentacion, costo_usd, margen_ganancia, aplica_iva, proveedor_id) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+                    [item.codigo || null, item.nombre, item.categoria_id || null, item.presentacion || 'Unidad', costo_usd, margen_ganancia, aplica_iva, finalProveedorId]
+                );
+                currentId = result.rows[0].id;
+            }
 
             const targetColumn = (destino === 'principal') ? 'stock_principal' :
                 (destino === 'secundaria') ? 'stock_secundaria' : 'stock';
@@ -1949,18 +1961,18 @@ app.post('/api/products/receive-bulk', async (req, res) => {
                 proveedor_id = COALESCE($5, proveedor_id),
                 actualizado_en = NOW() 
                 WHERE id = $6`,
-                [cantidad, costo_usd, margen_ganancia, aplica_iva, finalProveedorId, id]
+                [cantidad, costo_usd, margen_ganancia, aplica_iva, finalProveedorId, currentId]
             );
 
             // Registrar en historial de compras
             await client.query(
                 `INSERT INTO historial_compras (producto_id, proveedor_id, cantidad, costo_unitario_usd) 
                  VALUES ($1, $2, $3, $4)`,
-                [id, finalProveedorId, cantidad, costo_usd]
+                [currentId, finalProveedorId, cantidad, costo_usd]
             );
 
             // Auditoría por línea
-            await global.logAudit(req, req.headers['x-user-id'], 'RECEIVE_STOCK_BULK_ITEM', 'productos', id, 
+            await global.logAudit(req, req.headers['x-user-id'], 'RECEIVE_STOCK_BULK_ITEM', 'productos', currentId, 
                 { quantity: cantidad, cost: costo_usd, dest: destino, invoice: factura_nro }, req.ip);
         }
 

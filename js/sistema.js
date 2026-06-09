@@ -4119,22 +4119,83 @@ function initRecibirMercancia() {
                     searchInput.value = '';
                     searchResults.style.display = 'none';
                 } else {
-                    if(confirm("Producto no encontrado. ¿Desea registrarlo como un nuevo artículo?")) {
-                        if (typeof window.openProductModal === 'function') {
-                            window.openProductModal();
-                            setTimeout(() => {
-                                const codeInput = document.getElementById('pCodigo');
-                                if (codeInput) codeInput.value = term;
-                            }, 200);
-                        } else {
-                            alert("Por favor dirígete a Inventario -> Alta de Productos para crear este ítem primero.");
-                        }
-                    }
+                    openQuickAddProductModal(term);
                     searchInput.value = '';
                     searchResults.style.display = 'none';
                 }
             }
         });
+        
+        window.openQuickAddProductModal = async (barcode) => {
+            document.getElementById('quickAddBarcode').value = barcode;
+            document.getElementById('quickAddName').value = '';
+            
+            // Fetch Categories
+            try {
+                const resCat = await fetch('/api/categories');
+                const catData = await resCat.json();
+                const catSelect = document.getElementById('quickAddCategory');
+                catSelect.innerHTML = '<option value="">Seleccionar Categoría...</option>';
+                if(catData.success) {
+                    catData.categories.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.nombre;
+                        catSelect.appendChild(opt);
+                    });
+                }
+            } catch(e) { console.error(e); }
+
+            // Fetch Presentations
+            try {
+                const resPres = await fetch('/api/config/presentations');
+                const presData = await resPres.json();
+                const presSelect = document.getElementById('quickAddPresentation');
+                presSelect.innerHTML = '<option value="">Seleccionar Presentación...</option>';
+                if(presData.success) {
+                    presData.data.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.nombre;
+                        presSelect.appendChild(opt);
+                    });
+                }
+            } catch(e) { console.error(e); }
+
+            document.getElementById('quickAddProductModal').style.display = 'flex';
+        };
+
+        window.closeQuickAddProductModal = () => {
+            document.getElementById('quickAddProductModal').style.display = 'none';
+        };
+
+        window.saveQuickProductToInvoice = () => {
+            const barcode = document.getElementById('quickAddBarcode').value.trim();
+            const name = document.getElementById('quickAddName').value.trim();
+            const category_id = document.getElementById('quickAddCategory').value;
+            const presentation_id = document.getElementById('quickAddPresentation').value;
+
+            if(!name || !category_id || !presentation_id) {
+                window.showNotification('Campos Incompletos', 'Por favor llena el nombre, la categoría y la presentación.');
+                return;
+            }
+
+            const virtualProduct = {
+                id: null,
+                is_new: true,
+                codigo: barcode,
+                nombre: name,
+                categoria_id: category_id,
+                presentacion: presentation_id,
+                costo_usd: 0,
+                aplica_iva: false,
+                margen_ganancia: 30, // Default markup
+                proveedor_id: null
+            };
+
+            addInvoiceItem(virtualProduct);
+            closeQuickAddProductModal();
+        };
         
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && searchResults && !searchResults.contains(e.target)) {
@@ -4178,9 +4239,11 @@ function initRecibirMercancia() {
             const tr = document.createElement('tr');
             const subtotal = item.cantidad * item.costo_usd;
             
+            const isNewBadge = item.is_new ? ' <span class="badge" style="background:#10b981; color:white; font-size:0.7rem; padding: 0.2rem 0.4rem;">NUEVO</span>' : '';
+            
             tr.innerHTML = `
                 <td>${item.codigo || '-'}</td>
-                <td>${item.nombre}</td>
+                <td>${item.nombre}${isNewBadge}</td>
                 <td><input type="number" min="0" class="search-input" style="width: 100%; min-width: 60px; max-width: 100px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
                 <td><input type="number" min="0" step="0.01" class="search-input" style="width: 100%; min-width: 80px; max-width: 120px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)"></td>
                 <td style="text-align: center;">
