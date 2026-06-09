@@ -4181,9 +4181,14 @@ function initRecibirMercancia() {
             tr.innerHTML = `
                 <td>${item.codigo || '-'}</td>
                 <td>${item.nombre}</td>
-                <td><input type="number" min="1" class="search-input" style="width: 80px; text-align: center;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
-                <td><input type="number" min="0" step="0.01" class="search-input" style="width: 100px; text-align: right;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)"></td>
-                <td style="text-align: center;">${item.aplica_iva ? '<span class="badge badge-low-stock">Sí (16%)</span>' : '<span class="badge badge-user">No</span>'}</td>
+                <td><input type="number" min="1" class="search-input" style="width: 100%; min-width: 80px; max-width: 120px; text-align: center;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
+                <td><input type="number" min="0" step="0.01" class="search-input" style="width: 100%; min-width: 100px; max-width: 150px; text-align: right;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)"></td>
+                <td style="text-align: center;">
+                    <select class="search-input" style="width: 100%; min-width: 90px; text-align: center; padding: 0.4rem;" onchange="updateInvoiceItemField(${index}, 'aplica_iva', this.value)">
+                        <option value="true" ${item.aplica_iva ? 'selected' : ''}>Sí (16%)</option>
+                        <option value="false" ${!item.aplica_iva ? 'selected' : ''}>No</option>
+                    </select>
+                </td>
                 <td style="text-align: right; font-weight: bold;">$${subtotal.toFixed(2)}</td>
                 <td style="text-align: center;"><button class="btn-action btn-delete" onclick="removeInvoiceItem(${index})"><i class="fas fa-trash"></i></button></td>
             `;
@@ -4193,9 +4198,13 @@ function initRecibirMercancia() {
     }
 
     window.updateInvoiceItemField = (index, field, value) => {
-        const val = parseFloat(value);
-        if (isNaN(val) || val < 0) return;
-        invoiceItems[index][field] = val;
+        if (field === 'aplica_iva') {
+            invoiceItems[index][field] = (value === 'true');
+        } else {
+            const val = parseFloat(value);
+            if (isNaN(val) || val < 0) return;
+            invoiceItems[index][field] = val;
+        }
         renderInvoiceTable();
     };
 
