@@ -818,7 +818,7 @@ function initInventory() {
     function renderHistoryTableToBody(purchases, tbody) {
         tbody.innerHTML = '';
         if (purchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay historial registrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay historial registrado.</td></tr>';
             return;
         }
 
@@ -831,6 +831,11 @@ function initInventory() {
                 <td>${p.cantidad}</td>
                 <td>$${parseFloat(p.costo_unitario_usd).toFixed(2)}</td>
                 <td>$${parseFloat(p.total_usd).toFixed(2)}</td>
+                <td>
+                    <button class="btn-icon" onclick="editPurchaseHistory(${p.id}, ${p.costo_unitario_usd})" title="Editar Costo Histórico">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
@@ -839,6 +844,33 @@ function initInventory() {
     // Expose for filters
     window.loadHistory = loadHistory;
     window.loadHistorySuppliers = loadHistorySuppliers;
+
+    window.editPurchaseHistory = async (id, currentCost) => {
+        const newCost = prompt(`Ingresa el costo unitario correcto (USD):`, currentCost);
+        if (newCost === null) return;
+        const costNum = parseFloat(newCost);
+        if (isNaN(costNum) || costNum < 0) {
+            showNotification('Error', 'Monto inválido.');
+            return;
+        }
+        
+        try {
+            const res = await fetch(`/api/purchases/${id}/cost`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ costo_unitario_usd: costNum })
+            });
+            if (res.ok) {
+                showNotification('Éxito', 'Costo histórico actualizado.');
+                // Recargar historial actual
+                document.getElementById('btnApplyHistoryFilter')?.click();
+            } else {
+                showNotification('Error', 'No se pudo actualizar.');
+            }
+        } catch (err) {
+            showNotification('Error', 'Error de conexión.');
+        }
+    };
 
     // --- Utils ---
     function setupCalculator(costId, saleId, typeName, marginId, iconId, costTypeName, costIconId) {

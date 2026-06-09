@@ -2784,6 +2784,22 @@ app.get('/api/sales/:id', async (req, res) => {
 });
 
 // --- PURCHASES HISTORY ENDPOINTS ---
+
+// Edit Purchase History Cost
+app.put('/api/purchases/:id/cost', async (req, res) => {
+    const { id } = req.params;
+    const { costo_unitario_usd } = req.body;
+    try {
+        await req.pool.query('UPDATE historial_compras SET costo_unitario_usd = $1 WHERE id = $2', [costo_unitario_usd, id]);
+        // Also log the audit action
+        await global.logAudit(req, req.headers['x-user-id'], 'EDIT_PURCHASE_HISTORY', 'historial_compras', id, { new_cost: costo_unitario_usd }, req.ip);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error editing purchase history:', err);
+        res.status(500).json({ success: false, message: 'Error updating history' });
+    }
+});
+
 app.get('/api/purchases', async (req, res) => {
     console.log('API: /api/purchases hit');
     const { startDate, endDate, supplierId, productSearch } = req.query;
