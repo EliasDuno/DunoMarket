@@ -3504,10 +3504,39 @@ function initCuentas() {
     window.openAddModal = () => {
         const modal = document.getElementById('addModal');
         if (modal) modal.style.display = 'flex';
+        const titleEl = modal.querySelector('.modal-header h2');
+        if (titleEl) titleEl.innerText = 'Nuevo Compromiso';
+        const editId = document.getElementById('editCommitmentId');
+        if (editId) editId.value = '';
+
         // Set default issue date to today
         const issueDate = document.getElementById('newIssueDate');
         if (issueDate && !issueDate.value) {
             issueDate.valueAsDate = new Date();
+        }
+    };
+
+    window.openEditCommitment = (cDataStr) => {
+        const c = JSON.parse(decodeURIComponent(cDataStr));
+        const modal = document.getElementById('addModal');
+        if (modal) modal.style.display = 'flex';
+        
+        const titleEl = modal.querySelector('.modal-header h2');
+        if (titleEl) titleEl.innerText = 'Editar Compromiso';
+        
+        document.getElementById('editCommitmentId').value = c.id;
+        document.getElementById('newSupplierId').value = c.proveedor_id;
+        document.getElementById('newDescription').value = c.descripcion;
+        document.getElementById('newInvoiceNumber').value = c.numero_factura || '';
+        document.getElementById('newAmount').value = c.monto_total_usd;
+        
+        if (c.fecha_emision) {
+            const dateStr = new Date(c.fecha_emision).toISOString().split('T')[0];
+            document.getElementById('newIssueDate').value = dateStr;
+        }
+        if (c.fecha_vencimiento) {
+            const dateStr = new Date(c.fecha_vencimiento).toISOString().split('T')[0];
+            document.getElementById('newDueDate').value = dateStr;
         }
     };
 
@@ -3673,11 +3702,14 @@ function initCuentas() {
                 </td>
                 <td>${formatDate(c.fecha_vencimiento)}</td>
                 <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
-                <td>
-                    <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color);">
-                        <i class="fas fa-hand-holding-usd"></i> Pagar
-                    </button>
-                    <!-- Delete button could adhere here if needed -->
+                    <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
+                        <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 4px 8px;" title="Pagar">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </button>
+                        <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -3780,6 +3812,7 @@ async function updateAlertConfig() {
 window.saveCommitment = async () => {
     // alert('Global saveCommitment executing...'); // DEBUG
 
+    const editId = document.getElementById('editCommitmentId')?.value;
     const data = {
         proveedor_id: document.getElementById('newSupplierId').value,
         descripcion: document.getElementById('newDescription').value,
@@ -3794,24 +3827,25 @@ window.saveCommitment = async () => {
         return;
     }
 
-    // alert('Datos a enviar: ' + JSON.stringify(data)); // DEBUG
-
     try {
-        const res = await fetch('/api/commitments', {
-            method: 'POST',
+        const url = editId ? `/api/commitments/${editId}` : '/api/commitments';
+        const method = editId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
 
-        // alert('Respuesta del servidor status: ' + res.status); // DEBUG
-
         if (res.ok) {
             const json = await res.json();
-            // alert('Guardado éxito: ' + JSON.stringify(json)); // DEBUG
-            showNotification('Éxito', 'Compromiso guardado correctamente.');
+            showNotification('Éxito', editId ? 'Compromiso actualizado correctamente.' : 'Compromiso guardado correctamente.');
             closeAddModal();
             loadCommitments(); // Now global
             document.getElementById('addForm').reset();
+            if (document.getElementById('editCommitmentId')) {
+                document.getElementById('editCommitmentId').value = '';
+            }
         } else {
             const text = await res.text();
             // alert('Error servidor: ' + text); // DEBUG

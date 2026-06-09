@@ -3725,6 +3725,33 @@ app.post('/api/commitments', async (req, res) => {
     }
 });
 
+// Edit Commitment
+app.put('/api/commitments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { proveedor_id, descripcion, monto_usd, fecha_vencimiento, fecha_emision, numero_factura } = req.body;
+    try {
+        await req.pool.query(
+            `UPDATE compromisos_pago 
+             SET proveedor_id = $1, descripcion = $2, monto_total_usd = $3, fecha_vencimiento = $4, fecha_emision = $5, numero_factura = $6 
+             WHERE id = $7`,
+            [proveedor_id, descripcion, monto_usd, fecha_vencimiento, fecha_emision || null, numero_factura || null, id]
+        );
+        
+        const check = await req.pool.query('SELECT monto_total_usd, monto_pagado_usd FROM compromisos_pago WHERE id = $1', [id]);
+        if (check.rows.length > 0) {
+            const { monto_total_usd, monto_pagado_usd } = check.rows[0];
+            let newStatus = parseFloat(monto_pagado_usd) >= parseFloat(monto_total_usd) ? 'PAGADO' : (parseFloat(monto_pagado_usd) > 0 ? 'PARCIAL' : 'PENDIENTE');
+            await req.pool.query('UPDATE compromisos_pago SET estado = $1 WHERE id = $2', [newStatus, id]);
+        }
+        
+        await global.logAudit(req, req.headers['x-user-id'], 'EDIT_COMMITMENT', 'compromisos_pago', id, { amount: monto_usd }, req.ip);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error editing commitment:', err);
+        res.status(500).json({ success: false, message: 'Error al editar compromiso' });
+    }
+});
+
 // 3. Register Payment (Partial or Full)
 app.post('/api/commitments/:id/payments', async (req, res) => {
     const commitmentId = req.params.id;
