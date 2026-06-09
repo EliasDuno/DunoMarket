@@ -4113,7 +4113,25 @@ function initRecibirMercancia() {
                 const term = searchInput.value.trim().toLowerCase();
                 if (!term) return;
 
-                const found = productsList.find(p => p.codigo && p.codigo.toLowerCase() === term);
+                // 1. Exact barcode match (trimming both sides)
+                let found = productsList.find(p => p.codigo && p.codigo.trim().toLowerCase() === term);
+
+                // 2. Exact name match
+                if (!found) {
+                    found = productsList.find(p => p.nombre && p.nombre.trim().toLowerCase() === term);
+                }
+
+                // 3. Fallback to first suggestion if dropdown is open and has items
+                if (!found && searchResults.style.display === 'block' && searchResults.children.length > 0) {
+                    const filtered = productsList.filter(p => 
+                        (p.codigo && p.codigo.toLowerCase().includes(term)) || 
+                        (p.nombre && p.nombre.toLowerCase().includes(term))
+                    );
+                    if (filtered.length > 0) {
+                        found = filtered[0];
+                    }
+                }
+
                 if (found) {
                     addInvoiceItem(found);
                     searchInput.value = '';
