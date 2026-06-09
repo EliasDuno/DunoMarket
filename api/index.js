@@ -34,6 +34,7 @@ const upload = multer({ storage: storage });
 const masterPool = new Pool(getMasterPoolConfig());
 
 const tenantPools = new Map();
+const tenantPoolPromises = new Map();
 const tenantSchemaEnsured = new Set();
 
 async function ensureAdminColumnsExist() {
@@ -575,45 +576,54 @@ async function ensureTenantSchema(pool) {
 async function getTenantPoolWithError(slug) {
     if (tenantPools.has(slug)) return { pool: tenantPools.get(slug) };
 
-    try {
-        const result = await masterPool.query('SELECT db_url FROM tenants WHERE slug = $1 AND status = $2', [slug, 'active']);
-        if (result.rows.length === 0) return { pool: null, error: 'Tenant inactivo o no existe' };
-
-        const dbUrl = result.rows[0].db_url;
-
-        // 1. Ensure schema exists first (except for the master tenant 'pidunet' which uses 'public')
-        if (slug !== 'pidunet') {
-            const tempPool = new Pool(getTenantPoolConfig(dbUrl, slug));
-            try {
-                await tempPool.query(`CREATE SCHEMA IF NOT EXISTS "${slug}"`);
-            } catch (schemaErr) {
-                console.error(`Error creating schema for tenant ${slug}:`, schemaErr.message);
-            } finally {
-                await tempPool.end();
-            }
-        }
-
-        // 2. Instantiate persistent tenant pool con search_path embebido en la config
-        // El search_path se aplica a nivel de conexión de PostgreSQL (opción --search_path),
-        // garantizando que esté activo desde el primer query sin condiciones de carrera.
-        const tenantPool = new Pool(getTenantPoolConfig(dbUrl, slug));
-        tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
-
-        // 4. Validate or update base table schema
-        try {
-            await ensureTenantSchema(tenantPool);
-            tenantSchemaEnsured.add(slug);
-            tenantPools.set(slug, tenantPool);
-            return { pool: tenantPool };
-        } catch (schemaErr) {
-            console.error(`No se pudo verificar el esquema del tenant ${slug}:`, schemaErr);
-            await tenantPool.end().catch(() => {});
-            return { pool: null, error: `Error de BD: ${schemaErr.message}` };
-        }
-    } catch (err) {
-        console.error(`Error connecting to tenant DB (${slug}):`, err);
-        return { pool: null, error: `Error de conexión: ${err.message}` };
+    if (tenantPoolPromises.has(slug)) {
+        return await tenantPoolPromises.get(slug);
     }
+
+    const initPromise = (async () => {
+        try {
+            const result = await masterPool.query('SELECT db_url FROM tenants WHERE slug = $1 AND status = $2', [slug, 'active']);
+            if (result.rows.length === 0) return { pool: null, error: 'Tenant inactivo o no existe' };
+
+            const dbUrl = result.rows[0].db_url;
+
+            // 1. Ensure schema exists first
+            if (slug !== 'pidunet') {
+                const tempPool = new Pool(getTenantPoolConfig(dbUrl, slug));
+                try {
+                    await tempPool.query(`CREATE SCHEMA IF NOT EXISTS "${slug}"`);
+                } catch (schemaErr) {
+                    console.error(`Error creating schema for tenant ${slug}:`, schemaErr.message);
+                } finally {
+                    await tempPool.end();
+                }
+            }
+
+            // 2. Instantiate persistent tenant pool con search_path embebido
+            const tenantPool = new Pool(getTenantPoolConfig(dbUrl, slug));
+            tenantPool.on('error', (err) => console.error(`Pool error for tenant ${slug}:`, err));
+
+            // 3. Validate or update base table schema
+            try {
+                await ensureTenantSchema(tenantPool);
+                tenantSchemaEnsured.add(slug);
+                tenantPools.set(slug, tenantPool);
+                return { pool: tenantPool };
+            } catch (schemaErr) {
+                console.error(`No se pudo verificar el esquema del tenant ${slug}:`, schemaErr);
+                await tenantPool.end().catch(() => {});
+                return { pool: null, error: `Error de BD: ${schemaErr.message}` };
+            }
+        } catch (err) {
+            console.error(`Error connecting to tenant DB (${slug}):`, err);
+            return { pool: null, error: `Error de conexión: ${err.message}` };
+        }
+    })();
+
+    tenantPoolPromises.set(slug, initPromise);
+    const result = await initPromise;
+    tenantPoolPromises.delete(slug);
+    return result;
 }
 
 async function getTenantPool(slug) {
