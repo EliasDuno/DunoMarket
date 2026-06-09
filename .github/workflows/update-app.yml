@@ -1,0 +1,29 @@
+name: Publish OTA Update
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Install dependencies
+        working-directory: pidunet_mobile
+        run: npm install
+
+      - name: Publish OTA Update (EAS)
+        working-directory: pidunet_mobile
+        run: eas update --branch preview --message "Automated OTA update from GitHub" --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
