@@ -4154,8 +4154,8 @@ function initRecibirMercancia() {
                 const catData = await resCat.json();
                 const catSelect = document.getElementById('quickAddCategory');
                 catSelect.innerHTML = '<option value="">Seleccionar Categoría...</option>';
-                if(catData.success) {
-                    catData.categories.forEach(c => {
+                if(Array.isArray(catData)) {
+                    catData.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.id;
                         opt.textContent = c.nombre;
@@ -4170,8 +4170,8 @@ function initRecibirMercancia() {
                 const presData = await resPres.json();
                 const presSelect = document.getElementById('quickAddPresentation');
                 presSelect.innerHTML = '<option value="">Seleccionar Presentación...</option>';
-                if(presData.success) {
-                    presData.data.forEach(p => {
+                if(Array.isArray(presData)) {
+                    presData.forEach(p => {
                         const opt = document.createElement('option');
                         opt.value = p.id;
                         opt.textContent = p.nombre;
