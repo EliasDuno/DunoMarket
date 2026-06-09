@@ -572,12 +572,12 @@ async function ensureTenantSchema(pool) {
     }
 }
 
-async function getTenantPool(slug) {
-    if (tenantPools.has(slug)) return tenantPools.get(slug);
+async function getTenantPoolWithError(slug) {
+    if (tenantPools.has(slug)) return { pool: tenantPools.get(slug) };
 
     try {
         const result = await masterPool.query('SELECT db_url FROM tenants WHERE slug = $1 AND status = $2', [slug, 'active']);
-        if (result.rows.length === 0) return null;
+        if (result.rows.length === 0) return { pool: null, error: 'Tenant inactivo o no existe' };
 
         const dbUrl = result.rows[0].db_url;
 
@@ -604,16 +604,21 @@ async function getTenantPool(slug) {
             await ensureTenantSchema(tenantPool);
             tenantSchemaEnsured.add(slug);
             tenantPools.set(slug, tenantPool);
-            return tenantPool;
+            return { pool: tenantPool };
         } catch (schemaErr) {
             console.error(`No se pudo verificar el esquema del tenant ${slug}:`, schemaErr);
             await tenantPool.end().catch(() => {});
-            return null;
+            return { pool: null, error: `Error de BD: ${schemaErr.message}` };
         }
     } catch (err) {
         console.error(`Error connecting to tenant DB (${slug}):`, err);
-        return null;
+        return { pool: null, error: `Error de conexión: ${err.message}` };
     }
+}
+
+async function getTenantPool(slug) {
+    const res = await getTenantPoolWithError(slug);
+    return res.pool;
 }
 
 // Lightweight API health check for deployment/routing diagnostics.
@@ -640,8 +645,8 @@ app.use(async (req, res, next) => {
         return next();
     }
 
-    const pool = await getTenantPool(slug);
-    if (!pool) return res.status(404).json({ success: false, message: 'Código de empresa no encontrado o servicio suspendido' });
+    const { pool, error } = await getTenantPoolWithError(slug);
+    if (!pool) return res.status(404).json({ success: false, message: error || 'Código de empresa no encontrado o servicio suspendido' });
     
     req.pool = pool;
     next();
