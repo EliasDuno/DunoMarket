@@ -1705,29 +1705,6 @@ app.delete('/api/suppliers/:id', global.checkFiscal, async (req, res) => {
     }
 });
 
-// LIST Products (Updated to include category and supplier names)
-app.get('/api/products', async (req, res) => {
-    try {
-        const result = await req.pool.query(`
-            SELECT p.*, 
-            p.stock_merma,
-            p.stock_merma_venta,
-            p.stock_merma_principal,
-            p.stock_merma_secundaria,
-            ROUND((p.costo_usd * (1 + p.margen_ganancia / 100)), 2) as precio_venta_usd,
-            c.nombre as categoria_nombre, 
-            s.nombre as proveedor_nombre 
-            FROM productos p 
-            LEFT JOIN categorias c ON p.categoria_id = c.id 
-            LEFT JOIN proveedores s ON p.proveedor_id = s.id 
-            ORDER BY p.nombre ASC
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error al obtener productos' });
-    }
-});
 
 // CREATE/UPDATE Product (Updated for FKs & Warehouses)
 app.post('/api/products', async (req, res) => {
