@@ -4181,10 +4181,10 @@ function initRecibirMercancia() {
             tr.innerHTML = `
                 <td>${item.codigo || '-'}</td>
                 <td>${item.nombre}</td>
-                <td><input type="number" min="1" class="search-input" style="width: 100%; min-width: 80px; max-width: 120px; text-align: center;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
-                <td><input type="number" min="0" step="0.01" class="search-input" style="width: 100%; min-width: 100px; max-width: 150px; text-align: right;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)"></td>
+                <td><input type="number" min="1" class="search-input" style="width: 100%; min-width: 60px; max-width: 100px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
+                <td><input type="number" min="0" step="0.01" class="search-input" style="width: 100%; min-width: 80px; max-width: 120px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)"></td>
                 <td style="text-align: center;">
-                    <select class="search-input" style="width: 100%; min-width: 90px; text-align: center; padding: 0.4rem;" onchange="updateInvoiceItemField(${index}, 'aplica_iva', this.value)">
+                    <select class="search-input" style="width: 100%; min-width: 80px; text-align: center; padding: 0.4rem 0.5rem;" onchange="updateInvoiceItemField(${index}, 'aplica_iva', this.value)">
                         <option value="true" ${item.aplica_iva ? 'selected' : ''}>Sí (16%)</option>
                         <option value="false" ${!item.aplica_iva ? 'selected' : ''}>No</option>
                     </select>
