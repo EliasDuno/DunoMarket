@@ -2261,19 +2261,21 @@ app.post('/api/categories/bulk-create', async (req, res) => {
         await client.query('BEGIN');
         for (const item of items) {
             try {
-                if (!item.nombre) throw new Error('Nombre requerido');
+                const nombre = item.nombre || item.NOMBRE || item.Nombre || item.name || item.Name;
+                if (!nombre || !nombre.trim()) throw new Error('Nombre requerido');
                 // Check duplicate
-                const check = await client.query('SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1)', [item.nombre.trim()]);
+                const check = await client.query('SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1)', [nombre.trim()]);
                 if (check.rows.length > 0) {
                     results.failed++;
-                    results.errors.push(`Categoría ya existe: ${item.nombre}`);
+                    results.errors.push(`Categoría ya existe: ${nombre}`);
                     continue;
                 }
-                await client.query('INSERT INTO categorias (nombre, activo) VALUES ($1, $2)', [item.nombre.trim(), true]);
+                await client.query('INSERT INTO categorias (nombre, activo) VALUES ($1, $2)', [nombre.trim(), true]);
                 results.success++;
             } catch (err) {
+                const errNombre = item.nombre || item.NOMBRE || item.Nombre || item.name || 'Fila';
                 results.failed++;
-                results.errors.push(`Error en ${item.nombre}: ${err.message}`);
+                results.errors.push(`Error en ${errNombre}: ${err.message}`);
             }
         }
         await client.query('COMMIT');
@@ -2299,31 +2301,37 @@ app.post('/api/suppliers/bulk-create', async (req, res) => {
         await client.query('BEGIN');
         for (const item of items) {
             try {
-                if (!item.rif || !item.nombre || !item.rif.trim() || !item.nombre.trim()) {
+                const rif = item.rif || item.RIF || item.Rif;
+                const nombre = item.nombre || item.NOMBRE || item.Nombre || item.name || item.Name;
+                const telefono = item.telefono || item.TELEFONO || item.Telefono || item.phone || '';
+                const dias_credito = item.dias_credito || item.DIAS_CREDITO || item.diasCredito || 0;
+
+                if (!rif || !nombre || !rif.trim() || !nombre.trim()) {
                     results.failed++;
                     results.errors.push(`Fila inválida: RIF y Nombre son obligatorios (Datos: ${JSON.stringify(item)})`);
                     continue;
                 }
 
-                const rif = item.rif.trim();
-                const nombre = item.nombre.trim();
+                const cleanRif = rif.trim();
+                const cleanNombre = nombre.trim();
 
                 // Check duplicate RIF
-                const check = await client.query('SELECT id FROM proveedores WHERE rif = $1', [rif]);
+                const check = await client.query('SELECT id FROM proveedores WHERE rif = $1', [cleanRif]);
                 if (check.rows.length > 0) {
                     results.failed++;
-                    results.errors.push(`RIF ya existe: ${rif}`);
+                    results.errors.push(`RIF ya existe: ${cleanRif}`);
                     continue;
                 }
 
                 await client.query(
                     'INSERT INTO proveedores (rif, nombre, telefono, activo, dias_credito) VALUES ($1, $2, $3, $4, $5)',
-                    [rif, nombre, item.telefono || '', true, parseInt(item.dias_credito) || 0]
+                    [cleanRif, cleanNombre, telefono, true, parseInt(dias_credito) || 0]
                 );
                 results.success++;
             } catch (err) {
+                const errNombre = item.nombre || item.NOMBRE || item.Nombre || 'fila desconocida';
                 results.failed++;
-                results.errors.push(`Error en ${item.nombre || 'fila desconocida'}: ${err.message}`);
+                results.errors.push(`Error en ${errNombre}: ${err.message}`);
             }
         }
         await client.query('COMMIT');
@@ -2349,22 +2357,28 @@ app.post('/api/clients/bulk-create', async (req, res) => {
         await client.query('BEGIN');
         for (const item of items) {
             try {
-                if (!item.cedula || !item.nombre) throw new Error('Cédula y Nombre requeridos');
+                const cedula = item.cedula || item.CEDULA || item.Cedula || item.dni || item.DNI;
+                const nombre = item.nombre || item.NOMBRE || item.Nombre || item.name || item.Name;
+                const email = item.email || item.EMAIL || item.Email || null;
+                const telefono = item.telefono || item.TELEFONO || item.Telefono || item.phone || null;
+
+                if (!cedula || !nombre) throw new Error('Cédula y Nombre requeridos');
                 // Check duplicate Cedula
-                const check = await client.query('SELECT id FROM clientes WHERE cedula = $1', [item.cedula.trim()]);
+                const check = await client.query('SELECT id FROM clientes WHERE cedula = $1', [cedula.trim()]);
                 if (check.rows.length > 0) {
                     results.failed++;
-                    results.errors.push(`Cédula ya existe: ${item.cedula}`);
+                    results.errors.push(`Cédula ya existe: ${cedula}`);
                     continue;
                 }
                 await client.query(
                     'INSERT INTO clientes (cedula, nombre, email, telefono) VALUES ($1, $2, $3, $4)',
-                    [item.cedula.trim(), item.nombre.trim(), item.email || null, item.telefono || null]
+                    [cedula.trim(), nombre.trim(), email, telefono]
                 );
                 results.success++;
             } catch (err) {
+                const errNombre = item.cedula || item.CEDULA || item.Cedula || 'Fila';
                 results.failed++;
-                results.errors.push(`Error en ${item.cedula}: ${err.message}`);
+                results.errors.push(`Error en ${errNombre}: ${err.message}`);
             }
         }
         await client.query('COMMIT');
@@ -2390,8 +2404,13 @@ app.post('/api/users/bulk-create', async (req, res) => {
         await client.query('BEGIN');
         for (const item of items) {
             try {
-                if (!item.email || !item.password || !item.nombre) throw new Error('Email, Password y Nombre requeridos');
-                const lowEmail = item.email.trim().toLowerCase();
+                const email = item.email || item.EMAIL || item.Email;
+                const password = item.password || item.PASSWORD || item.Password || item.clave || item.CLAVE || item.Clave;
+                const nombre = item.nombre || item.NOMBRE || item.Nombre || item.name || item.Name;
+                const rol = item.rol || item.ROL || item.Rol || 'vendedor';
+
+                if (!email || !password || !nombre) throw new Error('Email, Password y Nombre requeridos');
+                const lowEmail = email.trim().toLowerCase();
 
                 // Check duplicate Email
                 const check = await client.query('SELECT id FROM usuarios WHERE email = $1', [lowEmail]);
@@ -2403,16 +2422,17 @@ app.post('/api/users/bulk-create', async (req, res) => {
 
                 // Hash password
                 const saltRounds = 10;
-                const passwordHash = await bcrypt.hash(item.password, saltRounds);
+                const passwordHash = await bcrypt.hash(password.toString(), saltRounds);
 
                 await client.query(
                     'INSERT INTO usuarios (nombre, email, password_hash, rol, activo, creado_en) VALUES ($1, $2, $3, $4, $5, NOW())',
-                    [item.nombre.trim(), lowEmail, passwordHash, item.rol || 'vendedor', true]
+                    [nombre.trim(), lowEmail, passwordHash, rol, true]
                 );
                 results.success++;
             } catch (err) {
+                const errNombre = item.email || item.EMAIL || item.Email || 'Fila';
                 results.failed++;
-                results.errors.push(`Error en ${item.email}: ${err.message}`);
+                results.errors.push(`Error en ${errNombre}: ${err.message}`);
             }
         }
         await client.query('COMMIT');
