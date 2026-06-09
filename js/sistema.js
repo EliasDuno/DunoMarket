@@ -4027,34 +4027,57 @@ function initRecibirMercancia() {
     let invoiceItems = [];
     let invoiceSuppliers = [];
     let productsList = [];
+    let dollarRate = 1.0;
 
     const searchInput = document.getElementById('invoiceProductSearch');
     const searchResults = document.getElementById('invoiceSearchResults');
     const tableBody = document.getElementById('invoiceTableBody');
     const globalSupplierSelect = document.getElementById('globalSupplier');
 
+    // 0. Cargar Configuración Global (Dólar)
+    const loadInvoiceConfig = async () => {
+        try {
+            const res = await fetch('/api/config');
+            const config = await res.json();
+            dollarRate = parseFloat(config.precio_dolar) || 1.0;
+            const rateEl = document.getElementById('currentDollarRate');
+            if (rateEl) rateEl.innerText = dollarRate.toFixed(2);
+        } catch (e) { console.error('Error cargando config:', e); }
+    };
+
     // 1. Cargar proveedores y productos
     window.loadInvoiceSuppliers = async () => {
         try {
             const res = await fetch('/api/suppliers');
-            invoiceSuppliers = await res.json();
-            globalSupplierSelect.innerHTML = '<option value="">Seleccionar Proveedor...</option>';
-            invoiceSuppliers.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.id;
-                opt.innerText = s.nombre;
-                globalSupplierSelect.appendChild(opt);
-            });
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                invoiceSuppliers = data;
+                globalSupplierSelect.innerHTML = '<option value="">Seleccionar Proveedor...</option>';
+                invoiceSuppliers.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = s.nombre;
+                    globalSupplierSelect.appendChild(opt);
+                });
+            } else {
+                console.error('API suppliers no retornó un arreglo:', data);
+            }
         } catch (e) { console.error('Error cargando proveedores:', e); }
     };
 
     const loadLocalProducts = async () => {
         try {
             const res = await fetch('/api/products');
-            productsList = await res.json();
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                productsList = data;
+            } else {
+                console.error('API products no retornó un arreglo:', data);
+            }
         } catch (e) { console.error('Error cargando productos:', e); }
     };
 
+    loadInvoiceConfig();
     loadInvoiceSuppliers();
     loadLocalProducts();
 

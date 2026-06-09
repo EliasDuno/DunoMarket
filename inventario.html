@@ -663,14 +663,213 @@
             <div class="button-group" style="justify-content: center; gap: 15px;">
                 <button class="btn-cancel" id="btnConfirmCancel"
                     style="width: auto; min-width: 100px;">Cancelar</button>
+                <p id="transProdName"
+                    style="margin-bottom: 1.5rem; font-weight: 600; color: var(--text-color); text-align: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                </p>
+
+                <div class="input-grid"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="input-group">
+                        <label>Origen</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <select id="transOrigin">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Destino</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <select id="transDest">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Cantidad a Transferir</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-exchange-alt"></i>
+                        <input type="number" id="transQty" required min="1" placeholder="Ej: 10">
+                    </div>
+                </div>
+
+                <!-- Merma Options -->
+                <div class="form-group" id="groupMerma"
+                    style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem; background: rgba(220, 38, 38, 0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid rgba(220, 38, 38, 0.3);">
+                    <input type="checkbox" id="checkMerma"
+                        style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
+                    <label for="checkMerma" style="margin: 0; color: #ef4444; font-weight: 600; cursor: pointer;">¿Es
+                        Merma / Pérdida?</label>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Observaciones (Opcional)</label>
+                    <div class="input-wrapper">
+                        <textarea id="transObs" rows="2" placeholder="Motivo de la transferencia o merma..."
+                            style="padding-left: 1rem; resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 2rem;">
+                    <button type="button" class="btn-cancel" onclick="closeTransferModal()">Cancelar</button>
+                    <button type="submit" class="btn-login"><i class="fas fa-exchange-alt"></i> Transferir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content login-container" style="margin: auto; max-width: 900px;">
+            <div class="modal-header">
+                <h2>Historial de Compras</h2>
+                <span class="close" id="closeHistoryModal">&times;</span>
+            </div>
+
+            <div class="input-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="input-group">
+                    <label>Fecha Inicio</label>
+                    <div class="input-wrapper" onclick="document.getElementById('histStart').showPicker()">
+                        <i class="fas fa-calendar"></i><input type="date" id="histStart" style="cursor: pointer;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Fecha Fin</label>
+                    <div class="input-wrapper" onclick="document.getElementById('histEnd').showPicker()">
+                        <i class="fas fa-calendar"></i><input type="date" id="histEnd" style="cursor: pointer;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Proveedor</label>
+                    <div class="input-wrapper"><i class="fas fa-truck"></i><select id="histSupplier">
+                            <option value="">Todos</option>
+                        </select></div>
+                </div>
+                <div class="input-group">
+                    <label>Producto</label>
+                    <div class="input-wrapper" style="position: relative;">
+                        <i class="fas fa-box"></i>
+                        <input type="text" id="histProduct" placeholder="Filtrar por nombre..." autocomplete="off">
+                        <div id="histProductResults" class="search-results-dropdown" style="top: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button id="btnApplyHistoryFilter" class="btn-login" style="width: auto; padding: 0.6rem 2rem;">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Proveedor</th>
+                            <th>Cant.</th>
+                            <th>Costo Unit.</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+
+            <div class="button-group" style="justify-content: flex-end; margin-top: 1rem;">
+                <button class="btn-cancel" id="btnCloseHistoryBtn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte Mermas Modal -->
+    <div id="mermasModal" class="mermas-modal">
+        <div class="modal-content">
+            <div class="mermas-header">
+                <h2><i class="fas fa-trash-alt"></i> Reporte de Mermas</h2>
+                <span class="close" onclick="closeMermasModal()">&times;</span>
+            </div>
+
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Desde</label>
+                    <input type="date" id="mermaStart">
+                </div>
+                <div class="filter-group">
+                    <label>Hasta</label>
+                    <input type="date" id="mermaEnd">
+                </div>
+                <button class="btn-primary" onclick="loadMermasData()">
+                    <i class="fas fa-filter" style="margin-right: 8px;"></i> Filtrar
+                </button>
+                <div class="total-loss">
+                    Total Pérdida: <span id="mermaTotalCost">$0.00</span>
+                </div>
+            </div>
+
+            <div class="mermas-table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Bodega</th>
+                            <th>Cant.</th>
+                            <th>Costo U.</th>
+                            <th>Total ($)</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mermasTableBody">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 id="notificationTitle">Aviso</h2>
+            </div>
+            <p id="notificationMessage" style="margin-bottom: 1.5rem; color: var(--text-color);"></p>
+            <div class="button-group" style="justify-content: center;">
+                <button class="btn-login" onclick="closeNotification()">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content login-container" style="margin: 0; text-align: center; max-width: 400px;">
+            <div class="modal-header" style="justify-content: center; border-bottom: none;">
+                <h2 id="confirmTitle" style="color: var(--primary-color);">Confirmar</h2>
+            </div>
+            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-color); font-size: 1.1em;"></p>
+            <div class="button-group" style="justify-content: center; gap: 15px;">
+                <button class="btn-cancel" id="btnConfirmCancel"
+                    style="width: auto; min-width: 100px;">Cancelar</button>
                 <button class="btn-login" id="btnConfirmOk" style="width: auto; min-width: 100px;">Aceptar</button>
             </div>
         </div>
     </div>
 
-    <script src="js/nucleo.js"></script>
+    <script src="js/nucleo.js?v=2.1"></script>
     <script src="js/offline.js"></script>
-    <script src="js/sistema.js?v=6"></script>
+    <script src="js/sistema.js?v=2.1"></script>
+    <script>
+        checkGlobalAuth();
+        filterSidebarByRole(JSON.parse(sessionStorage.getItem('user_session'))?.rol);
+    </script>
 </body>
 
 </html>
