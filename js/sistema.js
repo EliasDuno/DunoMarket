@@ -3702,12 +3702,13 @@ function initCuentas() {
                 </td>
                 <td>${formatDate(c.fecha_vencimiento)}</td>
                 <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
+                <td>
                     <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
                         <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 4px 8px;" title="Pagar">
-                            <i class="fas fa-hand-holding-usd"></i>
+                            <i class="fas fa-hand-holding-usd"></i> Pagar
                         </button>
                         <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i> Editar
                         </button>
                     </div>
                 </td>
