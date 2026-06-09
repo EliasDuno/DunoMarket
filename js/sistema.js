@@ -4154,7 +4154,7 @@ function initRecibirMercancia() {
                 id: product.id,
                 codigo: product.codigo,
                 nombre: product.nombre,
-                cantidad: 1,
+                cantidad: 0,
                 costo_usd: parseFloat(product.costo_usd) || 0,
                 aplica_iva: product.aplica_iva,
                 margen_ganancia: product.margen_ganancia,
@@ -4181,7 +4181,7 @@ function initRecibirMercancia() {
             tr.innerHTML = `
                 <td>${item.codigo || '-'}</td>
                 <td>${item.nombre}</td>
-                <td><input type="number" min="1" class="search-input" style="width: 100%; min-width: 60px; max-width: 100px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
+                <td><input type="number" min="0" class="search-input" style="width: 100%; min-width: 60px; max-width: 100px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.cantidad}" onchange="updateInvoiceItemField(${index}, 'cantidad', this.value)"></td>
                 <td><input type="number" min="0" step="0.01" class="search-input" style="width: 100%; min-width: 80px; max-width: 120px; text-align: center; padding: 0.4rem 0.5rem;" value="${item.costo_usd.toFixed(2)}" onchange="updateInvoiceItemField(${index}, 'costo_usd', this.value)"></td>
                 <td style="text-align: center;">
                     <select class="search-input" style="width: 100%; min-width: 80px; text-align: center; padding: 0.4rem 0.5rem;" onchange="updateInvoiceItemField(${index}, 'aplica_iva', this.value)">
@@ -4236,8 +4236,9 @@ function initRecibirMercancia() {
         document.getElementById('invoiceTotal').innerText = '$' + total.toFixed(2);
     }
 
-    window.clearInvoice = () => {
-        if(confirm('¿Está seguro de limpiar todos los productos de la recepción?')) {
+    window.clearInvoice = async () => {
+        const confirmed = await window.showConfirm('¿Está seguro de limpiar todos los productos de la recepción?', 'Limpiar Recepción');
+        if (confirmed) {
             invoiceItems = [];
             document.getElementById('globalSupplier').value = '';
             document.getElementById('invoiceNumber').value = '';
@@ -4246,13 +4247,14 @@ function initRecibirMercancia() {
     };
 
     // 5. Procesar Recepción y Lógica de Destinos
-    window.processInvoiceReception = () => {
+    window.processInvoiceReception = async () => {
         if (invoiceItems.length === 0) {
-            alert('Agrega al menos un producto a la factura.');
+            window.showNotification('Factura Vacía', 'Agrega al menos un producto a la recepción.');
             return;
         }
 
-        if (confirm("¿Todos los productos van a la bodega 'Disponible Venta'?")) {
+        const confirmed = await window.showConfirm("¿Todos los productos van a la bodega 'Disponible Venta'?", "Destino de Mercancía");
+        if (confirmed) {
             invoiceItems.forEach(item => item.destino = 'venta');
             submitBulkReception();
         } else {
