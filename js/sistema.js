@@ -4510,9 +4510,8 @@ window.renderReceivablesTable = (data) => {
                 <small>${item.cliente_cedula || '-'}</small>
             </td>
             <td>${dateStr}</td>
-            <td style="max-width: 250px; white-space: pre-wrap; word-wrap: break-word; position: relative;">
+            <td id="obs-cell-${item.id}" style="max-width: 250px; white-space: pre-wrap; word-wrap: break-word; position: relative;">
                 <span class="obs-text">${item.observaciones || '-'}</span>
-                <i class="fas fa-edit" style="color:var(--text-muted); cursor:pointer; font-size: 0.8rem; margin-left: 5px;" onclick="inlineEditObservation(${item.id}, this.parentElement)"></i>
             </td>
             <td style="font-weight: 600;">$${total.toFixed(2)}</td>
             <td style="color: #10b981;">$${paid.toFixed(2)}</td>
@@ -4522,12 +4521,15 @@ window.renderReceivablesTable = (data) => {
                 </div>
                 <small style="margin-left:5px;">${progress.toFixed(0)}%</small>
             </td>
-            <td>
+            <td style="display: flex; gap: 5px;">
                 ${item.estado !== 'PAGADO' ? `
                     <button class="btn-sm" onclick="showPayReceivableModal(${item.id}, ${total - paid})" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Abonar">
                         <i class="fas fa-hand-holding-usd"></i> Cobrar
                     </button>
-                ` : `<span style="color:var(--text-muted); font-size:0.8rem;">Completado</span>`}
+                ` : `<span style="color:var(--text-muted); font-size:0.8rem; padding: 4px 10px;">Completado</span>`}
+                <button class="btn-sm" onclick="inlineEditObservation(${item.id}, document.getElementById('obs-cell-${item.id}'))" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-color); padding: 4px 10px; border-radius: 4px;" title="Editar Observación">
+                    <i class="fas fa-edit"></i>
+                </button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -4599,6 +4601,5 @@ window.saveInlineEdit = async (id, tdElement) => {
 window.renderObservationCell = (tdElement, obs, id) => {
     tdElement.innerHTML = `
         <span class="obs-text">${obs || '-'}</span>
-        <i class="fas fa-edit" style="color:var(--text-muted); cursor:pointer; font-size: 0.8rem; margin-left: 5px;" onclick="inlineEditObservation(${id}, this.parentElement)"></i>
     `;
 };
