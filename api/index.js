@@ -2548,7 +2548,7 @@ app.post('/api/sales', async (req, res) => {
 
     try {
         // 0. Get VAT Config
-        const resConfig = await req.pool.query("SELECT valor FROM configuracion WHERE clave = 'iva_percentage'");
+        const resConfig = await client.query("SELECT valor FROM configuracion WHERE clave = 'iva_percentage'");
         const ivaPercentage = resConfig.rows.length > 0 ? parseFloat(resConfig.rows[0].valor) : 0;
 
         await client.query('BEGIN'); // Start Transaction
@@ -2632,13 +2632,13 @@ app.post('/api/sales', async (req, res) => {
         await client.query('COMMIT');
 
         // --- 3. GENERATE INVOICE ---
-        const configRes = await req.pool.query("SELECT * FROM configuracion");
+        const configRes = await client.query("SELECT * FROM configuracion");
         const config = {};
         configRes.rows.forEach(r => config[r.clave] = r.valor);
 
         let clientData = null;
         if (clientId) {
-            const clientRes = await req.pool.query('SELECT * FROM clientes WHERE id = $1', [clientId]);
+            const clientRes = await client.query('SELECT * FROM clientes WHERE id = $1', [clientId]);
             if (clientRes.rows.length > 0) clientData = clientRes.rows[0];
         }
 
