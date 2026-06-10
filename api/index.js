@@ -526,6 +526,29 @@ const TENANT_MIGRATIONS = [
         up: async (client) => {
             await client.query(`INSERT INTO configuracion (clave, valor) VALUES ('comision_avance', '12') ON CONFLICT (clave) DO NOTHING;`);
         }
+    },
+    {
+        version: '029_add_ventas_cuentas_cobrar',
+        up: async (client) => {
+            await client.query(`
+                DO $$
+                BEGIN
+                    ALTER TABLE ventas ADD COLUMN monto_pagado_usd DECIMAL(12, 2) DEFAULT 0;
+                EXCEPTION WHEN duplicate_column THEN
+                    NULL;
+                END $$;
+            `);
+            await client.query(`
+                DO $$
+                BEGIN
+                    ALTER TABLE ventas ADD COLUMN estado VARCHAR(20) DEFAULT 'PAGADO';
+                EXCEPTION WHEN duplicate_column THEN
+                    NULL;
+                END $$;
+            `);
+            // Actualizar ventas existentes asumiendo que están pagadas (retrocompatibilidad)
+            await client.query(`UPDATE ventas SET estado = 'PAGADO', monto_pagado_usd = total_usd WHERE monto_pagado_usd = 0 AND estado = 'PAGADO';`);
+        }
     }
 ];
 
@@ -1002,7 +1025,9 @@ async function initializeTenantDB(tenantPool, adminName, adminEmail, adminPasswo
                 total_bs NUMERIC(12, 2),
                 caja_id INTEGER REFERENCES caja_sesiones(id),
                 cliente_id INTEGER,
-                observaciones TEXT
+                observaciones TEXT,
+                monto_pagado_usd DECIMAL(12, 2) DEFAULT 0,
+                estado VARCHAR(20) DEFAULT 'PAGADO'
             );
         `);
 
@@ -2553,23 +2578,45 @@ app.post('/api/sales', async (req, res) => {
 
         await client.query('BEGIN'); // Start Transaction
 
-        // 1. Create Sale Record (Initial)
+        // 1. Process Payments
+        const paymentsList = req.body.payments || [{ method: paymentMethod, amount: totalUsd }];
+        let totalPaidUsd = 0;
+        
+        for (const payment of paymentsList) {
+            // "A Crédito" does not add to the paid amount
+            if (payment.method !== 'A Crédito') {
+                totalPaidUsd += parseFloat(payment.amount);
+            }
+        }
+
+        let estado = 'PAGADO';
+        if (totalPaidUsd === 0) {
+            estado = 'PENDIENTE';
+        } else if (totalPaidUsd < parseFloat(totalUsd) - 0.01) {
+            estado = 'PARCIAL';
+        }
+
         const totalBs = parseFloat(totalUsd) * parseFloat(rate);
+        
+        // 2. Create Sale Record
         const resVenta = await client.query(
-            'INSERT INTO ventas (metodo_pago, total_usd, tasa_bcv, total_bs, caja_id, cliente_id, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-            [paymentMethod, totalUsd, rate, totalBs, cajaId || null, clientId || null, observaciones || '']
+            'INSERT INTO ventas (metodo_pago, total_usd, tasa_bcv, total_bs, caja_id, cliente_id, observaciones, monto_pagado_usd, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
+            [paymentMethod, totalUsd, rate, totalBs, cajaId || null, clientId || null, observaciones || '', totalPaidUsd, estado]
         );
         const ventaId = resVenta.rows[0].id;
 
-        // 1.5 Process Payments
-        const paymentsList = req.body.payments || [{ method: paymentMethod, amount: totalUsd }];
+        // 3. Insert Payments into pagos_ventas
         for (const payment of paymentsList) {
-            const pAmountUsd = parseFloat(payment.amount);
-            const pAmountBs = pAmountUsd * parseFloat(rate);
-            await client.query(
-                'INSERT INTO pagos_ventas (venta_id, metodo, monto_usd, monto_bs, tasa) VALUES ($1, $2, $3, $4, $5)',
-                [ventaId, payment.method, pAmountUsd, pAmountBs, rate]
-            );
+            // Only record the payment in pagos_ventas if it's not "A Crédito", OR if you want to record it with 0 amount. 
+            // It's better to record actual payments. We'll skip "A Crédito" or record it if we want history.
+            if (payment.method !== 'A Crédito') {
+                const pAmountUsd = parseFloat(payment.amount);
+                const pAmountBs = pAmountUsd * parseFloat(rate);
+                await client.query(
+                    'INSERT INTO pagos_ventas (venta_id, metodo, monto_usd, monto_bs, tasa) VALUES ($1, $2, $3, $4, $5)',
+                    [ventaId, payment.method, pAmountUsd, pAmountBs, rate]
+                );
+            }
         }
 
         // 2. Process Items & Calculate VAT
@@ -2826,6 +2873,91 @@ app.get('/api/sales/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Error al obtener detalle de venta' });
+    }
+});
+
+// --- CUENTAS POR COBRAR ENDPOINTS ---
+
+// GET: List Receivables (Cuentas por Cobrar)
+app.get('/api/receivables', async (req, res) => {
+    const { status, hasObservations } = req.query;
+    try {
+        let query = `
+            SELECT v.id, v.fecha, v.total_usd, v.monto_pagado_usd, v.estado, v.metodo_pago, v.observaciones,
+                   c.nombre as cliente_nombre, c.cedula as cliente_cedula
+            FROM ventas v
+            LEFT JOIN clientes c ON v.cliente_id = c.id
+            WHERE 1=1
+        `;
+        const params = [];
+        let idx = 1;
+
+        if (status && status !== 'TODOS') {
+            if (status === 'PENDIENTES_PARCIALES') {
+                query += ` AND v.estado IN ('PENDIENTE', 'PARCIAL')`;
+            } else {
+                query += ` AND v.estado = $${idx++}`;
+                params.push(status);
+            }
+        }
+        
+        if (hasObservations === 'true') {
+            query += ` AND v.observaciones IS NOT NULL AND TRIM(v.observaciones) != ''`;
+        }
+
+        query += ' ORDER BY v.fecha DESC';
+
+        const result = await req.pool.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error al obtener cuentas por cobrar' });
+    }
+});
+
+// POST: Add Payment to a Receivable
+app.post('/api/receivables/:id/pay', async (req, res) => {
+    const { id } = req.params;
+    const { method, amount, rate } = req.body; // amount is in USD
+    const client = await req.pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // 1. Get Sale
+        const resVenta = await client.query('SELECT total_usd, monto_pagado_usd, estado FROM ventas WHERE id = $1 FOR UPDATE', [id]);
+        if (resVenta.rows.length === 0) throw new Error('Venta no encontrada');
+        
+        const venta = resVenta.rows[0];
+        const newPaidAmount = parseFloat(venta.monto_pagado_usd) + parseFloat(amount);
+        const amountBs = parseFloat(amount) * parseFloat(rate);
+        
+        // 2. Insert Payment
+        await client.query(
+            'INSERT INTO pagos_ventas (venta_id, metodo, monto_usd, monto_bs, tasa) VALUES ($1, $2, $3, $4, $5)',
+            [id, method, parseFloat(amount), amountBs, parseFloat(rate)]
+        );
+        
+        // 3. Determine new status
+        let newStatus = 'PARCIAL';
+        if (newPaidAmount >= parseFloat(venta.total_usd) - 0.01) {
+            newStatus = 'PAGADO';
+        }
+        
+        // 4. Update Sale
+        await client.query(
+            'UPDATE ventas SET monto_pagado_usd = $1, estado = $2 WHERE id = $3',
+            [newPaidAmount, newStatus, id]
+        );
+        
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Abono registrado correctamente', newStatus, newPaidAmount });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ success: false, message: err.message || 'Error al procesar el abono' });
+    } finally {
+        client.release();
     }
 });
 

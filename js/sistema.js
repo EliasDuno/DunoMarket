@@ -4371,3 +4371,197 @@ function initRecibirMercancia() {
         }
     }
 }
+
+// ==========================================
+// MÓDULO: CUENTAS POR COBRAR (RECEIVABLES)
+// ==========================================
+function initCuentasCobrar() {
+    window.receivablesList = [];
+    window.hasObservationsFilter = false;
+    
+    // Auth Check
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // Init Profile
+    if (typeof loadUserProfile === 'function') loadUserProfile();
+    
+    // Listeners
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            renderReceivablesTable(receivablesList);
+        });
+    }
+
+    const payForm = document.getElementById('payForm');
+    if (payForm) {
+        payForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('payReceivableId').value;
+            const method = document.getElementById('payMethod').value;
+            const amount = document.getElementById('payAmount').value;
+
+            try {
+                // Fetch rate to send with payment
+                const rateRes = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv');
+                let currentRate = window.exchangeRate || 1;
+                if (rateRes.ok) {
+                    const rateData = await rateRes.json();
+                    if (rateData && rateData.monitors && rateData.monitors.usd) {
+                        currentRate = rateData.monitors.usd.price;
+                    }
+                }
+
+                const payload = { method, amount: parseFloat(amount), rate: currentRate };
+                
+                const res = await fetch(`/api/receivables/${id}/pay`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    if (typeof showNotification === 'function') showNotification('Éxito', 'Abono registrado correctamente.');
+                    closePayModal();
+                    loadReceivables();
+                } else {
+                    if (typeof showNotification === 'function') showNotification('Error', data.message || 'Error al registrar abono.');
+                }
+            } catch (err) {
+                console.error(err);
+                if (typeof showNotification === 'function') showNotification('Error', 'No se pudo conectar con el servidor.');
+            }
+        };
+    }
+
+    loadReceivables();
+}
+
+window.toggleObservationsFilter = () => {
+    window.hasObservationsFilter = !window.hasObservationsFilter;
+    const btn = document.getElementById('btnFilterObs');
+    if (btn) {
+        if (window.hasObservationsFilter) {
+            btn.style.background = '#3b82f6';
+            btn.style.color = 'white';
+            btn.style.borderColor = '#3b82f6';
+        } else {
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderColor = 'var(--glass-border)';
+        }
+    }
+    loadReceivables();
+};
+
+window.loadReceivables = async () => {
+    const statusSelect = document.getElementById('filterStatus');
+    const status = statusSelect ? statusSelect.value : 'TODOS';
+    const obsFilter = window.hasObservationsFilter ? 'true' : 'false';
+
+    try {
+        const res = await fetch(`/api/receivables?status=${status}&hasObservations=${obsFilter}`);
+        const data = await res.json();
+        
+        window.receivablesList = data || [];
+        renderReceivablesTable(receivablesList);
+    } catch (error) {
+        console.error('Error fetching receivables:', error);
+        if (typeof showNotification === 'function') showNotification('Error', 'No se pudieron cargar las cuentas por cobrar.');
+    }
+};
+
+window.renderReceivablesTable = (data) => {
+    const tbody = document.getElementById('receivablesTableBody');
+    if (!tbody) return;
+
+    const query = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+    const filtered = data.filter(item => {
+        const cName = item.cliente_nombre ? item.cliente_nombre.toLowerCase() : '';
+        const cCed = item.cliente_cedula ? item.cliente_cedula.toLowerCase() : '';
+        const obs = item.observaciones ? item.observaciones.toLowerCase() : '';
+        const idV = item.id.toString();
+        return cName.includes(query) || cCed.includes(query) || obs.includes(query) || idV.includes(query);
+    });
+
+    tbody.innerHTML = '';
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 20px;">No se encontraron resultados</td></tr>';
+        return;
+    }
+
+    filtered.forEach(item => {
+        const total = parseFloat(item.total_usd);
+        const paid = parseFloat(item.monto_pagado_usd) || 0;
+        const progress = total > 0 ? (paid / total) * 100 : 100;
+        
+        let statusClass = 'badge-pending';
+        let statusText = 'Pendiente';
+        if (item.estado === 'PAGADO') {
+            statusClass = 'badge-active';
+            statusText = 'Pagado';
+        } else if (item.estado === 'PARCIAL') {
+            statusClass = 'badge-inactive'; // or a new badge for partial
+            statusText = 'Parcial';
+        }
+
+        const dateObj = new Date(item.fecha);
+        const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>#${item.id}</td>
+            <td>
+                <strong>${item.cliente_nombre || 'Cliente General'}</strong><br>
+                <small>${item.cliente_cedula || '-'}</small>
+            </td>
+            <td>${dateStr}</td>
+            <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.observaciones || ''}">${item.observaciones || '-'}</td>
+            <td style="font-weight: 600;">$${total.toFixed(2)}</td>
+            <td style="color: #10b981;">$${paid.toFixed(2)}</td>
+            <td>
+                 <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; width: 80px; overflow: hidden; display: inline-block; vertical-align: middle;">
+                    <div style="background: #3b82f6; height: 100%; width: ${progress}%;"></div>
+                </div>
+                <small style="margin-left:5px;">${progress.toFixed(0)}%</small>
+            </td>
+            <td><span class="${statusClass}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
+            <td>
+                ${item.estado !== 'PAGADO' ? `
+                    <button class="btn-sm" onclick="showPayReceivableModal(${item.id}, ${total - paid})" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Abonar">
+                        <i class="fas fa-hand-holding-usd"></i> Cobrar
+                    </button>
+                ` : `<span style="color:var(--text-muted); font-size:0.8rem;">Completado</span>`}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+};
+
+window.showPayReceivableModal = (id, pendingAmount) => {
+    document.getElementById('payReceivableId').value = id;
+    document.getElementById('payPendingAmount').innerText = `$${pendingAmount.toFixed(2)}`;
+    
+    // Estimate Bs amount with current rate (visual only)
+    const pendingBs = pendingAmount * (window.exchangeRate || 1);
+    document.getElementById('payPendingBs').innerText = `${pendingBs.toFixed(2)} Bs`;
+    
+    const payAmountInput = document.getElementById('payAmount');
+    if (payAmountInput) {
+        payAmountInput.max = pendingAmount.toFixed(2);
+        payAmountInput.value = pendingAmount.toFixed(2);
+    }
+    
+    document.getElementById('payModal').style.display = 'flex';
+};
+
+window.closePayModal = () => {
+    document.getElementById('payModal').style.display = 'none';
+};
+
