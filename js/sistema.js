@@ -4449,8 +4449,9 @@ window.toggleObservationsFilter = () => {
 
 window.loadReceivables = async () => {
     const statusSelect = document.getElementById('filterStatus');
-    const status = statusSelect ? statusSelect.value : 'TODOS';
-    const obsFilter = window.hasObservationsFilter ? 'true' : 'false';
+    const filterVal = statusSelect ? statusSelect.value : 'PENDIENTES_PARCIALES';
+    const status = 'PENDIENTES_PARCIALES'; // Always omit fully paid
+    const obsFilter = (filterVal === 'SOLO_OBSERVACIONES') ? 'true' : 'false';
 
     try {
         const res = await fetch(`/api/receivables?status=${status}&hasObservations=${obsFilter}`);
@@ -4504,13 +4505,12 @@ window.renderReceivablesTable = (data) => {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>#${item.id}</td>
             <td>
                 <strong>${item.cliente_nombre || 'Cliente General'}</strong><br>
                 <small>${item.cliente_cedula || '-'}</small>
             </td>
             <td>${dateStr}</td>
-            <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.observaciones || ''}">${item.observaciones || '-'}</td>
+            <td style="max-width: 250px; white-space: pre-wrap; word-wrap: break-word;">${item.observaciones || '-'}</td>
             <td style="font-weight: 600;">$${total.toFixed(2)}</td>
             <td style="color: #10b981;">$${paid.toFixed(2)}</td>
             <td>
@@ -4519,7 +4519,6 @@ window.renderReceivablesTable = (data) => {
                 </div>
                 <small style="margin-left:5px;">${progress.toFixed(0)}%</small>
             </td>
-            <td><span class="${statusClass}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
             <td>
                 ${item.estado !== 'PAGADO' ? `
                     <button class="btn-sm" onclick="showPayReceivableModal(${item.id}, ${total - paid})" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Abonar">

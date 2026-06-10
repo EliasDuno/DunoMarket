@@ -100,24 +100,16 @@
                 </header>
 
                 <div class="actions-bar" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-                    <a href="pdv.html" class="btn-login" style="width: auto; flex: 0 0 auto; text-decoration: none; color: white;">
-                        <i class="fas fa-plus"></i> Nueva Venta
-                    </a>
                     <div class="search-wrapper">
                         <i class="fas fa-filter"></i>
                         <select id="filterStatus" onchange="loadReceivables()" class="search-input"
                             style="width: auto; cursor: pointer; padding-right: 2.5rem; appearance: none;">
-                            <option value="TODOS">Todos los Estados</option>
-                            <option value="PENDIENTES_PARCIALES" selected>Pendientes y Parciales</option>
-                            <option value="PAGADO">Pagados</option>
+                            <option value="PENDIENTES_PARCIALES" selected>Pendientes</option>
+                            <option value="SOLO_OBSERVACIONES">Con Observaciones</option>
                         </select>
                         <i class="fas fa-chevron-down"
                             style="left: auto; right: 1rem; font-size: 0.8rem; pointer-events: none;"></i>
                     </div>
-                    
-                    <button id="btnFilterObs" onclick="toggleObservationsFilter()" class="btn-sm" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 8px 12px; border-radius: 6px;">
-                        <i class="fas fa-comment-dots"></i> Con Observaciones
-                    </button>
                 </div>
 
                 <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem;">
@@ -138,14 +130,12 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th># Venta</th>
                                 <th>Cliente</th>
                                 <th>Fecha</th>
                                 <th>Observaciones</th>
                                 <th>Monto Total $</th>
                                 <th>Cobrado $</th>
                                 <th>Progreso</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
