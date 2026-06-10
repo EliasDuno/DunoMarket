@@ -154,7 +154,10 @@
         if (frame) {
             // 1. Restore last visited page on load
             const lastPage = sessionStorage.getItem('last_module');
+            alert("Al cargar la página, last_module en caché es: " + lastPage);
+            
             if (lastPage && lastPage !== 'resumen.html') {
+                alert("Intentando cargar en el iframe: " + lastPage);
                 frame.src = lastPage;
             }
 
@@ -163,6 +166,8 @@
                     const path = frame.contentWindow.location.pathname;
                     const page = path.split('/').pop();
 
+                    alert("El iframe acaba de cargar la ruta: " + path + "\nNombre de página: " + page);
+                    
                     // 2. Save current page
                     sessionStorage.setItem('last_module', page);
 
