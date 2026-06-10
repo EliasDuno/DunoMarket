@@ -4401,15 +4401,8 @@ function initCuentasCobrar() {
             const amount = document.getElementById('payAmount').value;
 
             try {
-                // Fetch rate to send with payment
-                const rateRes = await fetch('https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv');
+                // Use global exchange rate loaded from config
                 let currentRate = window.exchangeRate || 1;
-                if (rateRes.ok) {
-                    const rateData = await rateRes.json();
-                    if (rateData && rateData.monitors && rateData.monitors.usd) {
-                        currentRate = rateData.monitors.usd.price;
-                    }
-                }
 
                 const payload = { method, amount: parseFloat(amount), rate: currentRate };
                 
