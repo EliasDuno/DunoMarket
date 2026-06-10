@@ -2624,18 +2624,23 @@ app.post('/api/sales', async (req, res) => {
         let calcTotalBase = 0;
         let calcTotalTax = 0;
 
-        for (const item of items) {
-            // Update Stock & Get Info (Including aplica_iva)
+        const productUpdates = await Promise.all(items.map(async item => {
             const resUpdate = await client.query(
                 'UPDATE productos SET stock = stock - $1, actualizado_en = NOW() WHERE id = $2 AND stock >= $1 RETURNING id, nombre, stock, stock_minimo, costo_usd, aplica_iva',
                 [item.qty, item.id]
             );
-
             if (resUpdate.rowCount === 0) {
                 throw new Error(`Stock insuficiente para el producto ID: ${item.id}`);
             }
+            return resUpdate.rows[0];
+        }));
 
-            const product = resUpdate.rows[0];
+        const detailPromises = [];
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const product = productUpdates[i];
+
             if (product.stock <= product.stock_minimo) {
                 alerts.push(`${product.nombre} (Quedan: ${product.stock})`);
             }
@@ -2649,24 +2654,27 @@ app.post('/api/sales', async (req, res) => {
             calcTotalBase += subtotal;
             calcTotalTax += itemTax;
 
-            // Record Detail
-            await client.query(
+            detailPromises.push(client.query(
                 'INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario_usd, subtotal_usd, costo_unitario_usd) VALUES ($1, $2, $3, $4, $5, $6)',
                 [ventaId, item.id, item.qty, item.price, subtotal, product.costo_usd]
-            );
+            ));
 
-            itemsTableRows += `
-                <tr>
-                    <td style="padding: 5px; border-bottom: 1px solid #ddd;">${item.qty}</td>
-                    <td style="padding: 5px; border-bottom: 1px solid #ddd;">
-                        ${product.nombre}
-                        ${product.aplica_iva ? '<span style="font-size:0.8em; color:#777;">(G)</span>' : '<span style="font-size:0.8em; color:#aaa;">(E)</span>'}
-                    </td>
-                    <td style="padding: 5px; border-bottom: 1px solid #ddd; text-align: right;">$${item.price.toFixed(2)}</td>
-                    <td style="padding: 5px; border-bottom: 1px solid #ddd; text-align: right;">$${subtotal.toFixed(2)}</td>
-                </tr>
-            `;
+            if (sendEmail) {
+                itemsTableRows += `
+                    <tr>
+                        <td style="padding: 5px; border-bottom: 1px solid #ddd;">${item.qty}</td>
+                        <td style="padding: 5px; border-bottom: 1px solid #ddd;">
+                            ${product.nombre}
+                            ${product.aplica_iva ? '<span style="font-size:0.8em; color:#777;">(G)</span>' : '<span style="font-size:0.8em; color:#aaa;">(E)</span>'}
+                        </td>
+                        <td style="padding: 5px; border-bottom: 1px solid #ddd; text-align: right;">$${item.price.toFixed(2)}</td>
+                        <td style="padding: 5px; border-bottom: 1px solid #ddd; text-align: right;">$${subtotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
         }
+
+        await Promise.all(detailPromises);
 
         // 2.5 Update Sale with Calculated Totals
         // Note: totalUsd from frontend should match (Base + Tax). We can enforce or just store what we calculated.
@@ -2679,17 +2687,18 @@ app.post('/api/sales', async (req, res) => {
         await client.query('COMMIT');
 
         // --- 3. GENERATE INVOICE ---
-        const configRes = await client.query("SELECT * FROM configuracion");
-        const config = {};
-        configRes.rows.forEach(r => config[r.clave] = r.valor);
-
         let clientData = null;
-        if (clientId) {
+        if (clientId && sendEmail) {
             const clientRes = await client.query('SELECT * FROM clientes WHERE id = $1', [clientId]);
             if (clientRes.rows.length > 0) clientData = clientRes.rows[0];
         }
 
-        if (clientData && clientData.email && sendEmail && config.smtp_email && config.smtp_pass) {
+        if (clientData && clientData.email && sendEmail) {
+            const configRes = await client.query("SELECT * FROM configuracion");
+            const config = {};
+            configRes.rows.forEach(r => config[r.clave] = r.valor);
+            
+            if (config.smtp_email && config.smtp_pass) {
 
             customerEmail = clientData.email;
             const commerceName = config.commerce_name || 'PiduNet';
@@ -2782,6 +2791,7 @@ app.post('/api/sales', async (req, res) => {
                 if (err) console.error("Error sending invoice email:", err);
                 else console.log("Invoice email sent:", info.response);
             });
+            }
         }
 
 
@@ -2892,17 +2902,15 @@ app.get('/api/receivables', async (req, res) => {
         const params = [];
         let idx = 1;
 
-        if (status && status !== 'TODOS') {
+        if (hasObservations === 'true') {
+            query += ` AND v.observaciones IS NOT NULL AND TRIM(v.observaciones) != ''`;
+        } else if (status && status !== 'TODOS') {
             if (status === 'PENDIENTES_PARCIALES') {
                 query += ` AND v.estado IN ('PENDIENTE', 'PARCIAL')`;
             } else {
                 query += ` AND v.estado = $${idx++}`;
                 params.push(status);
             }
-        }
-        
-        if (hasObservations === 'true') {
-            query += ` AND v.observaciones IS NOT NULL AND TRIM(v.observaciones) != ''`;
         }
 
         query += ' ORDER BY v.fecha DESC';
