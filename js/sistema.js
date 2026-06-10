@@ -4379,12 +4379,7 @@ function initCuentasCobrar() {
     window.receivablesList = [];
     window.hasObservationsFilter = false;
     
-    // Auth Check
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
-    }
+    // Auth is handled globally by nucleo.js
     
     // Init Profile
     if (typeof loadUserProfile === 'function') loadUserProfile();
