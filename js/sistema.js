@@ -193,7 +193,7 @@ function initInventory() {
             }
         }
     };
-    if (btnHistory) btnHistory.onclick = () => { if (historyModal) historyModal.style.display = 'flex'; loadHistory(); loadHistorySuppliers(); };
+    if (btnHistory) btnHistory.onclick = () => { window.location.href = 'recibir_mercancia.html?tab=historial'; };
 
     const btnApplyHistoryFilter = document.getElementById('btnApplyHistoryFilter');
     if (btnApplyHistoryFilter) {
@@ -734,9 +734,16 @@ function initInventory() {
         try {
             const res = await fetch(url);
             const purchases = await res.json();
+            if (!res.ok) {
+                showNotification('Error', purchases.message || 'Error al cargar historial');
+                renderHistoryTable([]);
+                return;
+            }
             renderHistoryTable(purchases);
         } catch (err) {
             console.error(err);
+            renderHistoryTable([]);
+            showNotification('Error', 'Error de red al cargar historial.');
         }
     }
 
@@ -775,7 +782,7 @@ function initInventory() {
     function renderHistoryTableToBody(purchases, tbody) {
         tbody.innerHTML = '';
         if (purchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay historial registrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #f87171; font-weight: bold; font-size: 1.1rem;">No hay historial registrado para los filtros aplicados.</td></tr>';
             return;
         }
 
@@ -3661,7 +3668,7 @@ function initCuentas() {
                 <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
                 <td>
                     <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
-                        <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 4px 8px;" title="Pagar">
+                        <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Pagar">
                             <i class="fas fa-hand-holding-usd"></i> Pagar
                         </button>
                         <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
@@ -4023,6 +4030,12 @@ function initCategories() {
 // =============================================================================
 function initRecibirMercancia() {
     console.log('Inicializando Recibir Mercancía...');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && typeof switchReceiveTab === 'function') {
+        setTimeout(() => switchReceiveTab(tabParam), 100);
+    }
     
     let invoiceItems = [];
     let invoiceSuppliers = [];

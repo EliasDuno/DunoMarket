@@ -164,7 +164,16 @@
                     </div>
                 </header>
 
-                <div class="invoice-container">
+                <div class="inventory-tabs" style="display: flex; gap: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
+                    <button class="inventory-tab active" id="tab-nueva" onclick="switchReceiveTab('nueva')">
+                        <i class="fas fa-plus-circle"></i> Nueva Recepción
+                    </button>
+                    <button class="inventory-tab" id="tab-historial" onclick="switchReceiveTab('historial')">
+                        <i class="fas fa-history"></i> Historial de Compras
+                    </button>
+                </div>
+
+                <div class="invoice-container" id="view-nueva">
                     <!-- Invoice Header (Global Data) -->
                     <div class="invoice-header">
                         <div class="input-group">
@@ -248,9 +257,82 @@
                         <button class="btn-login" style="background: var(--secondary-color); font-size: 1.1rem; padding: 12px 24px;" onclick="processInvoiceReception()"><i class="fas fa-check-circle"></i> Procesar Recepción</button>
                     </div>
 
-                </div>
+                </div> <!-- end view-nueva -->
+
+                <div class="invoice-container" id="view-historial" style="display: none;">
+                    <!-- History Modal Content transplanted -->
+                    <div class="input-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="input-group">
+                            <label>Fecha Inicio</label>
+                            <div class="input-wrapper" onclick="document.getElementById('histStart').showPicker()">
+                                <i class="fas fa-calendar"></i><input type="date" id="histStart" style="cursor: pointer;">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Fecha Fin</label>
+                            <div class="input-wrapper" onclick="document.getElementById('histEnd').showPicker()">
+                                <i class="fas fa-calendar"></i><input type="date" id="histEnd" style="cursor: pointer;">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Proveedor</label>
+                            <div class="input-wrapper"><i class="fas fa-truck"></i><select id="histSupplier">
+                                    <option value="">Todos</option>
+                                </select></div>
+                        </div>
+                        <div class="input-group">
+                            <label>Producto</label>
+                            <div class="input-wrapper" style="position: relative;">
+                                <i class="fas fa-box"></i>
+                                <input type="text" id="histProduct" placeholder="Filtrar por nombre..." autocomplete="off">
+                                <div id="histProductResults" class="search-results-dropdown" style="top: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                        <button id="btnApplyHistoryFilter" class="btn-login" style="width: auto; padding: 0.6rem 2rem;">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+
+                    <div class="table-container" style="max-height: 50vh; overflow-y: auto;">
+                        <table id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Proveedor</th>
+                                    <th>Cant.</th>
+                                    <th>Costo Unit.</th>
+                                    <th>Total</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody"></tbody>
+                        </table>
+                    </div>
+                </div> <!-- end view-historial -->
+
             </div>
         </main>
+        <script>
+            function switchReceiveTab(tab) {
+                document.getElementById('tab-nueva').classList.remove('active');
+                document.getElementById('tab-historial').classList.remove('active');
+                document.getElementById('tab-' + tab).classList.add('active');
+                
+                document.getElementById('view-nueva').style.display = 'none';
+                document.getElementById('view-historial').style.display = 'none';
+                
+                document.getElementById('view-' + tab).style.display = 'block';
+                
+                if (tab === 'historial') {
+                    if (window.loadHistory) window.loadHistory();
+                    if (window.loadHistorySuppliers) window.loadHistorySuppliers();
+                }
+            }
+        </script>
     </div>
 
     <!-- Modals -->

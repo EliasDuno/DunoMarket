@@ -2891,8 +2891,8 @@ app.get('/api/purchases', async (req, res) => {
         console.log('Rows found:', result.rows.length);
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Error al obtener historial de compras' });
+        console.error('SQL Error in /api/purchases:', err.message);
+        res.status(500).json({ success: false, message: 'Error al obtener historial de compras: ' + err.message });
     }
 });
 
