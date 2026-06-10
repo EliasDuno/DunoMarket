@@ -4510,7 +4510,10 @@ window.renderReceivablesTable = (data) => {
                 <small>${item.cliente_cedula || '-'}</small>
             </td>
             <td>${dateStr}</td>
-            <td style="max-width: 250px; white-space: pre-wrap; word-wrap: break-word;">${item.observaciones || '-'}</td>
+            <td style="max-width: 250px; white-space: pre-wrap; word-wrap: break-word; position: relative;">
+                <span class="obs-text">${item.observaciones || '-'}</span>
+                <i class="fas fa-edit" style="color:var(--text-muted); cursor:pointer; font-size: 0.8rem; margin-left: 5px;" onclick="inlineEditObservation(${item.id}, this.parentElement)"></i>
+            </td>
             <td style="font-weight: 600;">$${total.toFixed(2)}</td>
             <td style="color: #10b981;">$${paid.toFixed(2)}</td>
             <td>
@@ -4552,3 +4555,50 @@ window.closePayModal = () => {
     document.getElementById('payModal').style.display = 'none';
 };
 
+window.inlineEditObservation = (id, tdElement) => {
+    if (tdElement.querySelector('textarea')) return;
+
+    const span = tdElement.querySelector('.obs-text');
+    const currentObs = span.innerText === '-' ? '' : span.innerText;
+    
+    tdElement.innerHTML = `
+        <textarea style="width: 100%; min-height: 60px; background: rgba(0,0,0,0.1); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 5px;">${currentObs}</textarea>
+        <div style="text-align: right; margin-top: 5px;">
+            <button class="btn-sm" style="background: #ef4444; color: white; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer;" onclick="cancelInlineEdit(this.parentElement.parentElement, \`${currentObs.replace(/`/g, '\\`')}\`, ${id})">Cancelar</button>
+            <button class="btn-sm" style="background: #10b981; color: white; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer; margin-left: 5px;" onclick="saveInlineEdit(${id}, this.parentElement.parentElement)">Guardar</button>
+        </div>
+    `;
+};
+
+window.cancelInlineEdit = (tdElement, oldObs, id) => {
+    window.renderObservationCell(tdElement, oldObs, id);
+};
+
+window.saveInlineEdit = async (id, tdElement) => {
+    const newObs = tdElement.querySelector('textarea').value;
+    try {
+        const res = await fetch(`/api/sales/${id}/observaciones`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ observaciones: newObs })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.renderObservationCell(tdElement, newObs, id);
+            const item = window.receivablesList.find(r => r.id === id);
+            if (item) item.observaciones = newObs;
+            if (typeof showNotification === 'function') showNotification('Éxito', 'Observación actualizada.');
+        } else {
+            if (typeof showNotification === 'function') showNotification('Error', data.message);
+        }
+    } catch(err) {
+        if (typeof showNotification === 'function') showNotification('Error', 'Error de conexión');
+    }
+};
+
+window.renderObservationCell = (tdElement, obs, id) => {
+    tdElement.innerHTML = `
+        <span class="obs-text">${obs || '-'}</span>
+        <i class="fas fa-edit" style="color:var(--text-muted); cursor:pointer; font-size: 0.8rem; margin-left: 5px;" onclick="inlineEditObservation(${id}, this.parentElement)"></i>
+    `;
+};

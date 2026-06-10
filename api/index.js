@@ -2814,6 +2814,23 @@ app.post('/api/sales', async (req, res) => {
 
 // --- SALES HISTORY & REPORTING ENDPOINTS ---
 
+// PUT: Update Sale Observations
+app.put('/api/sales/:id/observaciones', async (req, res) => {
+    const { id } = req.params;
+    const { observaciones } = req.body;
+    try {
+        await req.pool.query('UPDATE ventas SET observaciones = $1 WHERE id = $2', [observaciones, id]);
+        
+        // Audit Log
+        await global.logAudit(req, req.headers['x-user-id'], 'UPDATE_OBSERVATIONS', 'ventas', id, { observaciones }, req.ip);
+        
+        res.json({ success: true, message: 'Observaciones actualizadas correctamente.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error al actualizar observaciones' });
+    }
+});
+
 // GET: List Sales (History)
 app.get('/api/sales', async (req, res) => {
     const { startDate, endDate, clientId } = req.query;
