@@ -4505,12 +4505,12 @@ window.renderReceivablesTable = (data) => {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>
+            <td style="text-align: left; padding: 10px;">
                 <strong>${item.cliente_nombre || 'Cliente General'}</strong><br>
                 <small>${item.cliente_cedula || '-'}</small>
             </td>
             <td>${dateStr}</td>
-            <td id="obs-cell-${item.id}" style="max-width: 250px; white-space: pre-wrap; word-wrap: break-word; position: relative;">
+            <td id="obs-cell-${item.id}" style="max-width: 250px; min-width: 200px; white-space: pre-wrap; word-wrap: break-word; position: relative; text-align: left; padding: 10px;">
                 <span class="obs-text">${item.observaciones || '-'}</span>
             </td>
             <td style="font-weight: 600;">$${total.toFixed(2)}</td>
