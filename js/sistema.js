@@ -4097,14 +4097,24 @@ function initRecibirMercancia() {
                 filtered.forEach(p => {
                     const div = document.createElement('div');
                     div.className = 'search-result-item';
+                    div.style.cursor = 'pointer';
                     div.innerText = `${p.codigo} - ${p.nombre} (Stock: ${p.stock})`;
                     div.onclick = () => { addInvoiceItem(p); searchInput.value = ''; searchResults.style.display = 'none'; searchInput.focus(); };
                     searchResults.appendChild(div);
                 });
-                searchResults.style.display = 'block';
-            } else {
-                searchResults.style.display = 'none';
             }
+            
+            // Siempre agregar la opción de "Producto Nuevo" al final si hay texto
+            const createDiv = document.createElement('div');
+            createDiv.className = 'search-result-item';
+            createDiv.style.cursor = 'pointer';
+            createDiv.style.color = '#10b981';
+            createDiv.style.fontWeight = 'bold';
+            createDiv.innerText = `+ Crear nuevo producto: "${term}"`;
+            createDiv.onclick = () => { openQuickAddProductModal(term); searchInput.value = ''; searchResults.style.display = 'none'; };
+            searchResults.appendChild(createDiv);
+
+            searchResults.style.display = 'block';
         });
 
         searchInput.addEventListener('keypress', (e) => {
@@ -4119,17 +4129,6 @@ function initRecibirMercancia() {
                 // 2. Exact name match
                 if (!found) {
                     found = productsList.find(p => p.nombre && p.nombre.trim().toLowerCase() === term);
-                }
-
-                // 3. Fallback to first suggestion if dropdown is open and has items
-                if (!found && searchResults.style.display === 'block' && searchResults.children.length > 0) {
-                    const filtered = productsList.filter(p => 
-                        (p.codigo && p.codigo.toLowerCase().includes(term)) || 
-                        (p.nombre && p.nombre.toLowerCase().includes(term))
-                    );
-                    if (filtered.length > 0) {
-                        found = filtered[0];
-                    }
                 }
 
                 if (found) {
@@ -4407,7 +4406,7 @@ function initRecibirMercancia() {
             const data = await res.json();
             
             if (data.success) {
-                alert('¡Mercancía recibida exitosamente!');
+                window.showNotification('¡Mercancía recibida exitosamente!', 'Éxito');
                 invoiceItems = [];
                 document.getElementById('globalSupplier').value = '';
                 document.getElementById('invoiceNumber').value = '';
@@ -4415,11 +4414,11 @@ function initRecibirMercancia() {
                 
                 loadLocalProducts();
             } else {
-                alert('Error al procesar: ' + data.message);
+                window.showNotification('Error al procesar: ' + data.message, 'Error');
             }
         } catch (e) {
             console.error('Network Error:', e);
-            alert('Error de conexión al procesar la mercancía.');
+            window.showNotification('Error de conexión al procesar la mercancía.', 'Error');
         }
     }
 }

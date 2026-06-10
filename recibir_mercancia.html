@@ -308,6 +308,19 @@
             <button class="btn-primary full-width" onclick="closeNotification()">Aceptar</button>
         </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content small-modal">
+            <div id="confirmIcon" style="text-align: center; font-size: 3rem; margin-bottom: 1rem; color: #f59e0b;"><i class="fas fa-question-circle"></i></div>
+            <h2 id="confirmTitle" style="text-align: center;">...</h2>
+            <p id="confirmMessage" style="text-align: center; margin-bottom: 1.5rem;">...</p>
+            <div style="display: flex; gap: 1rem;">
+                <button id="btnConfirmCancel" class="btn-secondary" style="flex: 1;">Cancelar</button>
+                <button id="btnConfirmOk" class="btn-primary" style="flex: 1;">Aceptar</button>
+            </div>
+        </div>
+    </div>
     <!-- Quick Add Product Modal -->
     <div id="quickAddProductModal" class="modal">
         <div class="modal-content login-container" style="max-width: 500px;">
