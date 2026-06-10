@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuentas por Cobrar | PiduNet</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="manifest" href="/manifest.json">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="images/logo.png" alt="Logo" class="sidebar-logo">
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-label">Principal</div>
+                <a href="/" class="nav-item">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="pdv.html" class="nav-item">
+                    <i class="fas fa-cash-register"></i> Punto de Venta
+                </a>
+                <a href="reportes.html" class="nav-item">
+                    <i class="fas fa-chart-line"></i> Reportes
+                </a>
+
+                <div class="sidebar-label">Gestión</div>
+                <a href="inventario.html" class="nav-item">
+                    <i class="fas fa-box"></i> Inventario
+                </a>
+                <a href="categorias.html" class="nav-item">
+                    <i class="fas fa-tags"></i> Categorías
+                </a>
+                <a href="proveedores.html" class="nav-item">
+                    <i class="fas fa-truck"></i> Proveedores
+                </a>
+                <a href="clientes.html" class="nav-item">
+                    <i class="fas fa-user-friends"></i> Clientes
+                </a>
+                <a href="cuentas.html" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Cuentas por Pagar
+                </a>
+                <a href="c_cobrar.html" class="nav-item active">
+                    <i class="fas fa-hand-holding-usd"></i> Cuentas por Cobrar
+                </a>
+
+                <div class="sidebar-label">Admin</div>
+                <a href="usuarios.html" class="nav-item">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <i class="fas fa-cog"></i> Configuración
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile" onclick="logout()">
+                    <div class="user-mini-avatar"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="user-mini-info">
+                        <span class="name">Cerrar Sesión</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="main-container" style="max-width: 100%;">
+                <header class="page-header">
+                    <div class="header-left">
+                        <h1>Cuentas por Cobrar</h1>
+                    </div>
+                    <div class="header-actions">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" class="search-input"
+                                placeholder="Buscar por cliente...">
+                        </div>
+                        <div class="user-profile-header" id="userProfileHeader"
+                            style="display: none; margin-left: 1rem;">
+                            <div class="profile-info">
+                                <span class="profile-name" id="profileName">Cargando...</span>
+                                <span class="profile-role" id="profileRole">...</span>
+                            </div>
+                            <div class="profile-avatar-container" id="profileAvatarContainer">
+                                <div class="user-avatar-placeholder small"><i class="fas fa-user"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="actions-bar" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                    <a href="pdv.html" class="btn-login" style="width: auto; flex: 0 0 auto; text-decoration: none; color: white;">
+                        <i class="fas fa-plus"></i> Nueva Venta
+                    </a>
+                    <div class="search-wrapper">
+                        <i class="fas fa-filter"></i>
+                        <select id="filterStatus" onchange="loadReceivables()" class="search-input"
+                            style="width: auto; cursor: pointer; padding-right: 2.5rem; appearance: none;">
+                            <option value="TODOS">Todos los Estados</option>
+                            <option value="PENDIENTES_PARCIALES" selected>Pendientes y Parciales</option>
+                            <option value="PAGADO">Pagados</option>
+                        </select>
+                        <i class="fas fa-chevron-down"
+                            style="left: auto; right: 1rem; font-size: 0.8rem; pointer-events: none;"></i>
+                    </div>
+                    
+                    <button id="btnFilterObs" onclick="toggleObservationsFilter()" class="btn-sm" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 8px 12px; border-radius: 6px;">
+                        <i class="fas fa-comment-dots"></i> Con Observaciones
+                    </button>
+                </div>
+
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem;">
+                    <div class="rows-per-page">
+                        <label for="pageSizeSelect" style="color: var(--text-color);">Mostrar: </label>
+                        <select id="pageSizeSelect" class="search-input" style="width: auto; padding: 5px; display: inline-block; cursor: pointer; appearance: auto; background: rgba(0,0,0,0.2);">
+                            <option value="15" selected>15</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="pagination-buttons" id="paginationButtons" style="display: flex; gap: 10px; align-items: center;">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th># Venta</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Observaciones</th>
+                                <th>Monto Total $</th>
+                                <th>Cobrado $</th>
+                                <th>Progreso</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="receivablesTableBody">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: Pay Receivable -->
+    <div id="payModal" class="modal">
+        <div class="modal-content login-container" style="margin: auto; max-width: 400px;">
+            <div class="modal-header">
+                <h2>Registrar Abono</h2>
+                <span class="close" onclick="closePayModal()">&times;</span>
+            </div>
+            <form id="payForm">
+                <input type="hidden" id="payReceivableId">
+                <div style="margin-bottom: 1rem; text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Monto Pendiente</div>
+                    <div id="payPendingAmount" style="font-size: 2rem; font-weight: 700; color: #ef4444;">$0.00</div>
+                    <div id="payPendingBs" style="font-size: 1rem; color: var(--text-muted); margin-top: 5px;">0.00 Bs</div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Método de Pago</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-money-check-alt"></i>
+                        <select id="payMethod" required class="input-field" style="background:transparent; border:none; width:100%; color: var(--text-color);">
+                            <option value="EFECTIVO_USD">Efectivo USD</option>
+                            <option value="EFECTIVO_BS">Efectivo Bs</option>
+                            <option value="PAGO_MOVIL">Pago Móvil</option>
+                            <option value="TRANSFERENCIA_BS">Transferencia Bs</option>
+                            <option value="PUNTO_DE_VENTA">Punto de Venta</option>
+                            <option value="ZELLE">Zelle</option>
+                            <option value="BINANCE">Binance (USDT)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Monto a Abonar (USD)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-dollar-sign"></i>
+                        <input type="number" id="payAmount" step="0.01" min="0.01" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" style="margin-top: 1rem; background: #10b981;">
+                    <i class="fas fa-check"></i> Confirmar Abono
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/sistema.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initCuentasCobrar === 'function') {
+                initCuentasCobrar();
+            }
+        });
+    </script>
+</body>
+
+</html>
