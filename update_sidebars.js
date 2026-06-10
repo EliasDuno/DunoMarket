@@ -11,12 +11,12 @@ const regexTargetMain = /(<a href="cuentas\.html" target="content-main" class="n
 const regexItem = /(<a href="cuentas\.html" class="nav-item( active)?">\s*<i class="fas fa-file-invoice-dollar"><\/i> Cuentas por Pagar\s*<\/a>)/i;
 
 const insertStr1 = `
-                <a href="cuentas_cobrar.html" target="content-main" class="nav-item">
+                <a href="c_cobrar.html" target="content-main" class="nav-item">
                     <i class="fas fa-hand-holding-usd"></i> Cuentas por Cobrar
                 </a>`;
                 
 const insertStr2 = `
-                <a href="cuentas_cobrar.html" class="nav-item">
+                <a href="c_cobrar.html" class="nav-item">
                     <i class="fas fa-hand-holding-usd"></i> Cuentas por Cobrar
                 </a>`;
 
