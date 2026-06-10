@@ -168,7 +168,12 @@
 
                     // 3. Highlight Sidebar
                     navItems.forEach(nav => {
-                        if (nav.href.includes(page)) {
+                        // Extract the page name from the href, ignoring query params and hash
+                        const navUrl = new URL(nav.href, window.location.origin);
+                        const navPage = navUrl.pathname.split('/').pop().split('?')[0].replace('.html', '');
+                        const cleanPage = page.split('?')[0].replace('.html', '');
+                        
+                        if (navPage === cleanPage && cleanPage !== '') {
                             navItems.forEach(n => n.classList.remove('active'));
                             nav.classList.add('active');
                         }
