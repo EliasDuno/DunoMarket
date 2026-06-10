@@ -110,6 +110,10 @@
                 showNotification('Error', 'No se pudo actualizar.');
             }
         } catch (err) {
+            console.error(err);
+            showNotification('Error', 'Error de red.');
+        }
+    };
 
 /**
  * SISTEMA.JS (Renamed from modulos.js)
@@ -831,10 +835,6 @@ function initInventory() {
             await fetch(`${API_URL_PRODUCTS}/${id}`, { method: 'DELETE' });
             loadProducts();
         } catch (e) { console.error(e); }
-    };
-
-            showNotification('Error', 'Error de conexión.');
-        }
     };
 
     // --- Utils ---
