@@ -2269,3 +2269,6 @@ body.embed-mode {
         display: block;
     }
 }
+
+
+tbody tr:nth-child(even) { background: rgba(0, 191, 255, 0.1); }

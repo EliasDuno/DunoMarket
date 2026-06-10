@@ -1,3 +1,116 @@
+    // --- History Logic ---
+    async function loadHistory() {
+        // Get Filters
+        const startDate = document.getElementById('histStart')?.value || '';
+        const endDate = document.getElementById('histEnd')?.value || '';
+        const supplierId = document.getElementById('histSupplier')?.value || '';
+        const productSearch = document.getElementById('histProduct')?.value || '';
+
+        const params = new URLSearchParams({ startDate, endDate, supplierId, productSearch });
+        const url = `/api/purchases?${params}`;
+
+        try {
+            const res = await fetch(url);
+            const purchases = await res.json();
+            if (!res.ok) {
+                showNotification('Error', purchases.message || 'Error al cargar historial');
+                renderHistoryTable([]);
+                return;
+            }
+            renderHistoryTable(purchases);
+        } catch (err) {
+            console.error(err);
+            renderHistoryTable([]);
+            showNotification('Error', 'Error de red al cargar historial.');
+        }
+    }
+
+    async function loadHistorySuppliers() {
+        try {
+            const res = await fetch('/api/suppliers'); // Use generic suppliers endpoint
+            const suppliers = await res.json();
+            const select = document.getElementById('histSupplier');
+            if (select) {
+                select.innerHTML = '<option value="">Todos los Proveedores</option>';
+                suppliers.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = s.nombre;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    function renderHistoryTable(purchases) {
+        const tbody = document.getElementById('historyBody'); // Ensure this ID matches HTML
+        if (!tbody) {
+            // Fallback for different ID or if table missing
+            const table = document.getElementById('historyTable');
+            if (table) {
+                // Try to find tbody inside
+                const body = table.querySelector('tbody');
+                if (body) { renderHistoryTableToBody(purchases, body); return; }
+            }
+            return;
+        }
+        renderHistoryTableToBody(purchases, tbody);
+    }
+
+    function renderHistoryTableToBody(purchases, tbody) {
+        tbody.innerHTML = '';
+        if (purchases.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #f87171; font-weight: bold; font-size: 1.1rem;">No hay historial registrado para los filtros aplicados.</td></tr>';
+            return;
+        }
+
+        purchases.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${new Date(p.fecha).toLocaleDateString()} ${new Date(p.fecha).toLocaleTimeString()}</td>
+                <td>${p.producto_nombre || 'Desconocido'}</td>
+                <td>${p.proveedor_nombre || 'N/A'}</td>
+                <td>${p.cantidad}</td>
+                <td>$${parseFloat(p.costo_unitario_usd).toFixed(2)}</td>
+                <td>$${parseFloat(p.total_usd).toFixed(2)}</td>
+                <td>
+                    <button class="btn-icon" onclick="editPurchaseHistory(${p.id}, ${p.costo_unitario_usd})" title="Editar Costo Histórico">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Expose for filters
+    window.loadHistory = loadHistory;
+    window.loadHistorySuppliers = loadHistorySuppliers;
+
+    window.editPurchaseHistory = async (id, currentCost) => {
+        const newCost = prompt(`Ingresa el costo unitario correcto (USD):`, currentCost);
+        if (newCost === null) return;
+        const costNum = parseFloat(newCost);
+        if (isNaN(costNum) || costNum < 0) {
+            showNotification('Error', 'Monto inválido.');
+            return;
+        }
+        
+        try {
+            const res = await fetch(`/api/purchases/${id}/cost`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ costo_unitario_usd: costNum })
+            });
+            if (res.ok) {
+                showNotification('Éxito', 'Costo histórico actualizado.');
+                // Recargar historial actual
+                document.getElementById('btnApplyHistoryFilter')?.click();
+            } else {
+                showNotification('Error', 'No se pudo actualizar.');
+            }
+        } catch (err) {
+
 /**
  * SISTEMA.JS (Renamed from modulos.js)
  * Contiene la lógica específica de cada módulo del sistema.
@@ -720,118 +833,6 @@ function initInventory() {
         } catch (e) { console.error(e); }
     };
 
-    // --- History Logic ---
-    async function loadHistory() {
-        // Get Filters
-        const startDate = document.getElementById('histStart')?.value || '';
-        const endDate = document.getElementById('histEnd')?.value || '';
-        const supplierId = document.getElementById('histSupplier')?.value || '';
-        const productSearch = document.getElementById('histProduct')?.value || '';
-
-        const params = new URLSearchParams({ startDate, endDate, supplierId, productSearch });
-        const url = `/api/purchases?${params}`;
-
-        try {
-            const res = await fetch(url);
-            const purchases = await res.json();
-            if (!res.ok) {
-                showNotification('Error', purchases.message || 'Error al cargar historial');
-                renderHistoryTable([]);
-                return;
-            }
-            renderHistoryTable(purchases);
-        } catch (err) {
-            console.error(err);
-            renderHistoryTable([]);
-            showNotification('Error', 'Error de red al cargar historial.');
-        }
-    }
-
-    async function loadHistorySuppliers() {
-        try {
-            const res = await fetch('/api/suppliers'); // Use generic suppliers endpoint
-            const suppliers = await res.json();
-            const select = document.getElementById('histSupplier');
-            if (select) {
-                select.innerHTML = '<option value="">Todos los Proveedores</option>';
-                suppliers.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.innerText = s.nombre;
-                    select.appendChild(opt);
-                });
-            }
-        } catch (err) { console.error(err); }
-    }
-
-    function renderHistoryTable(purchases) {
-        const tbody = document.getElementById('historyBody'); // Ensure this ID matches HTML
-        if (!tbody) {
-            // Fallback for different ID or if table missing
-            const table = document.getElementById('historyTable');
-            if (table) {
-                // Try to find tbody inside
-                const body = table.querySelector('tbody');
-                if (body) { renderHistoryTableToBody(purchases, body); return; }
-            }
-            return;
-        }
-        renderHistoryTableToBody(purchases, tbody);
-    }
-
-    function renderHistoryTableToBody(purchases, tbody) {
-        tbody.innerHTML = '';
-        if (purchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #f87171; font-weight: bold; font-size: 1.1rem;">No hay historial registrado para los filtros aplicados.</td></tr>';
-            return;
-        }
-
-        purchases.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${new Date(p.fecha).toLocaleDateString()} ${new Date(p.fecha).toLocaleTimeString()}</td>
-                <td>${p.producto_nombre || 'Desconocido'}</td>
-                <td>${p.proveedor_nombre || 'N/A'}</td>
-                <td>${p.cantidad}</td>
-                <td>$${parseFloat(p.costo_unitario_usd).toFixed(2)}</td>
-                <td>$${parseFloat(p.total_usd).toFixed(2)}</td>
-                <td>
-                    <button class="btn-icon" onclick="editPurchaseHistory(${p.id}, ${p.costo_unitario_usd})" title="Editar Costo Histórico">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    // Expose for filters
-    window.loadHistory = loadHistory;
-    window.loadHistorySuppliers = loadHistorySuppliers;
-
-    window.editPurchaseHistory = async (id, currentCost) => {
-        const newCost = prompt(`Ingresa el costo unitario correcto (USD):`, currentCost);
-        if (newCost === null) return;
-        const costNum = parseFloat(newCost);
-        if (isNaN(costNum) || costNum < 0) {
-            showNotification('Error', 'Monto inválido.');
-            return;
-        }
-        
-        try {
-            const res = await fetch(`/api/purchases/${id}/cost`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ costo_unitario_usd: costNum })
-            });
-            if (res.ok) {
-                showNotification('Éxito', 'Costo histórico actualizado.');
-                // Recargar historial actual
-                document.getElementById('btnApplyHistoryFilter')?.click();
-            } else {
-                showNotification('Error', 'No se pudo actualizar.');
-            }
-        } catch (err) {
             showNotification('Error', 'Error de conexión.');
         }
     };
@@ -3587,99 +3588,7 @@ function initCuentas() {
     }
 
     let cuentasData = [];
-    window.loadCommitments = async function () {
-        try {
-            const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : 'ALL';
-            let url = '/api/commitments';
-            if (statusFilter !== 'ALL') {
-                url += `?status=${statusFilter}`;
-            }
-
-            const res = await fetch(url);
-            cuentasData = await res.json();
-            renderCommitments();
-        } catch (e) { console.error(e); }
-    };
-
-    function renderCommitments() {
-        const tbody = document.getElementById('commitmentsTableBody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        let filtered = cuentasData;
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput && searchInput.value.trim() !== '') {
-            const term = searchInput.value.trim().toLowerCase();
-            filtered = cuentasData.filter(c => 
-                (c.proveedor_nombre && c.proveedor_nombre.toLowerCase().includes(term)) ||
-                (c.numero_factura && c.numero_factura.toLowerCase().includes(term)) ||
-                (c.descripcion && c.descripcion.toLowerCase().includes(term))
-            );
-        }
-
-        if (searchInput && !searchInput.dataset.listenerAdded) {
-            searchInput.dataset.listenerAdded = 'true';
-            searchInput.addEventListener('input', () => {
-                window.paginationState.cuentas.current = 1;
-                renderCommitments();
-            });
-        }
-
-        window.renderPagination('pageSizeSelect', 'paginationButtons', 'cuentas', filtered.length, renderCommitments);
-        const state = window.paginationState.cuentas;
-        const start = (state.current - 1) * state.limit;
-        const paginated = filtered.slice(start, start + state.limit);
-
-        if (paginated.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay compromisos registrados o no coinciden con la búsqueda.</td></tr>';
-            return;
-        }
-
-        paginated.forEach(c => {
-            // Calculate progress
-            const total = parseFloat(c.monto_total_usd);
-            const paid = parseFloat(c.monto_pagado_usd);
-            const progress = total > 0 ? (paid / total) * 100 : 0;
-
-            // Status Badge
-            let statusClass = 'badge-success';
-            let statusText = c.estado;
-            if (c.estado === 'PENDIENTE') statusClass = 'badge-danger'; // Assuming CSS has these or similar
-            if (c.estado === 'PARCIAL') statusClass = 'badge-warning';
-
-            // Use generic styles if badges not defined in main css, or map to styles
-            // Mapping to styles we might have seen or standard logic
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${c.proveedor_nombre || 'N/A'}</td>
-                <td>${c.numero_factura || '-'}</td>
-                <td>${formatDate(c.fecha_emision)}</td>
-                <td>${c.descripcion}</td>
-                <td>$${total.toFixed(2)}</td>
-                <td>$${paid.toFixed(2)}</td>
-                <td>
-                     <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; width: 100px; overflow: hidden;">
-                        <div style="background: var(--primary-color); height: 100%; width: ${progress}%;"></div>
-                    </div>
-                    <small>${progress.toFixed(0)}%</small>
-                </td>
-                <td>${formatDate(c.fecha_vencimiento)}</td>
-                <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
-                <td>
-                    <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
-                        <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Pagar">
-                            <i class="fas fa-hand-holding-usd"></i> Pagar
-                        </button>
-                        <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
+    // The table rendering and loading logic has been moved to the global scope to prevent duplication.
 
     // Helper Date Formatter
     function formatDate(dateString) {
@@ -3834,25 +3743,52 @@ window.loadCommitments = async function () {
         }
 
         const res = await fetch(url);
-        const commitments = await res.json();
-        renderCommitments(commitments);
+        window.cuentasData = await res.json();
+        renderCommitments();
     } catch (e) { console.error(e); }
 };
 
-window.renderCommitments = function (data) {
+window.renderCommitments = function () {
     const tbody = document.getElementById('commitmentsTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay compromisos registrados.</td></tr>';
+    let filtered = window.cuentasData || [];
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.trim() !== '') {
+        const term = searchInput.value.trim().toLowerCase();
+        filtered = filtered.filter(c => 
+            (c.proveedor_nombre && c.proveedor_nombre.toLowerCase().includes(term)) ||
+            (c.numero_factura && c.numero_factura.toLowerCase().includes(term)) ||
+            (c.descripcion && c.descripcion.toLowerCase().includes(term))
+        );
+    }
+
+    if (searchInput && !searchInput.dataset.listenerAdded) {
+        searchInput.dataset.listenerAdded = 'true';
+        searchInput.addEventListener('input', () => {
+            window.paginationState.cuentas.current = 1;
+            renderCommitments();
+        });
+    }
+
+    if (window.renderPagination) {
+        window.renderPagination('pageSizeSelect', 'paginationButtons', 'cuentas', filtered.length, renderCommitments);
+    }
+
+    const state = window.paginationState.cuentas;
+    const start = (state.current - 1) * state.limit;
+    const paginated = filtered.slice(start, start + state.limit);
+
+    if (paginated.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay compromisos registrados o no coinciden con la búsqueda.</td></tr>';
         return;
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    data.forEach(c => {
+    paginated.forEach(c => {
         // Calculate progress
         const total = parseFloat(c.monto_total_usd);
         const paid = parseFloat(c.monto_pagado_usd);
@@ -3884,12 +3820,12 @@ window.renderCommitments = function (data) {
 
             if (diffDays < 0) {
                 // Overdue
-                rowStyle = 'background-color: rgba(220, 38, 38, 0.1); border-left: 4px solid #dc2626;';
+                rowStyle = 'border-left: 4px solid #dc2626;';
                 statusText += ' (VENCIDO)';
                 statusClass = 'badge-danger'; // Force red badge
             } else if (diffDays <= globalAlertDays) {
                 // Warning
-                rowStyle = 'background-color: rgba(234, 179, 8, 0.1); border-left: 4px solid #eab308;';
+                rowStyle = 'border-left: 4px solid #eab308;';
                 statusText += ` (Vence en ${diffDays} días)`;
             }
         }
@@ -3914,7 +3850,7 @@ window.renderCommitments = function (data) {
             <td><span class="${statusClass}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">${statusText}</span></td>
             <td>
                 <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
-                    <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 4px 8px;" title="Pagar">
+                    <button class="btn-sm" onclick="showPayModal(${c.id}, ${total - paid})" style="background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Pagar">
                         <i class="fas fa-hand-holding-usd"></i> Pagar
                     </button>
                     <button class="btn-sm" onclick="openEditCommitment('${encodeURIComponent(JSON.stringify(c))}')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 8px;" title="Editar">
