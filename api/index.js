@@ -1456,8 +1456,8 @@ app.get('/api/cron/check-invoices', async (req, res) => {
             
             const tokens = admins.map(a => a.expo_push_token);
             
-            // Buscar facturas vencidas
-            const { rows: invoices } = await pool.query("SELECT count(*) as count FROM compromisos_pago WHERE estado != 'PAGADO' AND fecha_vencimiento < CURRENT_DATE");
+            // Buscar facturas vencidas o próximas a vencer (3 días o menos)
+            const { rows: invoices } = await pool.query("SELECT count(*) as count FROM compromisos_pago WHERE estado != 'PAGADO' AND fecha_vencimiento <= CURRENT_DATE + interval '3 days'");
             const count = parseInt(invoices[0].count);
             
             if (count > 0) {
