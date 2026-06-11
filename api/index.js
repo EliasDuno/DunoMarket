@@ -1932,15 +1932,14 @@ app.post('/api/products/receive-bulk', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        let currentItems = [];
+
+        // First pass: Handle newly created products
         for (const item of items) {
             const { cantidad, costo_usd, margen_ganancia, aplica_iva, destino, proveedor_id } = item;
-            
-            // Determinar proveedor final (prioridad al global si el item no tiene uno propio y viceversa)
             const finalProveedorId = global_proveedor_id || proveedor_id || null;
-
             let currentId = item.id;
 
-            // Si el producto es nuevo (creado desde la factura rápida)
             if (item.is_new || !currentId) {
                 const result = await client.query(
                     `INSERT INTO productos (codigo, nombre, categoria_id, presentacion, costo_usd, margen_ganancia, aplica_iva, proveedor_id) 
@@ -1949,33 +1948,52 @@ app.post('/api/products/receive-bulk', async (req, res) => {
                 );
                 currentId = result.rows[0].id;
             }
+            
+            currentItems.push({
+                id: currentId,
+                cantidad, costo_usd, margen_ganancia, aplica_iva, destino,
+                finalProveedorId
+            });
+        }
 
-            const targetColumn = (destino === 'principal') ? 'stock_principal' :
-                (destino === 'secundaria') ? 'stock_secundaria' : 'stock';
+        if (currentItems.length > 0) {
+            // Group by destination to build bulk updates safely
+            const dests = { 'principal': 'stock_principal', 'secundaria': 'stock_secundaria', 'venta': 'stock' };
+            
+            for (const [dest, column] of Object.entries(dests)) {
+                const itemsInDest = currentItems.filter(i => (i.destino || 'venta') === dest);
+                if (itemsInDest.length === 0) continue;
 
-            // Actualizar inventario del producto
-            await client.query(
-                `UPDATE productos SET 
-                ${targetColumn} = ${targetColumn} + $1, 
-                costo_usd = $2, 
-                margen_ganancia = $3, 
-                aplica_iva = $4,
-                proveedor_id = COALESCE($5, proveedor_id),
-                actualizado_en = NOW() 
-                WHERE id = $6`,
-                [cantidad, costo_usd, margen_ganancia, aplica_iva, finalProveedorId, currentId]
-            );
+                let updateQuery = `UPDATE productos p SET ${column} = ${column} + v.qty, costo_usd = v.cost, margen_ganancia = v.margin, aplica_iva = v.iva, proveedor_id = COALESCE(v.prov, p.proveedor_id), actualizado_en = NOW() FROM (VALUES `;
+                let updateParams = [];
+                let updateValues = [];
+                let pIndex = 1;
 
-            // Registrar en historial de compras
-            await client.query(
-                `INSERT INTO historial_compras (producto_id, proveedor_id, cantidad, costo_unitario_usd) 
-                 VALUES ($1, $2, $3, $4)`,
-                [currentId, finalProveedorId, cantidad, costo_usd]
-            );
+                itemsInDest.forEach(item => {
+                    updateValues.push(`($${pIndex++}::int, $${pIndex++}::int, $${pIndex++}::numeric, $${pIndex++}::numeric, $${pIndex++}::boolean, $${pIndex++}::int)`);
+                    updateParams.push(item.id, item.cantidad, item.costo_usd, item.margen_ganancia, item.aplica_iva, item.finalProveedorId);
+                });
 
-            // Auditoría por línea
-            await global.logAudit(req, req.headers['x-user-id'], 'RECEIVE_STOCK_BULK_ITEM', 'productos', currentId, 
-                { quantity: cantidad, cost: costo_usd, dest: destino, invoice: factura_nro }, req.ip);
+                updateQuery += updateValues.join(', ') + `) AS v(id, qty, cost, margin, iva, prov) WHERE p.id = v.id;`;
+                await client.query(updateQuery, updateParams);
+            }
+
+            // Bulk Insert History
+            let historyQuery = `INSERT INTO historial_compras (producto_id, proveedor_id, cantidad, costo_unitario_usd) VALUES `;
+            let historyParams = [];
+            let historyValues = [];
+            let hIndex = 1;
+
+            currentItems.forEach(item => {
+                historyValues.push(`($${hIndex++}, $${hIndex++}, $${hIndex++}, $${hIndex++})`);
+                historyParams.push(item.id, item.finalProveedorId, item.cantidad, item.costo_usd);
+            });
+
+            await client.query(historyQuery + historyValues.join(', '), historyParams);
+
+            // One audit log for all
+            await global.logAudit(req, req.headers['x-user-id'], 'RECEIVE_STOCK_BULK', 'productos', null, 
+                { items_count: currentItems.length, invoice: factura_nro }, req.ip);
         }
 
         await client.query('COMMIT');
@@ -2624,22 +2642,36 @@ app.post('/api/sales', async (req, res) => {
         let calcTotalBase = 0;
         let calcTotalTax = 0;
 
-        const productUpdates = await Promise.all(items.map(async item => {
-            const resUpdate = await client.query(
-                'UPDATE productos SET stock = stock - $1, actualizado_en = NOW() WHERE id = $2 AND stock >= $1 RETURNING id, nombre, stock, stock_minimo, costo_usd, aplica_iva',
-                [item.qty, item.id]
-            );
-            if (resUpdate.rowCount === 0) {
-                throw new Error(`Stock insuficiente para el producto ID: ${item.id}`);
-            }
-            return resUpdate.rows[0];
-        }));
+        // --- BULK UPDATE STOCK ---
+        let updateQuery = 'UPDATE productos p SET stock = stock - v.qty, actualizado_en = NOW() FROM (VALUES ';
+        let updateParams = [];
+        let updateValues = [];
+        let pIndex = 1;
+        
+        items.forEach(item => {
+            updateValues.push(`($${pIndex++}::int, $${pIndex++}::int)`);
+            updateParams.push(item.id, item.qty);
+        });
+        
+        updateQuery += updateValues.join(', ') + ') AS v(id, qty) WHERE p.id = v.id AND p.stock >= v.qty RETURNING p.id, p.nombre, p.stock, p.stock_minimo, p.costo_usd, p.aplica_iva;';
+        
+        const resUpdate = await client.query(updateQuery, updateParams);
+        
+        if (resUpdate.rowCount !== items.length) {
+            throw new Error(`Stock insuficiente o producto inválido en la lista de items.`);
+        }
 
-        const detailPromises = [];
+        const productMap = {};
+        resUpdate.rows.forEach(r => productMap[r.id] = r);
 
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const product = productUpdates[i];
+        // --- BULK INSERT DETAILS ---
+        let insertQuery = 'INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario_usd, subtotal_usd, costo_unitario_usd) VALUES ';
+        let insertParams = [];
+        let insertValues = [];
+        pIndex = 1;
+
+        for (const item of items) {
+            const product = productMap[item.id];
 
             if (product.stock <= product.stock_minimo) {
                 alerts.push(`${product.nombre} (Quedan: ${product.stock})`);
@@ -2654,10 +2686,8 @@ app.post('/api/sales', async (req, res) => {
             calcTotalBase += subtotal;
             calcTotalTax += itemTax;
 
-            detailPromises.push(client.query(
-                'INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario_usd, subtotal_usd, costo_unitario_usd) VALUES ($1, $2, $3, $4, $5, $6)',
-                [ventaId, item.id, item.qty, item.price, subtotal, product.costo_usd]
-            ));
+            insertValues.push(`($${pIndex++}, $${pIndex++}, $${pIndex++}, $${pIndex++}, $${pIndex++}, $${pIndex++})`);
+            insertParams.push(ventaId, item.id, item.qty, item.price, subtotal, product.costo_usd);
 
             if (sendEmail) {
                 itemsTableRows += `
@@ -2674,11 +2704,9 @@ app.post('/api/sales', async (req, res) => {
             }
         }
 
-        await Promise.all(detailPromises);
+        await client.query(insertQuery + insertValues.join(', '), insertParams);
 
         // 2.5 Update Sale with Calculated Totals
-        // Note: totalUsd from frontend should match (Base + Tax). We can enforce or just store what we calculated.
-        // For debugging/consistency, we rely on our calculation for Base/Tax columns.
         await client.query(
             'UPDATE ventas SET total_base_usd = $1, total_iva_usd = $2 WHERE id = $3',
             [calcTotalBase, calcTotalTax, ventaId]
