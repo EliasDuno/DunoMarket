@@ -793,13 +793,13 @@ function showCustomInstallPrompt() {
 
     // Use tenant logo if available, else default
     const tenantSlug = sessionStorage.getItem('tenant_slug');
-    const logoSrc = tenantSlug ? \`/api/config/logo?tenant=\${tenantSlug}\` : '/images/favicon.png';
+    const logoSrc = tenantSlug ? `/api/config/logo?tenant=${tenantSlug}` : '/images/favicon.png';
 
-    const modalHtml = \`
+    const modalHtml = `
         <div id="pwaInstallModal" class="modal" style="display: flex; z-index: 10000; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);">
             <div class="modal-content" style="margin: auto; max-width: 350px; text-align: center; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <div style="display: flex; justify-content: center; margin-bottom: 16px;">
-                    <img src="\${logoSrc}" alt="PiduNet Logo" style="width: 72px; height: 72px; object-fit: contain; border-radius: 16px; background: rgba(255,255,255,0.05); padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <img src="${logoSrc}" alt="PiduNet Logo" style="width: 72px; height: 72px; object-fit: contain; border-radius: 16px; background: rgba(255,255,255,0.05); padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 </div>
                 <h2 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.25rem;">Instalar la App</h2>
                 <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; line-height: 1.5;">Instala PiduNet en tu dispositivo para acceder de forma rápida y poder facturar sin conexión a internet.</p>
@@ -810,7 +810,7 @@ function showCustomInstallPrompt() {
                 </div>
             </div>
         </div>
-    \`;
+    `;
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
@@ -828,7 +828,7 @@ window.installPwa = async () => {
     if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        console.log(\`User response to the install prompt: \${outcome}\`);
+        console.log(`User response to the install prompt: ${outcome}`);
         deferredPrompt = null;
     }
 };
