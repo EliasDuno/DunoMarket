@@ -15,7 +15,7 @@
   "crons": [
     {
       "path": "/api/cron/check-invoices",
-      "schedule": "45 19 * * *"
+      "schedule": "20 20 * * *"
     }
   ],
   "cleanUrls": true,
