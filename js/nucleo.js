@@ -772,3 +772,70 @@ window.toggleAlerts = function (event) {
         }
     }
 };
+
+// --- CUSTOM PWA INSTALL PROMPT ---
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile/desktop natively if possible
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    
+    // Only show if not already installed and not explicitly dismissed recently
+    if (!sessionStorage.getItem('pwaPromptDismissed')) {
+        showCustomInstallPrompt();
+    }
+});
+
+function showCustomInstallPrompt() {
+    if (document.getElementById('pwaInstallModal')) return;
+
+    // Use tenant logo if available, else default
+    const tenantSlug = sessionStorage.getItem('tenant_slug');
+    const logoSrc = tenantSlug ? \`/api/config/logo?tenant=\${tenantSlug}\` : '/images/favicon.png';
+
+    const modalHtml = \`
+        <div id="pwaInstallModal" class="modal" style="display: flex; z-index: 10000; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);">
+            <div class="modal-content" style="margin: auto; max-width: 350px; text-align: center; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+                    <img src="\${logoSrc}" alt="PiduNet Logo" style="width: 72px; height: 72px; object-fit: contain; border-radius: 16px; background: rgba(255,255,255,0.05); padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                </div>
+                <h2 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.25rem;">Instalar la App</h2>
+                <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; line-height: 1.5;">Instala PiduNet en tu dispositivo para acceder de forma rápida y poder facturar sin conexión a internet.</p>
+                
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button onclick="closePwaPrompt()" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;">Más tarde</button>
+                    <button onclick="installPwa()" style="flex: 1; padding: 10px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; box-shadow: 0 4px 10px rgba(var(--secondary-color-rgb), 0.3); transition: all 0.2s;">Instalar</button>
+                </div>
+            </div>
+        </div>
+    \`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+window.closePwaPrompt = () => {
+    sessionStorage.setItem('pwaPromptDismissed', 'true');
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) modal.remove();
+};
+
+window.installPwa = async () => {
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) modal.remove();
+    
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(\`User response to the install prompt: \${outcome}\`);
+        deferredPrompt = null;
+    }
+};
+
+window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) modal.remove();
+    console.log('PWA was installed');
+});
