@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, StyleSheet, View, TextInput, Button, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';
+import { registerForPushNotificationsAsync } from '@/lib/push';
 
 export default function LoginScreen() {
   const [tenantSlug, setTenantSlug] = useState('');
@@ -10,6 +11,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    Alert.alert('App Actualizada', 'Versión OTA con depuración instalada correctamente.');
+  }, []);
 
   async function signInWithEmail() {
     if (!tenantSlug || !email || !password) {
@@ -36,20 +41,22 @@ export default function LoginScreen() {
         // Save the full session exactly like the web app
         await AsyncStorage.setItem('user_session', JSON.stringify(data.user));
         
-        // Push Notification Logic (Only for admins/superadmins)
+        // Push Notification Logic
         const rol = (data.user.rol || '').toLowerCase();
-        if (rol === 'admin' || rol === 'administrador' || rol === 'superadmin') {
+        if (rol === 'admin' || rol === 'administrador' || rol === 'superadmin' || true) { // Temporalmente true para forzar token
           try {
-            const { registerForPushNotificationsAsync } = require('@/lib/push');
             const token = await registerForPushNotificationsAsync();
             if (token) {
               await api.post('/api/users/push-token', {
                 email: data.user.email,
                 token: token
               });
+            } else {
+              Alert.alert('Advertencia', 'El token de notificaciones se generó vacío o nulo.');
             }
-          } catch (pushErr) {
+          } catch (pushErr: any) {
             console.log('Error registering push token:', pushErr);
+            Alert.alert('Error Notificaciones', pushErr?.message || String(pushErr));
           }
         }
 

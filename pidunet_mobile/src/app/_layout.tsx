@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View } from 'react-native';
-
+import * as Notifications from 'expo-notifications';
 export default function RootLayout() {
   const [session, setSession] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
@@ -16,6 +16,13 @@ export default function RootLayout() {
     }
     checkSession();
   }, []);
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      router.push('/(tabs)/cuentas');
+    });
+    return () => subscription.remove();
+  }, [router]);
 
   useEffect(() => {
     if (!initialized) return;
