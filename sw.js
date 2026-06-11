@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pidunet-cache-v5';
+const CACHE_NAME = 'pidunet-cache-v6';
 const STATIC_ASSETS = [
     '/',
     '/pdv.html',
