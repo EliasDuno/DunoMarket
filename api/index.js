@@ -1441,6 +1441,7 @@ app.get('/api/cron/check-invoices', async (req, res) => {
     try {
         const { rows: tenants } = await masterPool.query('SELECT slug FROM tenants');
         let totalSent = 0;
+        let debugLog = [];
         
         for (const tenant of tenants) {
             const pool = await getTenantPool(tenant.slug);
@@ -1448,11 +1449,17 @@ app.get('/api/cron/check-invoices', async (req, res) => {
             
             // Verificar si la columna expo_push_token existe
             const { rows: columns } = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name='usuarios' AND column_name='expo_push_token'");
-            if (columns.length === 0) continue; // Si no han corrido la migración, saltar
+            if (columns.length === 0) {
+                debugLog.push(`${tenant.slug}: Columna expo_push_token no existe`);
+                continue; // Si no han corrido la migración, saltar
+            }
 
             // Buscar administradores con token
             const { rows: admins } = await pool.query("SELECT expo_push_token FROM usuarios WHERE (rol = 'admin' OR rol = 'administrador' OR rol = 'superadmin') AND expo_push_token IS NOT NULL");
-            if (admins.length === 0) continue;
+            if (admins.length === 0) {
+                debugLog.push(`${tenant.slug}: No hay administradores con token registrado`);
+                continue;
+            }
             
             const tokens = admins.map(a => a.expo_push_token);
             
@@ -1461,6 +1468,7 @@ app.get('/api/cron/check-invoices', async (req, res) => {
             const count = parseInt(invoices[0].count);
             
             if (count > 0) {
+                debugLog.push(`${tenant.slug}: Enviando push a ${tokens.length} tokens por ${count} facturas`);
                 // Enviar push
                 await fetch('https://exp.host/--/api/v2/push/send', {
                     method: 'POST',
@@ -1473,9 +1481,11 @@ app.get('/api/cron/check-invoices', async (req, res) => {
                     })))
                 });
                 totalSent += tokens.length;
+            } else {
+                debugLog.push(`${tenant.slug}: 0 facturas vencidas o próximas a vencer`);
             }
         }
-        res.json({ success: true, messagesSent: totalSent });
+        res.json({ success: true, messagesSent: totalSent, debug: debugLog });
     } catch (err) {
         console.error('CRON Error:', err);
         res.status(500).json({ error: err.message });
