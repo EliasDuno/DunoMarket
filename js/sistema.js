@@ -4510,8 +4510,8 @@ window.renderReceivablesTable = (data) => {
                 <small>${item.cliente_cedula || '-'}</small>
             </td>
             <td>${dateStr}</td>
-            <td id="obs-cell-${item.id}" style="max-width: 250px; min-width: 200px; white-space: pre-wrap; word-wrap: break-word; position: relative; text-align: left !important; padding: 10px;">
-                <span class="obs-text">${item.observaciones || '-'}</span>
+            <td id="obs-cell-${item.id}" style="max-width: 250px; white-space: pre-line; word-wrap: break-word; position: relative; text-align: left !important;">
+                <span class="obs-text">${(item.observaciones || '').trim() || '-'}</span>
             </td>
             <td style="font-weight: 600;">$${total.toFixed(2)}</td>
             <td style="color: #10b981;">$${paid.toFixed(2)}</td>
@@ -4521,15 +4521,17 @@ window.renderReceivablesTable = (data) => {
                 </div>
                 <small style="margin-left:5px;">${progress.toFixed(0)}%</small>
             </td>
-            <td style="display: flex; gap: 5px;">
-                ${item.estado !== 'PAGADO' ? `
-                    <button class="btn-sm" onclick="showPayReceivableModal(${item.id}, ${total - paid})" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600;" title="Abonar">
-                        <i class="fas fa-hand-holding-usd"></i> Cobrar
+            <td>
+                <div style="display: flex; gap: 5px; align-items: center; justify-content: flex-start;">
+                    ${item.estado !== 'PAGADO' ? `
+                        <button class="btn-sm" onclick="showPayReceivableModal(${item.id}, ${total - paid})" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;" title="Abonar">
+                            <i class="fas fa-hand-holding-usd"></i> Cobrar
+                        </button>
+                    ` : `<span style="color:var(--text-muted); font-size:0.8rem; padding: 4px 10px;">Completado</span>`}
+                    <button class="btn-sm" onclick="inlineEditObservation(${item.id}, document.getElementById('obs-cell-${item.id}'))" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-color); padding: 4px 10px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; height: 100%;" title="Editar Observación">
+                        <i class="fas fa-edit"></i>
                     </button>
-                ` : `<span style="color:var(--text-muted); font-size:0.8rem; padding: 4px 10px;">Completado</span>`}
-                <button class="btn-sm" onclick="inlineEditObservation(${item.id}, document.getElementById('obs-cell-${item.id}'))" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-color); padding: 4px 10px; border-radius: 4px;" title="Editar Observación">
-                    <i class="fas fa-edit"></i>
-                </button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -4561,7 +4563,7 @@ window.inlineEditObservation = (id, tdElement) => {
     if (tdElement.querySelector('textarea')) return;
 
     const span = tdElement.querySelector('.obs-text');
-    const currentObs = span.innerText === '-' ? '' : span.innerText;
+    const currentObs = span.innerText === '-' ? '' : span.innerText.trim();
     
     tdElement.innerHTML = `
         <textarea style="width: 100%; min-height: 60px; background: rgba(0,0,0,0.1); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 5px;">${currentObs}</textarea>
