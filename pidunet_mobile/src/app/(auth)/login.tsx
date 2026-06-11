@@ -76,7 +76,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Pidunet Mobile</Text>
+      <Text style={styles.title}>Pidunet Mobile (V3)</Text>
       
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Text style={styles.label}>Código de Empresa</Text>
