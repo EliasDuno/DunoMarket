@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { api } from '@/lib/api';
+import { registerForPushNotificationsAsync } from '@/lib/push';
 export default function RootLayout() {
   const [session, setSession] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
@@ -12,6 +14,27 @@ export default function RootLayout() {
   useEffect(() => {
     async function checkSession() {
       const sessionStr = await AsyncStorage.getItem('user_session');
+      if (sessionStr) {
+        try {
+          const user = JSON.parse(sessionStr);
+          const rol = (user.rol || '').toLowerCase();
+          if (rol === 'admin' || rol === 'administrador' || rol === 'superadmin' || true) {
+            const token = await registerForPushNotificationsAsync();
+            if (token) {
+              await api.post('/api/users/push-token', {
+                email: user.email,
+                token: token
+              });
+              Alert.alert('Push Activo', 'Token de notificaciones registrado desde el auto-login.');
+            } else {
+               Alert.alert('Advertencia', 'Token generado vacío en el auto-login.');
+            }
+          }
+        } catch (err: any) {
+          console.log('Push error in auto-login:', err);
+          Alert.alert('Error Notificaciones', err?.message || String(err));
+        }
+      }
       setInitialized(true);
     }
     checkSession();
