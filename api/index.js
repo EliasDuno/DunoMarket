@@ -1432,10 +1432,20 @@ app.post('/api/users/push-token', async (req, res) => {
     try {
         const result = await req.pool.query('UPDATE usuarios SET expo_push_token = $1 WHERE email = $2', [token, email]);
         console.log(`[PUSH TOKEN] Filas actualizadas: ${result.rowCount}`);
-        res.json({ success: true });
+        res.json({ success: true, rowCount: result.rowCount });
     } catch (err) {
         console.error('[PUSH TOKEN] Error:', err);
         res.status(500).json({ success: false });
+    }
+});
+
+app.get('/api/debug/users', async (req, res) => {
+    try {
+        const { pool } = await getTenantPoolWithError('dmarket');
+        const { rows } = await pool.query('SELECT email, rol, expo_push_token FROM usuarios');
+        res.json({ users: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
