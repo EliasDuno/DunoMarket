@@ -33,10 +33,10 @@ export default function RootLayout() {
                Alert.alert('Advertencia', 'Token generado vacío en el auto-login.');
             }
           }
-        } catch (err: any) {
-          console.log('Push error in auto-login:', err);
-          Alert.alert('Error Notificaciones', err?.message || String(err));
-        }
+          } catch (pushErr: any) {
+            console.log('Error registering push token:', pushErr);
+            Alert.alert('Error Físico de Token', pushErr?.message || String(pushErr));
+          }
       }
       setInitialized(true);
     }

@@ -45,13 +45,13 @@ export async function registerForPushNotificationsAsync() {
         })
       ).data;
       console.log('Expo Push Token:', token);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      return null;
+      // Devuelve un string con el error para que _layout.tsx lo pueda atrapar o registrar
+      throw new Error("EXPO_ERR: " + (e?.message || String(e)));
     }
   } else {
-    console.log('Must use physical device for Push Notifications');
-    return null;
+    throw new Error("DEVICE_ERR: Debe usar un dispositivo físico");
   }
 
   return token;
