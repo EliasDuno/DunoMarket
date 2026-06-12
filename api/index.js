@@ -1427,12 +1427,14 @@ app.delete('/api/users/:id', global.checkFiscal, async (req, res) => {
 });
 app.post('/api/users/push-token', async (req, res) => {
     const { email, token } = req.body;
+    console.log(`[PUSH TOKEN] Recibida solicitud para email: ${email}, token: ${token}, tenant: ${req.headers['x-tenant-slug']}`);
     if (!email || !token) return res.status(400).json({ success: false, message: 'Faltan datos' });
     try {
-        await req.pool.query('UPDATE usuarios SET expo_push_token = $1 WHERE email = $2', [token, email]);
+        const result = await req.pool.query('UPDATE usuarios SET expo_push_token = $1 WHERE email = $2', [token, email]);
+        console.log(`[PUSH TOKEN] Filas actualizadas: ${result.rowCount}`);
         res.json({ success: true });
     } catch (err) {
-        console.error(err);
+        console.error('[PUSH TOKEN] Error:', err);
         res.status(500).json({ success: false });
     }
 });
@@ -1454,8 +1456,8 @@ app.get('/api/cron/check-invoices', async (req, res) => {
                 continue; // Si no han corrido la migración, saltar
             }
 
-            // Buscar administradores con token
-            const { rows: admins } = await pool.query("SELECT expo_push_token FROM usuarios WHERE (rol = 'admin' OR rol = 'administrador' OR rol = 'superadmin') AND expo_push_token IS NOT NULL");
+            // Buscar TODOS los usuarios con token
+            const { rows: admins } = await pool.query("SELECT expo_push_token FROM usuarios WHERE expo_push_token IS NOT NULL");
             if (admins.length === 0) {
                 debugLog.push(`${tenant.slug}: No hay administradores con token registrado`);
                 continue;
