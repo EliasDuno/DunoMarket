@@ -17,6 +17,9 @@ export default function RootLayout() {
       if (sessionStr) {
         try {
           const user = JSON.parse(sessionStr);
+          if (user.tenantSlug) {
+            await AsyncStorage.setItem('tenant_slug', user.tenantSlug);
+          }
           const rol = (user.rol || '').toLowerCase();
           if (rol === 'admin' || rol === 'administrador' || rol === 'superadmin' || true) {
             const token = await registerForPushNotificationsAsync();
