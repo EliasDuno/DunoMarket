@@ -17,6 +17,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.eliasduno.pidunet_mobile",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 2
     },
     "web": {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "60716676344",
+    "project_id": "pidunet-3faeb",
+    "storage_bucket": "pidunet-3faeb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60716676344:android:0a4d4a7e85c2c47ef4f70d",
+        "android_client_info": {
+          "package_name": "com.eliasduno.pidunet_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKbMFAn6M7ShkXf2e_Mk_oWfrzqu3ZxUY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
