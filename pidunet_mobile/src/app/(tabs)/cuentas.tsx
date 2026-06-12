@@ -112,6 +112,7 @@ export default function CuentasScreen() {
             <Text style={[styles.badgeText, isPendiente ? { color: statusColor } : {}]}>{item.estado}</Text>
           </View>
         </View>
+        <Text style={[styles.invoice, { color: '#666', fontWeight: 'bold' }]}>Proveedor: {item.proveedor_nombre || 'N/A'}</Text>
         <Text style={styles.invoice}>Factura: {item.numero_factura || 'N/A'}</Text>
         
         <View style={styles.row}>
