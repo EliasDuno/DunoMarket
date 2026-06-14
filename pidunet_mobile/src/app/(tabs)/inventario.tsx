@@ -67,7 +67,6 @@ export default function InventarioScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Inventario</Text>
 
       <View style={styles.tabContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>

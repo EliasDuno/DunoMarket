@@ -63,7 +63,7 @@ export default function ReportesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Reportes</Text>
+        <View />
         <Button title="Salir" color="#d32f2f" onPress={handleSignOut} />
       </View>
 

@@ -107,12 +107,11 @@ export default function CuentasScreen() {
     return (
       <View style={[styles.card, { borderLeftColor: statusColor }]}>
         <View style={styles.headerRow}>
-          <Text style={styles.description}>{item.descripcion}</Text>
+          <Text style={[styles.description, { fontWeight: 'bold' }]}>{item.proveedor_nombre || 'N/A'}</Text>
           <View style={[styles.badge, isPendiente ? { backgroundColor: statusColor + '20' } : styles.badgePagado]}>
             <Text style={[styles.badgeText, isPendiente ? { color: statusColor } : {}]}>{item.estado}</Text>
           </View>
         </View>
-        <Text style={[styles.invoice, { color: '#666', fontWeight: 'bold' }]}>Proveedor: {item.proveedor_nombre || 'N/A'}</Text>
         <Text style={styles.invoice}>Factura: {item.numero_factura || 'N/A'}</Text>
         
         <View style={styles.row}>
