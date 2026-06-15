@@ -1504,6 +1504,59 @@ app.get('/api/cron/check-invoices', async (req, res) => {
     }
 });
 
+app.get('/api/cron/check-stock', async (req, res) => {
+    try {
+        const { rows: tenants } = await masterPool.query('SELECT slug FROM tenants');
+        let totalSent = 0;
+        let debugLog = [];
+        
+        for (const tenant of tenants) {
+            const pool = await getTenantPool(tenant.slug);
+            if (!pool) continue;
+            
+            // Verify if expo_push_token exists
+            const { rows: columns } = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name='usuarios' AND column_name='expo_push_token'");
+            if (columns.length === 0) continue;
+
+            const { rows: admins } = await pool.query("SELECT expo_push_token FROM usuarios WHERE expo_push_token IS NOT NULL");
+            if (admins.length === 0) continue;
+            
+            const tokens = admins.map(a => a.expo_push_token);
+            
+            // Check low stock products
+            const { rows: products } = await pool.query("SELECT nombre, stock, stock_minimo FROM productos WHERE stock <= stock_minimo AND stock_minimo > 0");
+            
+            if (products.length > 0) {
+                let bodyText = `Los siguientes productos están agotándose:\n`;
+                products.forEach(p => {
+                    bodyText += `- ${p.nombre} (Quedan: ${p.stock} / Mín.: ${p.stock_minimo})\n`;
+                });
+
+                debugLog.push(`${tenant.slug}: Enviando alerta de stock para ${products.length} productos a ${tokens.length} admins`);
+                
+                await fetch('https://exp.host/--/api/v2/push/send', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tokens.map(token => ({
+                        to: token,
+                        sound: 'default',
+                        title: `⚠️ Alerta de Inventario - ${tenant.slug} ⚠️`,
+                        body: bodyText
+                    })))
+                });
+                totalSent += tokens.length;
+            } else {
+                debugLog.push(`${tenant.slug}: Stock saludable`);
+            }
+        }
+        res.json({ success: true, messagesSent: totalSent, debug: debugLog });
+    } catch (err) {
+        console.error('CRON Stock Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
     let { email, password } = req.body || {};

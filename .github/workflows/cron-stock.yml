@@ -1,0 +1,15 @@
+name: Cron Low Stock Alerts
+
+on:
+  schedule:
+    # 6:00 PM VET is 22:00 UTC
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit Vercel Check Stock API
+        run: |
+          curl -X GET "https://pidunet.vercel.app/api/cron/check-stock"

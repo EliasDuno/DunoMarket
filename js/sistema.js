@@ -331,12 +331,12 @@ function initInventory() {
     function updatePriceFromMargin() {
         const cost = parseFloat(pCosto.value) || 0;
         const margin = parseFloat(pMargen.value) || 0;
-        const basePriceUsd = cost * (1 + (margin / 100));
-        const priceUsd = basePriceUsd * (1 + (protectionMargin / 100));
+        const priceUsd = cost * (1 + (margin / 100)); // Precio USD puro
         
         const isBs = Array.from(pPriceTypeRadios).find(r => r.checked)?.value === 'bs';
         if (isBs) {
-            pSalePrice.value = (priceUsd * dollarRate).toFixed(2);
+            const adjustedRate = dollarRate * (1 + (protectionMargin / 100));
+            pSalePrice.value = (priceUsd * adjustedRate).toFixed(2);
             if (pCalcIcon) pCalcIcon.className = 'fas fa-money-bill-wave'; // Bs Icon
         } else {
             pSalePrice.value = priceUsd.toFixed(2);
@@ -346,17 +346,17 @@ function initInventory() {
 
     function updateMarginFromPrice() {
         const cost = parseFloat(pCosto.value) || 0;
-        let priceUsd = parseFloat(pSalePrice.value) || 0;
+        let priceInput = parseFloat(pSalePrice.value) || 0;
         
+        let priceUsd = priceInput;
         const isBs = Array.from(pPriceTypeRadios).find(r => r.checked)?.value === 'bs';
         if (isBs && dollarRate > 0) {
-            priceUsd = priceUsd / dollarRate;
+            const adjustedRate = dollarRate * (1 + (protectionMargin / 100));
+            priceUsd = priceInput / adjustedRate;
         }
 
-        const basePriceUsd = priceUsd / (1 + (protectionMargin / 100));
-
         if (cost > 0) {
-            const margin = ((basePriceUsd / cost) - 1) * 100;
+            const margin = ((priceUsd / cost) - 1) * 100;
             pMargen.value = margin.toFixed(1);
         }
     }
@@ -693,11 +693,13 @@ function initInventory() {
                 return;
             }
 
-            const costo = parseFloat(p.costo_usd);
-            const margen = parseFloat(p.margen_ganancia);
-            const precioUSDBase = costo * (1 + (margen / 100));
-            const precioUSD = precioUSDBase * (1 + (protectionMargin / 100));
-            const precioBS = precioUSD * dollarRate;
+            const precioUSDBase = parseFloat(p.costo_usd) * (1 + (parseFloat(p.margen_ganancia) / 100));
+            // USD se queda base
+            const precioUSD = precioUSDBase;
+            
+            // Bs aplica protección sobre la tasa
+            const adjustedRate = dollarRate * (1 + (protectionMargin / 100));
+            const precioBS = precioUSD * adjustedRate;
             
             let badgeStyle = '';
             if (stockToShow <= 0) {
@@ -723,8 +725,8 @@ function initInventory() {
                 <td><strong>${p.nombre}</strong><br><small>${p.categoria_nombre || 'Sin cat.'} | ${p.proveedor_nombre || 'S/P'}</small></td>
                 <td><span class="badge" style="${badgeStyle}">${stockToShow}</span></td>
                 ${mermaCell}
-                <td style="white-space: nowrap;">$ ${costo.toFixed(2)}</td>
-                <td>${margen.toFixed(1)}%</td>
+                <td style="white-space: nowrap;">$ ${parseFloat(p.costo_usd).toFixed(2)}</td>
+                <td>${parseFloat(p.margen_ganancia).toFixed(1)}%</td>
                 <td style="color: var(--primary-color); font-weight: bold; white-space: nowrap;">$ ${precioUSD.toFixed(2)}</td>
                 <td style="color: #4ade80; font-weight: bold; white-space: nowrap;">${formatCurrency(precioBS)}</td>
                 <td><span class="badge ${p.activo ? 'badge-user' : 'badge-low-stock'}">${p.activo ? 'Activo' : 'Suspendido'}</span></td>
@@ -856,26 +858,35 @@ function initInventory() {
         const updateSalePrice = () => {
             const costUsd = getCostInUsd();
             const margin = parseFloat(marginHidden.value) || 0;
-            const saleType = document.querySelector(`input[name="${typeName}"]:checked`)?.value || 'usd';
+            const isBsMode = document.querySelector(`input[name="${typeName}"]:checked`)?.value === 'bs';
             
             if (costUsd <= 0) return;
             
             const basePriceUsd = costUsd * (1 + (margin / 100));
-            let saleVal = basePriceUsd * (1 + (protectionMargin / 100));
-            if (saleType === 'bs') saleVal *= dollarRate;
+            let saleVal = basePriceUsd; 
+            
+            if (isBsMode) {
+                const adjustedRate = dollarRate * (1 + (protectionMargin / 100));
+                saleVal = basePriceUsd * adjustedRate;
+            }
             
             saleInput.value = saleVal.toFixed(2);
         };
 
         const updateMargin = () => {
             const costUsd = getCostInUsd();
-            const saleVal = parseFloat(saleInput.value) || 0;
-            const saleType = document.querySelector(`input[name="${typeName}"]:checked`)?.value || 'usd';
+            const val = parseFloat(saleInput.value) || 0;
+            const isBsMode = document.querySelector(`input[name="${typeName}"]:checked`)?.value === 'bs';
             
-            if (costUsd <= 0 || saleVal <= 0) return;
+            if (costUsd <= 0 || val <= 0) return;
             
-            const saleUsd = saleType === 'bs' ? (saleVal / dollarRate) : saleVal;
-            const basePriceUsd = saleUsd / (1 + (protectionMargin / 100));
+            let saleUsd = val;
+            if (isBsMode && dollarRate > 0) {
+                const adjustedRate = dollarRate * (1 + (protectionMargin / 100));
+                saleUsd = val / adjustedRate;
+            }
+            
+            const basePriceUsd = saleUsd;
             const margin = ((basePriceUsd / costUsd) - 1) * 100;
             
             marginHidden.value = margin.toFixed(2);
@@ -1362,10 +1373,8 @@ function initPOS() {
             
             // Calculate final precio_venta_usd applying both commercial and protection margins
             allProducts.forEach(p => {
-                const cost = parseFloat(p.costo_usd) || 0;
-                const commMargin = parseFloat(p.margen_ganancia) || 0;
-                const basePrice = cost * (1 + (commMargin / 100));
-                p.precio_venta_usd = basePrice * (1 + (protectionMargin / 100));
+                const basePrice = parseFloat(p.costo_usd) * (1 + (parseFloat(p.margen_ganancia) / 100));
+                p.precio_venta_usd = basePrice;
             });
 
             setupSearch();
@@ -1551,7 +1560,8 @@ function initPOS() {
             });
         }
 
-        const totalBs = totalUSD * exchangeRate;
+        const adjustedRate = exchangeRate * (1 + (protectionMargin / 100));
+        const totalBs = totalUSD * adjustedRate;
 
         const elSub = document.getElementById('cartSubtotal');
         if (elSub) elSub.innerText = `$${totalUSD.toFixed(2)}`;
@@ -1853,7 +1863,8 @@ function initPOS() {
         }
 
         let totalUSD = currentCart.reduce((sum, item) => sum + item.subtotal_usd, 0);
-        let totalBs = totalUSD * exchangeRate;
+        const adjustedRate = exchangeRate * (1 + (protectionMargin / 100));
+        let totalBs = totalUSD * adjustedRate;
 
         // Populate Payment Modal
         document.getElementById('payTotalUSD').innerText = `$${totalUSD.toFixed(2)}`;
@@ -1910,7 +1921,7 @@ function initPOS() {
                 items: itemsPayload,
                 paymentMethod: paymentMethod,
                 totalUsd: totalUSD,
-                rate: exchangeRate,
+                rate: exchangeRate * (1 + (protectionMargin / 100)),
                 cajaId: cajaId,
                 clientId: clientId ? parseInt(clientId) : null,
                 sendEmail: sendEmail,
