@@ -97,6 +97,7 @@
                         </summary>
                         <div class="section-content">
                             <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                                <!-- Fila 1 -->
                                 <div class="input-group">
                                     <label>Nombre del Comercio</label>
                                     <div class="input-wrapper">
@@ -111,30 +112,8 @@
                                         <input type="text" id="commerceRif" placeholder="Ej: J-12345678-9">
                                     </div>
                                 </div>
-                                <div class="input-group">
-                                    <label>Porcentaje IVA (%)</label>
-                                    <div class="input-wrapper">
-                                        <i class="fas fa-percentage"></i>
-                                        <input type="number" id="ivaPercentage" step="0.01" placeholder="Ej: 16.00">
-                                    </div>
-                                </div>
-                                <div class="input-group">
-                                    <label>Tasa de Ajuste de Margen de Ganancia (%)</label>
-                                    <div class="input-wrapper">
-                                        <i class="fas fa-shield-alt"></i>
-                                        <input type="number" id="protectionMargin" step="0.01" placeholder="Ej: 4.00">
-                                    </div>
-                                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 5px; display: block;">
-                                        ¿Quieres subir un monto fijo en Bs? Escríbelo abajo y calcularemos el % por ti.
-                                    </small>
-                                </div>
-                                <div class="input-group" style="background-color: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                                    <label style="color: #0f172a;"><i class="fas fa-calculator" style="color: var(--primary-color);"></i> Calculadora: Aumento en Bolívares</label>
-                                    <div class="input-wrapper">
-                                        <i class="fas fa-money-bill-wave" style="color: #22c55e;"></i>
-                                        <input type="number" id="calcFixedBs" step="0.01" placeholder="Ej: 4.00 (Bs)">
-                                    </div>
-                                </div>
+
+                                <!-- Fila 2 -->
                                 <div class="input-group">
                                     <label>Teléfono Admin</label>
                                     <div class="input-wrapper">
@@ -143,10 +122,38 @@
                                     </div>
                                 </div>
                                 <div class="input-group">
+                                    <label>Porcentaje IVA (%)</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-percentage"></i>
+                                        <input type="number" id="ivaPercentage" step="0.01" placeholder="Ej: 16.00">
+                                    </div>
+                                </div>
+
+                                <!-- Fila 3 -->
+                                <div class="input-group">
                                     <label>Comisión Avance de Efectivo (%)</label>
                                     <div class="input-wrapper">
                                         <i class="fas fa-hand-holding-usd"></i>
                                         <input type="number" id="cashAdvanceCommission" step="0.01" placeholder="Ej: 12.00">
+                                    </div>
+                                </div>
+                                <div class="input-group" style="visibility: hidden;">
+                                    <!-- Spacer para forzar que Tasa de Ajuste y Calculadora queden juntas en la siguiente fila si es necesario. Pero dejemos que fluya natural -->
+                                </div>
+
+                                <!-- Fila 4: Quedarán una al lado de la otra -->
+                                <div class="input-group">
+                                    <label>Tasa de Ajuste de Margen de Ganancia (%)</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <input type="number" id="protectionMargin" step="0.01" placeholder="Ej: 4.00">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label><i class="fas fa-calculator" style="color: var(--primary-color);"></i> Calculadora de Ajuste (Bs)</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-money-bill-wave" style="color: #22c55e;"></i>
+                                        <input type="number" id="calcFixedBs" step="0.01" placeholder="Ej: 4.00 (Bs)">
                                     </div>
                                 </div>
                             </div>

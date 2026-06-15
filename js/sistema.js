@@ -2797,14 +2797,19 @@ function initSettings() {
             // Setup Bs Calculator
             const calcFixedBs = document.getElementById('calcFixedBs');
             const protectionMarginInput = document.getElementById('protectionMargin');
-            const bcvRate = parseFloat(config['precio_dolar']) || 0;
             
-            if (calcFixedBs && protectionMarginInput && bcvRate > 0) {
+            if (calcFixedBs && protectionMarginInput) {
                 calcFixedBs.addEventListener('input', (e) => {
                     const extraBs = parseFloat(e.target.value) || 0;
-                    if (extraBs >= 0) {
-                        const percentage = (extraBs / bcvRate) * 100;
+                    // Try to get live BCV rate from UI, fallback to config
+                    let currentBcv = parseFloat(document.getElementById('currentDollarRate')?.innerText);
+                    if (!currentBcv || isNaN(currentBcv)) currentBcv = parseFloat(config['precio_dolar']) || 0;
+                    
+                    if (extraBs >= 0 && currentBcv > 0) {
+                        const percentage = (extraBs / currentBcv) * 100;
                         protectionMarginInput.value = percentage.toFixed(2);
+                    } else if (extraBs === 0 || isNaN(extraBs)) {
+                        protectionMarginInput.value = '';
                     }
                 });
             }
