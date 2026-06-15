@@ -2793,6 +2793,22 @@ function initSettings() {
                 const preview = document.getElementById('logoPreview');
                 if (preview) preview.src = config['logo_principal'];
             }
+
+            // Setup Bs Calculator
+            const calcFixedBs = document.getElementById('calcFixedBs');
+            const protectionMarginInput = document.getElementById('protectionMargin');
+            const bcvRate = parseFloat(config['precio_dolar']) || 0;
+            
+            if (calcFixedBs && protectionMarginInput && bcvRate > 0) {
+                calcFixedBs.addEventListener('input', (e) => {
+                    const extraBs = parseFloat(e.target.value) || 0;
+                    if (extraBs >= 0) {
+                        const percentage = (extraBs / bcvRate) * 100;
+                        protectionMarginInput.value = percentage.toFixed(2);
+                    }
+                });
+            }
+
         } catch (e) { console.error('Error loading config:', e); }
     }
 

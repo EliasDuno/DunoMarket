@@ -1,13 +1,12 @@
 console.log('OFFLINE.JS LOADED');
 
-// 1. Unregister Service Worker for PWA during dev
+// 1. Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-                registration.unregister();
-                console.log('PWA Service Worker unregistered for dev.');
-            }
+        navigator.serviceWorker.register('/sw.js').then((registration) => {
+            console.log('PWA Service Worker registered with scope: ', registration.scope);
+        }).catch((err) => {
+            console.error('ServiceWorker registration failed: ', err);
         });
     });
 }

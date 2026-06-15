@@ -12,6 +12,11 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+    e.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(STATIC_ASSETS);
+        })
+    );
     self.skipWaiting();
 });
 
@@ -19,13 +24,35 @@ self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then((keyList) => {
             return Promise.all(keyList.map((key) => {
-                return caches.delete(key);
+                if (key !== CACHE_NAME) {
+                    return caches.delete(key);
+                }
             }));
         })
     );
-    self.registration.unregister();
+    self.clients.claim();
 });
 
 self.addEventListener('fetch', (e) => {
-    // Bypass all caches
+    // Only cache GET requests
+    if (e.request.method !== 'GET') return;
+    
+    // Don't intercept API calls here (handled in offline.js via IndexedDB)
+    if (e.request.url.includes('/api/')) return;
+
+    e.respondWith(
+        caches.match(e.request).then((response) => {
+            return response || fetch(e.request).then((fetchRes) => {
+                return caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(e.request, fetchRes.clone());
+                    return fetchRes;
+                });
+            });
+        }).catch(() => {
+            // Fallback for offline mode if HTML is requested
+            if (e.request.headers.get('accept').includes('text/html')) {
+                return caches.match('/pdv.html'); // or sensible offline page
+            }
+        })
+    );
 });
