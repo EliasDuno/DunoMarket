@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, Button, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, Button, TouchableOpacity, Platform, Alert } from 'react-native';
+import * as Updates from 'expo-updates';
 import { api } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -63,7 +64,25 @@ export default function ReportesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View />
+        <Button 
+          title="Actualizar App" 
+          color="#208AEF" 
+          onPress={async () => {
+            try {
+              const { isAvailable } = await Updates.checkForUpdateAsync();
+              if (isAvailable) {
+                Alert.alert("Actualización encontrada", "Descargando nueva versión...");
+                await Updates.fetchUpdateAsync();
+                Alert.alert("¡Listo!", "Reiniciando la aplicación...");
+                await Updates.reloadAsync();
+              } else {
+                Alert.alert("Sin actualizaciones", "Tienes la versión más reciente.");
+              }
+            } catch (error) {
+              Alert.alert("Error", "No se pudo buscar actualizaciones: " + error);
+            }
+          }} 
+        />
         <Button title="Salir" color="#d32f2f" onPress={handleSignOut} />
       </View>
 
