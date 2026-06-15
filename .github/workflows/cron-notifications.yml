@@ -2,8 +2,8 @@ name: Cron Notifications
 
 on:
   schedule:
-    # 08:30 VET es 12:30 UTC
-    - cron: '30 12 * * *'
+    # 10:00 VET es 14:00 UTC
+    - cron: '0 14 * * *'
   workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub
 
 jobs:
