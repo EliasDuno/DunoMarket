@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pidunet-cache-v7';
+const CACHE_NAME = 'pidunet-cache-v8';
 const STATIC_ASSETS = [
     '/',
     '/pdv.html',
@@ -40,19 +40,21 @@ self.addEventListener('fetch', (e) => {
     // Don't intercept API calls here (handled in offline.js via IndexedDB)
     if (e.request.url.includes('/api/')) return;
 
+    // Network-First strategy
     e.respondWith(
-        caches.match(e.request).then((response) => {
-            return response || fetch(e.request).then((fetchRes) => {
-                return caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(e.request, fetchRes.clone());
-                    return fetchRes;
-                });
+        fetch(e.request).then((fetchRes) => {
+            return caches.open(CACHE_NAME).then((cache) => {
+                cache.put(e.request, fetchRes.clone());
+                return fetchRes;
             });
         }).catch(() => {
-            // Fallback for offline mode if HTML is requested
-            if (e.request.headers.get('accept').includes('text/html')) {
-                return caches.match('/pdv.html'); // or sensible offline page
-            }
+            return caches.match(e.request).then((response) => {
+                if (response) return response;
+                // Fallback for offline mode if HTML is requested
+                if (e.request.headers.get('accept').includes('text/html')) {
+                    return caches.match('/pdv.html');
+                }
+            });
         })
     );
 });
