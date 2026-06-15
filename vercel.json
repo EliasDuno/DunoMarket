@@ -12,12 +12,6 @@
       "destination": "/api/index.js"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/check-invoices",
-      "schedule": "20 18 * * *"
-    }
-  ],
   "cleanUrls": true,
   "redirects": [
     {
