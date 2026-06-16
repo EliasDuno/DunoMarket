@@ -331,7 +331,8 @@ function initInventory() {
     function updatePriceFromMargin() {
         const cost = parseFloat(pCosto.value) || 0;
         const margin = parseFloat(pMargen.value) || 0;
-        const priceUsd = cost * (1 + (margin / 100)); // Precio USD puro
+        let safeMargin = margin >= 100 ? 99.99 : margin;
+        const priceUsd = cost / (1 - (safeMargin / 100)); // Precio USD puro (Margen Bruto)
         
         const isBs = Array.from(pPriceTypeRadios).find(r => r.checked)?.value === 'bs';
         if (isBs) {
@@ -355,9 +356,9 @@ function initInventory() {
             priceUsd = priceInput / adjustedRate;
         }
 
-        if (cost > 0) {
-            const margin = ((priceUsd / cost) - 1) * 100;
-            pMargen.value = margin.toFixed(1);
+        if (priceUsd > 0) {
+            const margin = ((priceUsd - cost) / priceUsd) * 100;
+            pMargen.value = margin.toFixed(2);
         }
     }
 
@@ -773,7 +774,8 @@ function initInventory() {
             // Recalculate price
             const cost = parseFloat(document.getElementById('pCosto').value) || 0;
             const margin = parseFloat(document.getElementById('pMargen').value) || 0;
-            const price = cost * (1 + (margin / 100));
+            let safeMargin = margin >= 100 ? 99.99 : margin;
+            const price = cost / (1 - (safeMargin / 100));
             document.getElementById('pSalePrice').value = price.toFixed(2);
         }
     };
@@ -862,7 +864,8 @@ function initInventory() {
             
             if (costUsd <= 0) return;
             
-            const basePriceUsd = costUsd * (1 + (margin / 100));
+            let safeMargin = margin >= 100 ? 99.99 : margin;
+            const basePriceUsd = costUsd / (1 - (safeMargin / 100));
             let saleVal = basePriceUsd; 
             
             if (isBsMode) {
@@ -887,7 +890,7 @@ function initInventory() {
             }
             
             const basePriceUsd = saleUsd;
-            const margin = ((basePriceUsd / costUsd) - 1) * 100;
+            const margin = ((basePriceUsd - costUsd) / basePriceUsd) * 100;
             
             marginHidden.value = margin.toFixed(2);
             if (marginDisplay) {
