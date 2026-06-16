@@ -694,7 +694,9 @@ function initInventory() {
                 return;
             }
 
-            const precioUSDBase = parseFloat(p.costo_usd) * (1 + (parseFloat(p.margen_ganancia) / 100));
+            const margin = parseFloat(p.margen_ganancia);
+            let safeMargin = margin >= 100 ? 99.99 : margin;
+            const precioUSDBase = parseFloat(p.costo_usd) / (1 - (safeMargin / 100));
             // USD se queda base
             const precioUSD = precioUSDBase;
             
@@ -1376,7 +1378,9 @@ function initPOS() {
             
             // Calculate final precio_venta_usd applying both commercial and protection margins
             allProducts.forEach(p => {
-                const basePrice = parseFloat(p.costo_usd) * (1 + (parseFloat(p.margen_ganancia) / 100));
+                const margin = parseFloat(p.margen_ganancia);
+                let safeMargin = margin >= 100 ? 99.99 : margin;
+                const basePrice = parseFloat(p.costo_usd) / (1 - (safeMargin / 100));
                 p.precio_venta_usd = basePrice;
             });
 
